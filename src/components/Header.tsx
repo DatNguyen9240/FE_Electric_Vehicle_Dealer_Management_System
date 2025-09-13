@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   return (
     <header className="flex items-center px-4 md:px-8 py-3 md:py-4 bg-white shadow-md relative">
       <div className="flex items-center min-w-[120px] md:min-w-[320px]">
@@ -37,7 +39,10 @@ const Header: React.FC = () => {
           Contact Us
         </a>
       </nav>
-      <button className="hidden md:block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition ml-auto">
+      <button
+        className="hidden md:block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition ml-auto"
+        onClick={() => navigate("/login")}
+      >
         Login
       </button>
       {/* Mobile menu button */}
@@ -107,7 +112,10 @@ const Header: React.FC = () => {
           </a>
           <button
             className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition mt-2 w-3/4"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              navigate("/login");
+            }}
           >
             Login
           </button>
