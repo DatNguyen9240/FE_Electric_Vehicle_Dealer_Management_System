@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom"; // Thêm dòng này
 
 const Login: React.FC = () => {
   return (
@@ -68,12 +69,12 @@ const Login: React.FC = () => {
             </button>
             <div className="text-center text-gray-500 mt-2 text-sm sm:text-base">
               Don&apos;t have an account?{" "}
-              <a
-                href="/signup"
+              <Link
+                to="/signup"
                 className="text-blue-600 font-semibold hover:underline"
               >
                 Sign up
-              </a>
+              </Link>
             </div>
           </form>
         </div>

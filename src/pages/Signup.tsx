@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Signup: React.FC = () => {
   return (
@@ -74,12 +75,12 @@ const Signup: React.FC = () => {
             </button>
             <div className="text-center text-gray-500 mt-2 text-sm sm:text-base">
               Already have an account?{" "}
-              <a
-                href="/login"
+              <Link
+                to="/login"
                 className="text-blue-600 font-semibold hover:underline"
               >
                 Sign in
-              </a>
+              </Link>
             </div>
           </form>
         </div>
