@@ -6,6 +6,7 @@ interface ChargingStationCardProps {
   statusColor: string;
   bookUrl: string;
   img: string;
+  onBookNow?: () => void; // Thêm prop này
 }
 
 const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
@@ -14,6 +15,7 @@ const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
   statusColor,
   bookUrl,
   img,
+  onBookNow,
 }) => (
   <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6 flex flex-col items-center">
     <img
@@ -26,9 +28,10 @@ const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
       <div className="font-semibold text-base mb-2">
         Status: <span className={statusColor}>{status}</span>
       </div>
-      <a
-        href={bookUrl}
-        className="text-blue-600 font-semibold hover:underline flex items-center justify-center gap-1"
+      <button
+        type="button"
+        onClick={onBookNow}
+        className="text-blue-600 font-semibold hover:underline flex justify-center items-center gap-1 mx-auto mt-2"
       >
         Book now
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
@@ -40,7 +43,7 @@ const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
             strokeLinejoin="round"
           />
         </svg>
-      </a>
+      </button>
     </div>
   </div>
 );

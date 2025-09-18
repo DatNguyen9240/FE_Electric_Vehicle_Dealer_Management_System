@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import ChargingStationCard from "@components/Ui/ChargingStationCard";
-import Pagination from "@components/Ui/pagination";
+import Pagination from "@components/Ui/Pagination";
+import BookingModal from "@components/Sections/Booking/Modal/BookingModal";
 
 const stations = Array.from({ length: 16 }, (_, i) => ({
   id: i + 1,
@@ -17,6 +18,8 @@ const stations = Array.from({ length: 16 }, (_, i) => ({
 }));
 
 const ChargingListSection: React.FC = () => {
+  const [openModal, setOpenModal] = useState(false);
+
   return (
     <section className="w-full py-12 bg-white">
       <div>
@@ -25,10 +28,15 @@ const ChargingListSection: React.FC = () => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
           {stations.map((station) => (
-            <ChargingStationCard key={station.id} {...station} />
+            <ChargingStationCard
+              key={station.id}
+              {...station}
+              onBookNow={() => setOpenModal(true)}
+            />
           ))}
         </div>
         <Pagination />
+        <BookingModal open={openModal} onClose={() => setOpenModal(false)} />
       </div>
     </section>
   );

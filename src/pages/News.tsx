@@ -1,5 +1,5 @@
 import React from "react";
-import Pagination from "../components/Ui/pagination";
+import Pagination from "@components/Ui/Pagination";
 
 const newsList = [
   {
