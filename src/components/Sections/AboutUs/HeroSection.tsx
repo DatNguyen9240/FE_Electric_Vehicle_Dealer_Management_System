@@ -17,12 +17,9 @@ const HeroSection: React.FC = () => {
             YOUR LIFE
           </span>
         </h1>
-        <Link
-          to="/contact"
-          className="mt-10 bg-white text-black px-6 py-3 rounded-lg shadow hover:bg-gray-200 transition inline-block"
-        >
-          Contact Us
-        </Link>
+        <button className="mt-90 bg-white text-black px-6 py-3 rounded-lg shadow hover:bg-gray-200 transition">
+          <Link to="/contact">Contact Us</Link>
+        </button>
       </div>
     </section>
   );
