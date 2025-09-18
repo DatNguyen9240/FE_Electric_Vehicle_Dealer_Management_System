@@ -1,10 +1,12 @@
 import React from "react";
-import HeroSection from "../components/HeroSection";
-import AboutSection from "../components/AboutSection";
-import ChargingStationsSection from "../components/ChargingStationsSection";
-import ManageSection from "../components/ManageSection";
-import TrustSection from "../components/TrustSection";
-import FeedbackSection from "../components/FeedbackSection";
+import {
+  AboutSection,
+  HeroSection,
+  FeedbackSection,
+  ManageSection,
+  TrustSection,
+  ChargingStationsSection,
+} from "@components/Sections/Home";
 
 const Home: React.FC = () => {
   return (

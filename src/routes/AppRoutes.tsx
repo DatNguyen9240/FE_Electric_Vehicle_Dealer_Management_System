@@ -1,11 +1,7 @@
 // src/routes/AppRoutes.tsx
 import { Routes, Route } from "react-router-dom";
-import MainLayout from "../layouts/MainLayout";
-import Home from "../pages/Home";
-import Login from "../pages/Login";
-import Signup from "../pages/Signup";
-import ContactUs from "../pages/ContactUs";
-import FAQ from "../pages/FAQ";
+import MainLayout from "@layouts/MainLayout";
+import { Home, ContactUs, FAQ, News, Login, Signup } from "@pages";
 export default function AppRoutes() {
   return (
     <Routes>
@@ -13,7 +9,7 @@ export default function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/contact" element={<ContactUs />} />
         <Route path="/faq" element={<FAQ />} />
-
+        <Route path="/news" element={<News />} />
         {/* Các trang dùng MainLayout */}
       </Route>
       <Route path="/login" element={<Login />} />
