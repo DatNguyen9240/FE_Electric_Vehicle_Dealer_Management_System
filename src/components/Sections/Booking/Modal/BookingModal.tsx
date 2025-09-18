@@ -47,9 +47,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
   if (!open) return null;
 
   const onSubmit = (data: FormValues) => {
-    // Xử lý dữ liệu đặt lịch ở đây
-    // data: { name, email, phone, carModel }
-    // selectedDate, selectedTime
+    console.log({ ...data, date: selectedDate, time: selectedTime });
+    alert("Booking submitted! Check console for details.");
     onClose();
     reset();
   };

@@ -4,7 +4,6 @@ interface ChargingStationCardProps {
   id: number;
   status: string;
   statusColor: string;
-  bookUrl: string;
   img: string;
   onBookNow?: () => void; // Thêm prop này
 }
@@ -13,7 +12,6 @@ const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
   id,
   status,
   statusColor,
-  bookUrl,
   img,
   onBookNow,
 }) => (

@@ -1,38 +1,5 @@
 import React from "react";
 
-const team = [
-  {
-    name: "Jenny Wilson",
-    title: "Co-Founder, CEO",
-    image: "/team/jenny.png",
-    highlight: true,
-  },
-  {
-    name: "John Doe",
-    title: "Developer",
-    image: "/team/john.png",
-    highlight: false,
-  },
-  {
-    name: "Sarah Lee",
-    title: "Designer",
-    image: "/team/sarah.png",
-    highlight: false,
-  },
-  {
-    name: "Mike Brown",
-    title: "Marketing",
-    image: "/team/mike.png",
-    highlight: false,
-  },
-  {
-    name: "Anna Smith",
-    title: "Support",
-    image: "/team/anna.png",
-    highlight: false,
-  },
-];
-
 const MeetOurTeam: React.FC = () => {
   return (
     <section className="w-full bg-white py-16">

@@ -98,7 +98,7 @@ const Pricing: React.FC = () => {
         )}
       </div>
       <div className="flex flex-col md:flex-row gap-8 justify-center mt-6">
-        {plans.map((plan, idx) => (
+        {plans.map((plan) => (
           <div
             key={plan.name}
             className={`flex-1 max-w-sm mx-auto rounded-2xl border
