@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const HeroSection: React.FC = () => {
   return (
@@ -16,9 +17,12 @@ const HeroSection: React.FC = () => {
             YOUR LIFE
           </span>
         </h1>
-        <button className="mt-90 bg-white text-black px-6 py-3 rounded-lg shadow hover:bg-gray-200 transition">
+        <Link
+          to="/contact"
+          className="mt-10 bg-white text-black px-6 py-3 rounded-lg shadow hover:bg-gray-200 transition inline-block"
+        >
           Contact Us
-        </button>
+        </Link>
       </div>
     </section>
   );
