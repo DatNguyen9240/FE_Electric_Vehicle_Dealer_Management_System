@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import ChargingStationCard from "@components/Ui/ChargingStationCard";
+import BookingModal from "@components/Sections/Booking/Modal/BookingModal";
+import { Link } from "react-router-dom";
 
 const stations = [
   {
@@ -23,11 +25,20 @@ const stations = [
     bookUrl: "#",
     img: "/station/01.png",
   },
+  {
+    id: 4,
+    status: "Available",
+    statusColor: "text-green-600",
+    bookUrl: "#",
+    img: "/station/01.png",
+  },
 ];
 
 const ChargingStationsSection: React.FC = () => {
+  const [openModal, setOpenModal] = useState(false);
+
   return (
-    <section className="w-full py-12 md:py-20 bg-white">
+    <section className="w-full bg-white">
       <div>
         {/* Title & subtitle */}
         <div className="flex flex-col items-center mb-8">
@@ -38,31 +49,34 @@ const ChargingStationsSection: React.FC = () => {
             Monitor real-time status of your EV chargers and slots availability.
           </p>
         </div>
-        {/* Cards + Get all */}
-        <div className="flex flex-col md:flex-row md:items-start md:gap-8 relative">
-          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
-            {stations.map((station) => (
-              <ChargingStationCard key={station.id} {...station} />
-            ))}
-          </div>
-          {/* Get all link */}
-          <div className="flex md:flex-col justify-center md:justify-center items-center md:items-start md:ml-8 mt-6 md:mt-0 md:self-center">
-            <a
-              href="#"
-              className="text-blue-600 font-semibold text-lg flex items-center gap-2 hover:underline"
-            >
-              Get all
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M5 12h14M13 6l6 6-6 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </a>
-          </div>
+        {/* Cards */}
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 flex-1">
+          {stations.map((station) => (
+            <ChargingStationCard
+              key={station.id}
+              {...station}
+              onBookNow={() => setOpenModal(true)}
+            />
+          ))}
+        </div>
+        <BookingModal open={openModal} onClose={() => setOpenModal(false)} />
+        {/* Get all link */}
+        <div className="flex justify-center mt-8">
+          <Link
+            to="/booking"
+            className="text-blue-600 font-semibold text-lg flex items-center gap-2 hover:underline"
+          >
+            Get all
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+              <path
+                d="M5 12h14M13 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
         </div>
       </div>
     </section>

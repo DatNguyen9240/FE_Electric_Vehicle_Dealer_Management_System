@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -18,12 +18,18 @@ const Header: React.FC = () => {
 
       {/* Desktop menu */}
       <nav className="hidden md:flex gap-12 absolute left-1/2 -translate-x-1/2 z-[100]">
-        <a
-          href="#"
+        <Link
+          to="/"
           className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600"
         >
           Home
-        </a>
+        </Link>
+        <Link
+          to="/about"
+          className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600"
+        >
+          About
+        </Link>
 
         {/* Dropdown Features */}
         <div
@@ -50,40 +56,40 @@ const Header: React.FC = () => {
 
           {dropdownOpen && (
             <div className="absolute top-full left-0 w-40 bg-white shadow-md rounded-md z-[9999]">
-              <a
-                href="/booking"
+              <Link
+                to="/booking"
                 className="block px-4 py-2 text-sm hover:bg-gray-100"
               >
                 Booking
-              </a>
-              <a
-                href="/pricing"
+              </Link>
+              <Link
+                to="/pricing"
                 className="block px-4 py-2 text-sm hover:bg-gray-100"
               >
                 Pricing
-              </a>
-              <a
-                href="/faq"
+              </Link>
+              <Link
+                to="/faq"
                 className="block px-4 py-2 text-sm hover:bg-gray-100"
               >
                 FAQ
-              </a>
+              </Link>
             </div>
           )}
         </div>
 
-        <a
-          href="#"
+        <Link
+          to="/news"
           className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600"
         >
           News
-        </a>
-        <a
-          href="#"
+        </Link>
+        <Link
+          to="/contact"
           className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600"
         >
           Contact Us
-        </a>
+        </Link>
       </nav>
 
       <button
@@ -130,13 +136,20 @@ const Header: React.FC = () => {
       {/* Mobile menu */}
       {open && (
         <div className="absolute top-full left-0 w-full bg-white shadow-md flex flex-col items-center py-4 z-50 md:hidden">
-          <a
-            href="#"
+          <Link
+            to="/"
             className="font-medium hover:text-blue-600 py-2 w-full text-center"
             onClick={() => setOpen(false)}
           >
             Home
-          </a>
+          </Link>
+          <Link
+            to="/about"
+            className="font-medium hover:text-blue-600 py-2 w-full text-center"
+            onClick={() => setOpen(false)}
+          >
+            About
+          </Link>
 
           {/* Dropdown in mobile */}
           <div className="w-full text-center">
@@ -163,45 +176,45 @@ const Header: React.FC = () => {
             </button>
             {dropdownOpen && (
               <div className="flex flex-col bg-gray-50 rounded-md mx-4 mb-2">
-                <a
-                  href="#"
+                <Link
+                  to="/booking"
                   className="py-2 text-sm hover:bg-gray-100"
                   onClick={() => setOpen(false)}
                 >
-                  Feature 1
-                </a>
-                <a
-                  href="#"
+                  Booking
+                </Link>
+                <Link
+                  to="/pricing"
                   className="py-2 text-sm hover:bg-gray-100"
                   onClick={() => setOpen(false)}
                 >
-                  Feature 2
-                </a>
-                <a
-                  href="#"
+                  Pricing
+                </Link>
+                <Link
+                  to="/faq"
                   className="py-2 text-sm hover:bg-gray-100"
                   onClick={() => setOpen(false)}
                 >
-                  Feature 3
-                </a>
+                  FAQ
+                </Link>
               </div>
             )}
           </div>
 
-          <a
-            href="#"
+          <Link
+            to="/news"
             className="font-medium hover:text-blue-600 py-2 w-full text-center"
             onClick={() => setOpen(false)}
           >
             News
-          </a>
-          <a
-            href="#"
+          </Link>
+          <Link
+            to="/contact"
             className="font-medium hover:text-blue-600 py-2 w-full text-center"
             onClick={() => setOpen(false)}
           >
             Contact Us
-          </a>
+          </Link>
           <button
             className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition mt-2 w-3/4"
             onClick={() => {

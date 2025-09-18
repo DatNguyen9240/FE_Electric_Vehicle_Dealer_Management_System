@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const AboutSection: React.FC = () => {
   return (
@@ -40,8 +41,8 @@ const AboutSection: React.FC = () => {
           <span className="font-bold text-black">E.V.C</span>
         </p>
         <hr className="mb-6" />
-        <a
-          href="#"
+        <Link
+          to="/about"
           className="text-blue-600 font-semibold flex items-center gap-2 hover:underline"
         >
           Read more
@@ -54,7 +55,7 @@ const AboutSection: React.FC = () => {
               strokeLinejoin="round"
             />
           </svg>
-        </a>
+        </Link>
       </div>
     </section>
   );
