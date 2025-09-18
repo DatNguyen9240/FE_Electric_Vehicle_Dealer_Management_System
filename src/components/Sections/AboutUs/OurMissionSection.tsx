@@ -18,7 +18,7 @@ const OurMissionSection: React.FC = () => {
         {/* Image */}
         <div className="md:w-1/2 w-full flex justify-center">
           <img
-            src="/station/02.png"
+            src="/about/02.png"
             alt="EV Chargers"
             className="w-full max-w-xl object-contain"
             draggable={false}

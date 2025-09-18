@@ -10,6 +10,7 @@ import {
   Signup,
   Pricing,
   AboutUs,
+  Booking,
 } from "@pages";
 export default function AppRoutes() {
   return (
@@ -21,6 +22,7 @@ export default function AppRoutes() {
         <Route path="/news" element={<News />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/about" element={<AboutUs />} />
+        <Route path="/booking" element={<Booking />} />
         {/* Các trang dùng MainLayout */}
       </Route>
       <Route path="/login" element={<Login />} />

@@ -7,7 +7,7 @@ const OurMissionSectionV2: React.FC = () => {
         {/* Image bên trái */}
         <div className="md:w-1/2 w-full flex justify-center">
           <img
-            src="/station/03.png"
+            src="/about/03.png"
             alt="EV Car Charging"
             className="w-full max-w-lg object-contain rounded"
             draggable={false}
