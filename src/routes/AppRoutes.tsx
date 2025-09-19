@@ -13,6 +13,8 @@ import {
   Booking,
   AdminDashboard,
   StaffManager,
+  UserManager,
+  Payment,
 } from "@pages";
 export default function AppRoutes() {
   return (
@@ -31,7 +33,9 @@ export default function AppRoutes() {
       <Route path="/signup" element={<Signup />} />
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/staff" element={<StaffManager />} />
+        <Route path="/admin/staffs" element={<StaffManager />} />
+        <Route path="/admin/users" element={<UserManager />} />
+        <Route path="/admin/payments" element={<Payment />} />
       </Route>
     </Routes>
   );

@@ -31,7 +31,7 @@ const StaffTable: React.FC<StaffTableProps> = ({ staffList }) => (
           <th className="px-4 py-3 text-left font-semibold">Join Date</th>
           <th className="px-4 py-3 text-left font-semibold">Phone Number</th>
           <th className="px-4 py-3 text-left font-semibold">Email address</th>
-          <th className="px-4 py-3"></th>
+          <th className="px-4 py-3 text-left font-semibold">Action</th>
         </tr>
       </thead>
       <tbody>

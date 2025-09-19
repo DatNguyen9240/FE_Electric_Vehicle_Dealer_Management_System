@@ -13,9 +13,9 @@ import { Link, useLocation } from "react-router-dom";
 
 const menu = [
   { label: "Home", icon: <Home size={20} />, to: "/admin" },
-  { label: "Staff", icon: <UserCog size={20} />, to: "/admin/staff" },
+  { label: "Staff", icon: <UserCog size={20} />, to: "/admin/staffs" },
   { label: "Users", icon: <Users size={20} />, to: "/admin/users" },
-  { label: "Payment", icon: <CreditCard size={20} />, to: "/admin/payment" },
+  { label: "Payment", icon: <CreditCard size={20} />, to: "/admin/payments" },
   {
     label: "Chargers",
     icon: <BatteryCharging size={20} />,

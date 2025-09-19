@@ -1,13 +1,13 @@
 import React from "react";
-import StaffTable from "@components/Sections/Admin/StaffTable";
+import { StaffTable, TableToolbar } from "@components/Admin";
 
-const staffList = [
+const userList = [
   {
     name: "Olivia Rhye",
     username: "@olivia",
     avatar: "https://randomuser.me/api/portraits/women/44.jpg",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-01-10",
     phone: "0123456789",
     email: "olivia@untitledui.com",
   },
@@ -16,7 +16,7 @@ const staffList = [
     username: "@phoenix",
     avatar: "https://randomuser.me/api/portraits/men/32.jpg",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-01-12",
     phone: "0123456789",
     email: "phoenix@untitledui.com",
   },
@@ -25,7 +25,7 @@ const staffList = [
     username: "@lana",
     avatar: "https://randomuser.me/api/portraits/women/68.jpg",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-01-15",
     phone: "0123456789",
     email: "lana@untitledui.com",
   },
@@ -34,16 +34,16 @@ const staffList = [
     username: "@demi",
     avatar: "https://randomuser.me/api/portraits/women/65.jpg",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-01-18",
     phone: "0123456789",
     email: "demi@untitledui.com",
   },
   {
     name: "Candice Wu",
     username: "@candice",
-    avatar: null,
+    avatar: "",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-01-20",
     phone: "0123456789",
     email: "candice@untitledui.com",
   },
@@ -52,7 +52,7 @@ const staffList = [
     username: "@natali",
     avatar: "https://randomuser.me/api/portraits/women/66.jpg",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-01-22",
     phone: "0123456789",
     email: "natali@untitledui.com",
   },
@@ -61,16 +61,16 @@ const staffList = [
     username: "@drew",
     avatar: "https://randomuser.me/api/portraits/men/33.jpg",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-01-25",
     phone: "0123456789",
     email: "drew@untitledui.com",
   },
   {
     name: "Orlando Diggs",
     username: "@orlando",
-    avatar: null,
+    avatar: "",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-01-28",
     phone: "",
     email: "orlando@untitledui.com",
     role: "UI Designer",
@@ -80,45 +80,28 @@ const staffList = [
     username: "@andi",
     avatar: "https://randomuser.me/api/portraits/women/67.jpg",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-02-01",
     phone: "0123456789",
     email: "andi@untitledui.com",
   },
   {
     name: "Kate Morrison",
     username: "@kate",
-    avatar: null,
+    avatar: "",
     status: "Active",
-    joinDate: "",
+    joinDate: "2022-02-05",
     phone: "0123456789",
     email: "kate@untitledui.com",
   },
 ];
 
-const StaffManager: React.FC = () => {
+const UserManager: React.FC = () => {
   return (
     <div className="p-6">
-      {/* Search and actions */}
-      <div className="flex items-center justify-between mb-4">
-        <input
-          type="text"
-          placeholder="Search"
-          className="border rounded-lg px-4 py-2 w-72 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-        />
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 border px-4 py-2 rounded-lg text-sm font-medium bg-white hover:bg-gray-50">
-            {/* ...icon export... */}
-            Export
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700">
-            <span className="text-lg">+</span> Create Staff
-          </button>
-        </div>
-      </div>
-      {/* Table */}
-      <StaffTable staffList={staffList} />
+      <TableToolbar createLabel="Create User" searchPlaceholder="Search user" />
+      <StaffTable staffList={userList} />
     </div>
   );
 };
 
-export default StaffManager;
+export default UserManager;
