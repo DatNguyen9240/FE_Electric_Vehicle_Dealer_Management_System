@@ -1,6 +1,6 @@
 // src/routes/AppRoutes.tsx
 import { Routes, Route } from "react-router-dom";
-import MainLayout from "@layouts/MainLayout";
+import { MainLayout, AdminLayout } from "@layouts/index";
 import {
   Home,
   ContactUs,
@@ -11,6 +11,7 @@ import {
   Pricing,
   AboutUs,
   Booking,
+  AdminDashboard,
 } from "@pages";
 export default function AppRoutes() {
   return (
@@ -27,6 +28,9 @@ export default function AppRoutes() {
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route element={<AdminLayout />}>
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Route>
     </Routes>
   );
 }

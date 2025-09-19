@@ -12,7 +12,7 @@ const Home: React.FC = () => {
   return (
     <>
       <HeroSection />
-      <div className="max-w-[1500px] mx-auto px-4 md:px-12">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-12">
         <AboutSection />
         <ChargingStationsSection />
         <ManageSection />

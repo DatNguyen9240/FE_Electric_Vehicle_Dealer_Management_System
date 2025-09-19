@@ -7,3 +7,4 @@ export { default as Signup } from "./Signup";
 export { default as Pricing } from "./Pricing";
 export { default as AboutUs } from "./AboutUs";
 export { default as Booking } from "./Booking";
+export { default as AdminDashboard } from "./AdminDashboard";

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { CalendarPicker } from "@components/Ui";
 import "react-day-picker/dist/style.css";
@@ -44,7 +44,28 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
     },
   });
 
+  // Khóa scroll khi mở modal
+  useEffect(() => {
+    if (open) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [open]);
+
+  // Để bắt sự kiện click ngoài modal
+  const modalRef = useRef<HTMLDivElement>(null);
+
   if (!open) return null;
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+      onClose();
+    }
+  };
 
   const onSubmit = (data: FormValues) => {
     console.log({ ...data, date: selectedDate, time: selectedTime });
@@ -54,8 +75,15 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-2">
-      <div className="bg-white rounded-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden relative overflow-y-auto max-h-[95vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-2"
+      onClick={handleOverlayClick}
+    >
+      <div
+        ref={modalRef}
+        className="bg-white rounded-2xl w-full max-w-5xl flex flex-col md:flex-row overflow-hidden relative overflow-y-auto max-h-[95vh]"
+        onClick={(e) => e.stopPropagation()} // Ngăn nổi bọt khi click vào modal
+      >
         {/* Close button */}
         <button
           className="absolute top-2 right-4 md:top-4 md:right-6 text-red-500 text-xl font-bold z-10"

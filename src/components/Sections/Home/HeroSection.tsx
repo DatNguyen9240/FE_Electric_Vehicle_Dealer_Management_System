@@ -14,7 +14,7 @@ const HeroSection: React.FC = () => {
       <div className="absolute inset-0 bg-black/30" />
 
       {/* Nội dung chữ nằm trên ảnh */}
-      <div className="absolute inset-0 z-10 flex flex-col items-start justify-center text-white px-4 sm:px-8 md:px-16 xl:px-32">
+      <div className="absolute inset-0 z-10 flex flex-col items-start justify-center text-white pl-4 sm:pl-8 md:pl-12 xl:pl-24">
         <h1 className="text-2xl sm:text-3xl md:text-5xl xl:text-6xl font-bold mb-4 drop-shadow-lg">
           EV CHARGING SOLUTION
         </h1>
