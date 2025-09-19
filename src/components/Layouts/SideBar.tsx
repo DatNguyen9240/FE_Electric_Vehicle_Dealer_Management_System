@@ -12,11 +12,15 @@ import {
 import { Link, useLocation } from "react-router-dom";
 
 const menu = [
-  { label: "Home", icon: <Home size={20} />, to: "/" },
-  { label: "Staff", icon: <UserCog size={20} />, to: "/staff" },
-  { label: "Users", icon: <Users size={20} />, to: "/users" },
-  { label: "Payment", icon: <CreditCard size={20} />, to: "/payment" },
-  { label: "Chargers", icon: <BatteryCharging size={20} />, to: "/chargers" },
+  { label: "Home", icon: <Home size={20} />, to: "/admin" },
+  { label: "Staff", icon: <UserCog size={20} />, to: "/admin/staff" },
+  { label: "Users", icon: <Users size={20} />, to: "/admin/users" },
+  { label: "Payment", icon: <CreditCard size={20} />, to: "/admin/payment" },
+  {
+    label: "Chargers",
+    icon: <BatteryCharging size={20} />,
+    to: "/admin/chargers",
+  },
 ];
 
 const SideBar: React.FC = () => {
@@ -123,11 +127,11 @@ const SideBar: React.FC = () => {
             <Link
               to={item.to}
               className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all duration-300
-                ${
-                  location.pathname === item.to
-                    ? "bg-blue-600 text-white shadow"
-                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                }`}
+  ${
+    location.pathname === item.to
+      ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white shadow-lg border-l-4 border-blue-300"
+      : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+  }`}
             >
               <span className="flex-shrink-0 pl-3">{item.icon}</span>
               <span
