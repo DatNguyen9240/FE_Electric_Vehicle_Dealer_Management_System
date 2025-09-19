@@ -17,9 +17,9 @@ const menu = [
   { label: "Users", icon: <Users size={20} />, to: "/admin/users" },
   { label: "Payment", icon: <CreditCard size={20} />, to: "/admin/payments" },
   {
-    label: "Chargers",
+    label: "Bookings",
     icon: <BatteryCharging size={20} />,
-    to: "/admin/chargers",
+    to: "/admin/bookings",
   },
 ];
 

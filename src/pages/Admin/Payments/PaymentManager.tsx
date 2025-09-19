@@ -29,7 +29,7 @@ const paymentData = [
 
 const tabs = ["Succeeded", "Refunded", "Uncaptured", "All"];
 
-const Payment: React.FC = () => {
+const PaymentManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState("Succeeded");
 
   // Lọc dữ liệu theo tab nếu cần, ở đây chỉ demo tab Succeeded
@@ -106,4 +106,4 @@ const Payment: React.FC = () => {
   );
 };
 
-export default Payment;
+export default PaymentManager;

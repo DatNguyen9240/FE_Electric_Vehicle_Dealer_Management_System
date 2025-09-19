@@ -14,7 +14,8 @@ import {
   AdminDashboard,
   StaffManager,
   UserManager,
-  Payment,
+  PaymentManager,
+  BookingManager,
 } from "@pages";
 export default function AppRoutes() {
   return (
@@ -35,7 +36,8 @@ export default function AppRoutes() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/staffs" element={<StaffManager />} />
         <Route path="/admin/users" element={<UserManager />} />
-        <Route path="/admin/payments" element={<Payment />} />
+        <Route path="/admin/payments" element={<PaymentManager />} />
+        <Route path="/admin/bookings" element={<BookingManager />} />
       </Route>
     </Routes>
   );

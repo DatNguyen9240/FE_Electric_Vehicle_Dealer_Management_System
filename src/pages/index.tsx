@@ -10,4 +10,5 @@ export { default as Booking } from "./Booking";
 export { default as AdminDashboard } from "./Admin/AdminDashboard";
 export { default as StaffManager } from "./Admin/Staffs/StaffManager";
 export { default as UserManager } from "./Admin/Users/UserManager";
-export { default as Payment } from "./Admin/Payments/Payment";
+export { default as PaymentManager } from "./Admin/Payments/PaymentManager";
+export { default as BookingManager } from "./Admin/Bookings/BookingManager";
