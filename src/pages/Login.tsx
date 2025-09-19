@@ -1,7 +1,21 @@
-import React from "react";
-import { Link } from "react-router-dom"; // Thêm dòng này
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 
 const Login: React.FC = () => {
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email === "admin" && pass === "admin") {
+      navigate("/admin");
+    } else {
+      setError("Invalid credentials");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
       <div className="max-w-md w-full mx-auto">
@@ -14,17 +28,22 @@ const Login: React.FC = () => {
           to create a truly professional website.
         </p>
         <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8">
-          <form>
+          <form onSubmit={handleSubmit}>
             <input
-              type="email"
+              type="text"
               placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full mb-4 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             />
             <input
               type="password"
               placeholder="Create Password"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
               className="w-full mb-4 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             />
+            {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 text-sm">
               <label className="flex items-center gap-2 mb-2 sm:mb-0">
                 <input type="checkbox" className="accent-blue-600" />
