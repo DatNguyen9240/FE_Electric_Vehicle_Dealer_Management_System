@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CheckCircle } from "lucide-react";
 import TableToolbar from "@components/Admin/TableToolbar";
+import { useTitle } from "../../../contexts";
 
 const paymentData = [
   {
@@ -31,6 +32,11 @@ const tabs = ["Succeeded", "Refunded", "Uncaptured", "All"];
 
 const PaymentManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState("Succeeded");
+  const { setTitle } = useTitle();
+
+  useEffect(() => {
+    setTitle("Payments");
+  }, [setTitle]);
 
   // Lọc dữ liệu theo tab nếu cần, ở đây chỉ demo tab Succeeded
   const filteredData = paymentData; // Có thể lọc theo status nếu có nhiều loại

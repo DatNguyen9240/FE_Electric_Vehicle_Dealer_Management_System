@@ -1,5 +1,6 @@
 import React from "react";
 import { StaffTable, TableToolbar } from "@components/Admin";
+import { useTitle } from "../../../contexts";
 
 const staffList = [
   {
@@ -96,6 +97,12 @@ const staffList = [
 ];
 
 const StaffManager: React.FC = () => {
+  const { setTitle } = useTitle();
+
+  React.useEffect(() => {
+    setTitle("Staffs");
+  }, [setTitle]);
+
   return (
     <div className="p-6">
       {/* Search and actions */}

@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { StaffTable, TableToolbar } from "@components/Admin";
+import { useTitle } from "../../../contexts";
 
 const userList = [
   {
@@ -96,6 +97,12 @@ const userList = [
 ];
 
 const UserManager: React.FC = () => {
+  const { setTitle } = useTitle();
+
+  useEffect(() => {
+    setTitle("Users");
+  }, [setTitle]);
+
   return (
     <div className="p-6">
       <TableToolbar createLabel="Create User" searchPlaceholder="Search user" />

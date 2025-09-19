@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CalendarPicker from "@components/Ui/CalendarPicker";
+import { useTitle } from "../../../contexts";
 
 const timeSlots = [
   "07:00",
@@ -59,6 +60,11 @@ const BookingManager: React.FC = () => {
     new Date()
   );
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const { setTitle } = useTitle();
+
+  useEffect(() => {
+    setTitle("Bookings");
+  }, [setTitle]);
 
   // Lấy trạng thái slot cho ngày đã chọn (ở đây demo cứng)
   const getSlot = (time: string) => slotStatus[time] || { booked: 0, total: 4 };
