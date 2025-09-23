@@ -47,7 +47,6 @@ export default defineConfig({
         },
       },
     },
-    // Tăng chunk size limit để tắt warning
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 650,
   },
 });
