@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import CalendarPicker from "@components/Ui/CalendarPicker";
-import { useTitle } from "../../../contexts";
+import TimeSlotBookingModal from "@components/Sections/Booking/Modal/TimeSlotBookingModal";
+import { useTitle } from "@contexts";
 
 const timeSlots = [
   "07:00",
@@ -60,72 +61,94 @@ const BookingManager: React.FC = () => {
     new Date()
   );
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTimeSlot, setModalTimeSlot] = useState<string>("");
   const { setTitle } = useTitle();
 
   useEffect(() => {
     setTitle("Bookings");
   }, [setTitle]);
 
-  // Lấy trạng thái slot cho ngày đã chọn (ở đây demo cứng)
   const getSlot = (time: string) => slotStatus[time] || { booked: 0, total: 4 };
 
+  const handleTimeSlotClick = (time: string) => {
+    setModalTimeSlot(time);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setModalTimeSlot("");
+  };
+
+  const handleTimeSlotChange = (newTimeSlot: string) => {
+    setModalTimeSlot(newTimeSlot);
+    setSelectedTime(newTimeSlot);
+  };
+
   return (
-    <div className="flex gap-8 p-8">
-      {/* Time slots */}
-      <div className="grid grid-cols-4 gap-4 flex-1">
-        {timeSlots.map((time) => {
-          const { booked, total } = getSlot(time);
-          const isFull = booked >= total;
-          const isSelected = selectedTime === time;
-          return (
-            <button
-              key={time}
-              disabled={isFull}
-              onClick={() => setSelectedTime(time)}
-              className={`
-                flex flex-col items-center justify-center border rounded-xl h-16
-                text-base font-semibold transition
-                ${
-                  isFull
-                    ? "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed"
-                    : ""
-                }
-                ${
-                  isSelected
-                    ? "bg-blue-600 text-white border-blue-600 shadow"
-                    : ""
-                }
-                ${
-                  !isFull && !isSelected
-                    ? "bg-white text-blue-600 border-blue-300 hover:border-blue-500"
-                    : ""
-                }
-              `}
-            >
-              <span>{time}</span>
-              <span
-                className={`text-xs mt-1 ${
-                  isFull
-                    ? "text-red-500"
-                    : booked === 0
-                    ? "text-blue-400"
-                    : "text-green-500"
-                }`}
+    <>
+      <div className="flex gap-8 p-8">
+        <div className="grid grid-cols-4 gap-4 flex-1">
+          {timeSlots.map((time) => {
+            const { booked, total } = getSlot(time);
+            const isFull = booked >= total;
+            const isSelected = selectedTime === time;
+            return (
+              <button
+                key={time}
+                onClick={() => {
+                  setSelectedTime(time);
+                  handleTimeSlotClick(time);
+                }}
+                className={`
+                  flex flex-col items-center justify-center border rounded-xl h-16
+                  text-base font-semibold transition cursor-pointer
+                  ${
+                    isSelected
+                      ? "bg-blue-600 text-white border-blue-600 shadow"
+                      : ""
+                  }
+                  ${
+                    !isSelected
+                      ? "bg-white text-blue-600 border-blue-300 hover:border-blue-500 hover:bg-blue-50"
+                      : ""
+                  }
+                `}
               >
-                {booked}/{total}
-              </span>
-            </button>
-          );
-        })}
+                <span>{time}</span>
+                <span
+                  className={`text-xs mt-1 ${
+                    isFull
+                      ? "text-red-500"
+                      : booked === 0
+                      ? "text-blue-400"
+                      : "text-green-500"
+                  }`}
+                >
+                  {booked}/{total}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {/* Calendar */}
+        <div>
+          <CalendarPicker
+            selectedDate={selectedDate}
+            onSelect={setSelectedDate}
+          />
+        </div>
       </div>
-      {/* Calendar */}
-      <div>
-        <CalendarPicker
-          selectedDate={selectedDate}
-          onSelect={setSelectedDate}
-        />
-      </div>
-    </div>
+
+      <TimeSlotBookingModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        selectedTimeSlot={modalTimeSlot}
+        selectedDate={selectedDate}
+        onTimeSlotChange={handleTimeSlotChange}
+      />
+    </>
   );
 };
 
