@@ -44,10 +44,6 @@ export default defineConfig({
               return "date";
             }
           }
-          // Components chunks
-          if (id.includes("/src/components/")) {
-            return "components";
-          }
         },
       },
     },
