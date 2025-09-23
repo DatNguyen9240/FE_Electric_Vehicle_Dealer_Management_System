@@ -2,10 +2,11 @@ import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import LazyLoading from "@components/Ui/LazyLoading";
 
-// Simple lazy loading without error handling
+// Lazy load layouts
 const MainLayout = lazy(() => import("@layouts/MainLayout"));
 const AdminLayout = lazy(() => import("@layouts/AdminLayout"));
 
+// Lazy load main pages
 const Home = lazy(() => import("@pages/Home"));
 const ContactUs = lazy(() => import("@pages/ContactUs"));
 const FAQ = lazy(() => import("@pages/FAQ"));
@@ -26,145 +27,91 @@ const BookingManager = lazy(
   () => import("@pages/Admin/Bookings/BookingManager")
 );
 
+const createLazyRoute = (
+  Component: React.LazyExoticComponent<React.ComponentType<any>>,
+  message: string
+) => (
+  <Suspense fallback={<LazyLoading message={message} />}>
+    <Component />
+  </Suspense>
+);
+
 export default function AppRoutes() {
   return (
-    <Routes>
-      <Route
-        element={
-          <Suspense fallback={<LazyLoading message="Loading layout..." />}>
-            <MainLayout />
-          </Suspense>
-        }
-      >
-        <Route
-          path="/"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading home..." />}>
-              <Home />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/contact"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading contact..." />}>
-              <ContactUs />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/faq"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading FAQ..." />}>
-              <FAQ />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/news"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading news..." />}>
-              <News />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/pricing"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading pricing..." />}>
-              <Pricing />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/about"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading about..." />}>
-              <AboutUs />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/booking"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading booking..." />}>
-              <Booking />
-            </Suspense>
-          }
-        />
-      </Route>
+    <Suspense fallback={<LazyLoading message="Starting application..." />}>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route
+            path="/"
+            element={createLazyRoute(Home, "Loading home page...")}
+          />
+          <Route
+            path="/contact"
+            element={createLazyRoute(ContactUs, "Loading contact page...")}
+          />
+          <Route path="/faq" element={createLazyRoute(FAQ, "Loading FAQ...")} />
+          <Route
+            path="/news"
+            element={createLazyRoute(News, "Loading news...")}
+          />
+          <Route
+            path="/pricing"
+            element={createLazyRoute(Pricing, "Loading pricing...")}
+          />
+          <Route
+            path="/about"
+            element={createLazyRoute(AboutUs, "Loading about us...")}
+          />
+          <Route
+            path="/booking"
+            element={createLazyRoute(Booking, "Loading booking system...")}
+          />
+        </Route>
 
-      <Route
-        path="/login"
-        element={
-          <Suspense fallback={<LazyLoading message="Loading login..." />}>
-            <Login />
-          </Suspense>
-        }
-      />
-      <Route
-        path="/signup"
-        element={
-          <Suspense fallback={<LazyLoading message="Loading signup..." />}>
-            <Signup />
-          </Suspense>
-        }
-      />
+        <Route
+          path="/login"
+          element={createLazyRoute(Login, "Loading login page...")}
+        />
+        <Route
+          path="/signup"
+          element={createLazyRoute(Signup, "Loading signup page...")}
+        />
 
-      <Route
-        element={
-          <Suspense
-            fallback={<LazyLoading message="Loading admin layout..." />}
-          >
-            <AdminLayout />
-          </Suspense>
-        }
-      >
-        <Route
-          path="/admin"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading dashboard..." />}>
-              <AdminDashboard />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/admin/staffs"
-          element={
-            <Suspense
-              fallback={<LazyLoading message="Loading staff management..." />}
-            >
-              <StaffManager />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <Suspense
-              fallback={<LazyLoading message="Loading user management..." />}
-            >
-              <UserManager />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/admin/payments"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading payments..." />}>
-              <PaymentManager />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/admin/bookings"
-          element={
-            <Suspense fallback={<LazyLoading message="Loading bookings..." />}>
-              <BookingManager />
-            </Suspense>
-          }
-        />
-      </Route>
-    </Routes>
+        <Route element={<AdminLayout />}>
+          <Route
+            path="/admin"
+            element={createLazyRoute(
+              AdminDashboard,
+              "Loading admin dashboard..."
+            )}
+          />
+          <Route
+            path="/admin/staffs"
+            element={createLazyRoute(
+              StaffManager,
+              "Loading staff management..."
+            )}
+          />
+          <Route
+            path="/admin/users"
+            element={createLazyRoute(UserManager, "Loading user management...")}
+          />
+          <Route
+            path="/admin/payments"
+            element={createLazyRoute(
+              PaymentManager,
+              "Loading payment management..."
+            )}
+          />
+          <Route
+            path="/admin/bookings"
+            element={createLazyRoute(
+              BookingManager,
+              "Loading booking management..."
+            )}
+          />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }
