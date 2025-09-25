@@ -6,7 +6,7 @@ const ManageSection: React.FC = () => {
       <div className="flex flex-col md:flex-row items-center">
         {/* Text content */}
         <div className="w-full md:w-3/7 mb-10 md:mb-0">
-          <h2 className="text-3xl md:text-6xl font-bold text-black mb-6 leading-tight">
+          <h2 className="text-3xl md:text-5xl font-bold text-black mb-6 leading-tight">
             Manage your EV
             <br />
             charging stations
@@ -17,7 +17,7 @@ const ManageSection: React.FC = () => {
             Our platform lets you monitor, control, and optimize your charging
             stations in real time — on both web and mobile.
           </p>
-          <button className="bg-blue-600 text-white font-semibold px-6 py-3 rounded hover:bg-blue-700 transition flex items-center gap-2">
+          <button className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
             Get Started
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
               <path

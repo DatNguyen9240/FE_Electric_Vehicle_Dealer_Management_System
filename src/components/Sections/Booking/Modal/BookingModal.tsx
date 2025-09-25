@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { CalendarPicker } from "@components/Ui";
 import "react-day-picker/dist/style.css";
+import logo from "@assets/logo.png";
 
 interface BookingModalProps {
   open: boolean;
@@ -94,9 +95,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
         {/* Left: Info */}
         <div className="md:w-1/3 w-full flex flex-col items-center py-8 px-4 md:py-10 md:px-6 border-b md:border-b-0 md:border-r">
           <img
-            src="/logo/01.png"
+            src={logo}
             alt="Logo"
-            className="mb-6 md:mb-8 object-contain"
+            className="mb-4 w-30 h-30 md:mb-6 object-contain"
           />
           <form className="w-full space-y-4" onSubmit={handleSubmit(onSubmit)}>
             <div>
@@ -170,9 +171,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
           </form>
         </div>
         {/* Right: Calendar & Time */}
-        <div className="md:w-2/3 w-full flex flex-col items-center justify-center py-8 px-4 md:py-10 md:px-6 bg-white">
+        <div className="md:w-2/3 w-full flex flex-col items-center justify-center py-8 px-4 md:py-10 md:px-7 bg-white">
           <div className="w-full flex flex-col items-center">
-            <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6 text-center">
+            <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6 text-center ">
               Please specify the time to commence using the service.
             </h2>
             <div className="flex flex-col md:flex-row w-full gap-4 md:gap-8">
@@ -185,7 +186,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
               </div>
               {/* Time slots */}
               <div className="flex flex-col items-center flex-1">
-                <div className="mb-2 font-semibold text-gray-700 text-base text-center">
+                <div className="mb-3 font-semibold text-gray-700 text-base text-center">
                   {selectedDate
                     ? selectedDate.toLocaleDateString("en-US", {
                         weekday: "long",
@@ -195,14 +196,14 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
                       })
                     : "Please select a date"}
                 </div>
-                <div className="flex flex-col gap-2 md:gap-3 w-full max-w-xs">
+                <div className="flex flex-col gap-2 md:gap-3 w-40 mx-auto">
                   {times.map((t) => (
                     <button
                       key={t.time}
                       type="button"
                       disabled={t.disabled}
                       onClick={() => setSelectedTime(t.time)}
-                      className={`w-full py-3 rounded-lg border text-base font-semibold transition
+                      className={`w-full py-2 rounded-lg border text-base font-semibold transition
                         ${
                           t.disabled
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -216,12 +217,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
                   ))}
                 </div>
                 <form
-                  className="flex flex-col md:flex-row gap-2 md:gap-4 mt-6 w-full max-w-xs"
+                  className="flex flex-col md:flex-row gap-1 md:gap-4 mt-6 w-60 max-w-xs "
                   onSubmit={handleSubmit(onSubmit)}
                 >
                   <button
                     type="button"
-                    className="flex-1 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold"
+                    className="flex-1 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold"
                     onClick={() => {
                       onClose();
                       reset();
@@ -231,7 +232,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2 rounded-lg bg-blue-600 text-white font-semibold"
+                    className="flex-1 py-1 rounded-lg bg-blue-600 text-white font-semibold"
                   >
                     Submit
                   </button>

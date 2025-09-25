@@ -29,6 +29,7 @@
       "@components/*": ["src/components/*"],
       "@layouts/*": ["src/layouts/*"],
       "@pages": ["src/pages"],
+      "@assets/*": ["src/assets/*"],
     }
   },
   "include": ["src"]

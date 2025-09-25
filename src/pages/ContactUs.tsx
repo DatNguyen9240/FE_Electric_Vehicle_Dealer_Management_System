@@ -1,5 +1,14 @@
 import React from "react";
 import { useForm } from "react-hook-form";
+import { 
+  Twitter,
+  Facebook,
+  Instagram,
+  Github,
+  Phone,
+  Mail,
+  MapPin
+} from "lucide-react";
 
 type FormData = {
   firstName: string;
@@ -30,44 +39,73 @@ const ContactUs: React.FC = () => {
         Need help with booking, payments, or charging issues? Our support team
         is here for you anytime.
       </p>
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8">
+      <div className="w-4/5 h-[70vh] mx-auto flex flex-col md:flex-row gap-8 md:mt-15">
         {/* Left: Contact Info */}
-        <div className="bg-blue-100 rounded-xl p-8 flex-1 max-w-md mx-auto md:mx-0">
-          <h2 className="text-2xl font-bold text-blue-700 mb-2">
-            Contact Information
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Our technical team is always ready to assist you with any issues
-            during charging.
-          </p>
-          <div className="flex items-center gap-3 mb-3 text-gray-700">
-            <span className="text-xl">📞</span>
-            <span>+123456789</span>
+        <div className="bg-[#E5F4FF] rounded-xl p-12 flex-1 max-w-md mx-auto md:mx-0 flex flex-col justify-between">
+          {/* Top Content */}
+          <div>
+            <h2 className="text-2xl font-bold text-[#2465EA] mb-2">
+              Contact Information
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Our technical team is always ready to assist you with any issues
+              during charging.
+            </p>
+            
+            <div className="flex flex-col gap-6 mt-20">
+              {/* Phone */}
+            <div className="flex items-center gap-3 mb-3 text-[#737373]">
+              <Phone className="w-5 h-5" />
+              <span>+123456789</span>
+            </div>
+            
+            {/* Email */}
+            <div className="flex items-center gap-3 mb-3 text-[#737373]">
+              <Mail className="w-5 h-5" />
+              <span>evcsupport@gmail.com</span>
+            </div>
+            
+            {/* Address */}
+            <div className="flex items-start gap-3 mb-6 text-[#737373]">
+              <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <span>
+                FPT University, ĐL. Long Thạnh Mỹ,
+                <br />
+                Thủ Đức, Ho Chi Minh.
+              </span>
+            </div>
+            </div>
           </div>
-          <div className="flex items-center gap-3 mb-3 text-gray-700">
-            <span className="text-xl">✉️</span>
-            <span>evcsupport@gmail.com</span>
-          </div>
-          <div className="flex items-center gap-3 mb-6 text-gray-700">
-            <span className="text-xl">📍</span>
-            <span>
-              FPT University, ĐL. Long Thạnh Mỹ,
-              <br />
-              Thủ Đức, Ho Chi Minh.
-            </span>
-          </div>
-          <div className="flex gap-4 mt-8 text-gray-500 text-xl">
-            <a href="#" aria-label="Twitter">
-              <i className="fab fa-twitter"></i>
+          
+          {/* Social Media Icons - Bottom Right */}
+          <div className="flex gap-4 text-gray-500 justify-end">
+            <a 
+              href="#" 
+              className="hover:text-blue-600 transition-colors"
+              aria-label="Twitter"
+            >
+              <Twitter className="w-4 h-4" />
             </a>
-            <a href="#" aria-label="Facebook">
-              <i className="fab fa-facebook"></i>
+            <a 
+              href="#" 
+              className="hover:text-blue-600 transition-colors"
+              aria-label="Facebook"
+            >
+              <Facebook className="w-4 h-4" />
             </a>
-            <a href="#" aria-label="Instagram">
-              <i className="fab fa-instagram"></i>
+            <a 
+              href="#" 
+              className="hover:text-pink-600 transition-colors"
+              aria-label="Instagram"
+            >
+              <Instagram className="w-4 h-4" />
             </a>
-            <a href="#" aria-label="GitHub">
-              <i className="fab fa-github"></i>
+            <a 
+              href="#" 
+              className="hover:text-gray-800 transition-colors"
+              aria-label="GitHub"
+            >
+              <Github className="w-4 h-4" />
             </a>
           </div>
         </div>
@@ -147,7 +185,7 @@ const ContactUs: React.FC = () => {
             <textarea
               {...register("message", { required: "Message is required" })}
               className="w-full border-b border-gray-300 focus:border-blue-500 outline-none py-2 resize-none"
-              rows={3}
+              rows={6}
               placeholder="Write your message.."
             />
             {errors.message && (
@@ -159,7 +197,7 @@ const ContactUs: React.FC = () => {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium shadow hover:bg-blue-700 transition"
+              className="bg-[#2465EA] text-white px-8 py-3 rounded-[5px] font-medium shadow hover:bg-blue-700 transition mt-15 me-5"
             >
               Send Message
             </button>
