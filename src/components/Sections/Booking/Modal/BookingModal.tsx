@@ -151,17 +151,13 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
                     Clear
                   </button>
                   <button
-<<<<<<< HEAD
-                    type="submit"
-                    className="flex-1 py-1 rounded-lg bg-[#2465EA] text-white font-semibold"
-=======
+
 
                     type="button"
                     className="flex-1 py-2 rounded-lg bg-blue-600 text-white font-semibold"
                     onClick={() => {
                       bookingFormRef.current?.submitForm();
                     }}
->>>>>>> develop
                   >
                     Submit
                   </button>
