@@ -9,7 +9,45 @@ export default defineConfig({
       "@components": "/src/components",
       "@layouts": "/src/layouts",
       "@pages": "/src/pages",
+      "@contexts": "/src/contexts",
       "@assets": "/src/assets",
     },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // React ecosystem
+          if (id.includes("node_modules")) {
+            if (
+              id.includes("react") ||
+              id.includes("react-dom") ||
+              id.includes("react-router-dom")
+            ) {
+              return "vendor";
+            }
+            if (
+              id.includes("lucide-react") ||
+              id.includes("@radix-ui/react-navigation-menu") ||
+              id.includes("@radix-ui/react-calendar") ||
+              id.includes("react-day-picker")
+            ) {
+              return "ui";
+            }
+            if (
+              id.includes("class-variance-authority") ||
+              id.includes("clsx") ||
+              id.includes("tailwind-merge")
+            ) {
+              return "utils";
+            }
+            if (id.includes("date-fns")) {
+              return "date";
+            }
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 650,
   },
 });
