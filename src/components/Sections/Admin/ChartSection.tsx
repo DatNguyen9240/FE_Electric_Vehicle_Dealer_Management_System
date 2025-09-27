@@ -28,31 +28,30 @@ const ChartSection: React.FC = () => {
   return (
     <div className="flex gap-6 p-4">
       {/* Left column */}
-      <div className="flex flex-col gap-4 w-72">
+      <div className="flex flex-col gap-4 w-80">
         <div className="flex gap-4">
           {/* Card 1 */}
-          <div className="flex-1 bg-white rounded-xl border p-4 flex flex-col items-start h-40">
-            <span className="text-xs text-gray-500 mb-2">
+          <div className="w-1/2 bg-white rounded-xl border p-6 flex flex-col h-35 relative">
+            <span className="text-xs text-gray-500 mb-3 font-medium uppercase tracking-wide leading-tight">
               TODAY'S CAR CHARGED
             </span>
-            <span className="text-2xl font-bold">50</span>
-            <span className="text-xs text-green-500 mt-1">+3.6%</span>
+            <span className="text-4xl font-bold text-black ps-5">50</span>
+            <span className="text-sm text-green-500 font-medium absolute bottom-3 right-3">+36% ↑</span>
           </div>
           {/* Card 2 */}
-          <div className="flex-1 bg-white rounded-xl border p-4 flex flex-col items-start">
-            <span className="text-xs text-gray-500 mb-2">TOTAL SLOT DONE</span>
-            <span className="text-2xl font-bold">
-              190
-              <span className="text-base text-gray-400">/192</span>
+          <div className="w-1/2 bg-white rounded-xl border p-6 flex flex-col h-35 relative">
+            <span className="text-xs text-gray-500 mb-3 font-medium uppercase tracking-wide leading-tight">TOTAL SLOT DONE</span>
+            <span className="text-4xl font-bold text-black pt-1">
+              190/<span className="text-lg">192</span>
             </span>
-            <span className="text-xs text-red-500 mt-1">-1.4%</span>
+            <span className="text-sm text-red-500 font-medium absolute bottom-3 right-3">-14% ↓</span>
           </div>
         </div>
         {/* Card 3 */}
-        <div className="bg-white rounded-xl border p-4 flex flex-col items-start">
-          <span className="text-xs text-gray-500 mb-2">TOTAL FEE</span>
-          <span className="text-3xl font-bold text-blue-600">$2,38,485</span>
-          <span className="text-xs text-green-500 mt-1">+3.6%</span>
+        <div className="bg-white rounded-xl border p-6 flex flex-col h-35 relative">
+          <span className="text-xs text-gray-500 mb-3 font-medium uppercase tracking-wide">TOTAL FEE</span>
+          <span className="text-5xl font-bold text-blue-600 ps-6">$2,38,485</span>
+          <span className="text-sm text-green-500 font-medium absolute bottom-4 right-4">+36% ↑</span>
         </div>
       </div>
       {/* Right column */}

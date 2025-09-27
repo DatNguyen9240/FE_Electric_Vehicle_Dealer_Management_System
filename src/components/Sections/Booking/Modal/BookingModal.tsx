@@ -208,7 +208,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
                           t.disabled
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : t.time === selectedTime
-                            ? "bg-blue-600 text-white border-blue-600"
+                            ? "bg-[#2465EA] text-white border-blue-600"
                             : "bg-white text-blue-600 border-blue-600 hover:bg-blue-50"
                         }`}
                     >
@@ -232,7 +232,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ open, onClose }) => {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-1 rounded-lg bg-blue-600 text-white font-semibold"
+                    className="flex-1 py-1 rounded-lg bg-[#2465EA] text-white font-semibold"
                   >
                     Submit
                   </button>

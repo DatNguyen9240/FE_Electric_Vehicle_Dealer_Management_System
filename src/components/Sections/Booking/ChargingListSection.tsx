@@ -19,6 +19,14 @@ const stations = Array.from({ length: 16 }, (_, i) => ({
 
 const ChargingListSection: React.FC = () => {
   const [openModal, setOpenModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(stations.length / itemsPerPage);
+
+  // Calculate which stations to show on current page
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentStations = stations.slice(startIndex, endIndex);
 
   return (
     <section className="w-full py-12 bg-white">
@@ -27,7 +35,7 @@ const ChargingListSection: React.FC = () => {
           Charging Station List
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-          {stations.map((station) => (
+          {currentStations.map((station) => (
             <ChargingStationCard
               key={station.id}
               {...station}
@@ -35,7 +43,11 @@ const ChargingListSection: React.FC = () => {
             />
           ))}
         </div>
-        <Pagination />
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
         <BookingModal open={openModal} onClose={() => setOpenModal(false)} />
       </div>
     </section>

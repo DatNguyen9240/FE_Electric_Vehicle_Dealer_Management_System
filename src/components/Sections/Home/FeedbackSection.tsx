@@ -28,10 +28,10 @@ const FeedbackSection: React.FC = () => {
           {/* Button */}
           <div className="mb-10 md:mt-0 me-10">
             <a
-              href="#"
+              href="/contact"
               className="border-2 border-white text-white px-10 py-3 rounded-xl text-lg font-medium hover:bg-white hover:text-black transition"
             >
-              FILL FORM
+              Contact Us
             </a>
           </div>
         </div>
