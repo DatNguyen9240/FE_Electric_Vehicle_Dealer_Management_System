@@ -28,7 +28,7 @@ const BookingManager = lazy(
 );
 
 const createLazyRoute = (
-  Component: React.LazyExoticComponent<React.ComponentType<any>>,
+  Component: React.LazyExoticComponent<React.ComponentType<object>>,
   message: string
 ) => (
   <Suspense fallback={<LazyLoading message={message} />}>

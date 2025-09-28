@@ -1,19 +1,26 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { loginUser } from "../redux/slice/Auth/authThunks";
+import { toast } from "react-toastify";
+import type { AppDispatch } from "../redux/store/store";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
-  const [error, setError] = useState("");
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === "admin" && pass === "admin") {
-      navigate("/admin");
-    } else {
-      setError("Invalid credentials");
-    }
+    dispatch(loginUser({ email, password: pass }))
+      .unwrap()
+      .then(() => {
+        toast.success("Login successful!");
+        setTimeout(() => navigate("/"), 1200);
+      })
+      .catch((err) => {
+        if (err) toast.error(err);
+      });
   };
 
   return (
@@ -35,15 +42,16 @@ const Login: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full mb-4 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              required
             />
             <input
               type="password"
-              placeholder="Create Password"
+              placeholder="Enter Password"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
               className="w-full mb-4 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              required
             />
-            {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 text-sm">
               <label className="flex items-center gap-2 mb-2 sm:mb-0">
                 <input type="checkbox" className="accent-blue-600" />

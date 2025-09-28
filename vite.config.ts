@@ -10,6 +10,8 @@ export default defineConfig({
       "@layouts": "/src/layouts",
       "@pages": "/src/pages",
       "@contexts": "/src/contexts",
+      "@libs": "/src/libs",
+      "@interfaces": "/src/interfaces",
     },
   },
   build: {

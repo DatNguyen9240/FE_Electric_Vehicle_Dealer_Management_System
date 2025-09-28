@@ -1,10 +1,35 @@
-import React, { useState } from "react";
+import type { User } from "@interfaces/Auth";
+import { useState } from "react";
+import React, { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { logoutUser } from "../../redux/slice/Auth/authThunks";
 import { useNavigate, Link } from "react-router-dom";
-
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [featuresDropdownOpen, setFeaturesDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false); // For mobile features dropdown
   const navigate = useNavigate();
+  const [cookieUser, setCookieUser] = useState<User | null>(null);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    function getCookie(name: string) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift();
+    }
+    const userStr = getCookie("user");
+    if (userStr) {
+      try {
+        setCookieUser(JSON.parse(decodeURIComponent(userStr)));
+      } catch {
+        setCookieUser(null);
+      }
+    } else {
+      setCookieUser(null);
+    }
+  }, []);
 
   return (
     <header className="flex items-center px-4 md:px-8 py-3 md:py-4 bg-white shadow-md relative">
@@ -34,8 +59,8 @@ const Header: React.FC = () => {
         {/* Dropdown Features */}
         <div
           className="relative"
-          onMouseEnter={() => setDropdownOpen(true)}
-          onMouseLeave={() => setDropdownOpen(false)}
+          onMouseEnter={() => setFeaturesDropdownOpen(true)}
+          onMouseLeave={() => setFeaturesDropdownOpen(false)}
         >
           <button className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600 flex items-center gap-1">
             Features
@@ -54,7 +79,7 @@ const Header: React.FC = () => {
             </svg>
           </button>
 
-          {dropdownOpen && (
+          {featuresDropdownOpen && (
             <div className="absolute top-full left-0 w-40 bg-white shadow-md rounded-md z-[9999]">
               <Link
                 to="/booking"
@@ -92,12 +117,55 @@ const Header: React.FC = () => {
         </Link>
       </nav>
 
-      <button
-        className="hidden md:block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition ml-auto"
-        onClick={() => navigate("/login")}
-      >
-        Login
-      </button>
+      {cookieUser ? (
+        <div className="hidden md:flex items-center ml-auto relative">
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-100 transition font-semibold"
+            onClick={() => setUserDropdownOpen((v) => !v)}
+          >
+            <span>{cookieUser.name || cookieUser.email}</span>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          {userDropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-40 bg-white shadow-md rounded-md z-[9999]">
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => navigate("/profile")}
+              >
+                Profile
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={async () => {
+                  await dispatch<any>(logoutUser());
+                  navigate("/login");
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <button
+          className="hidden md:block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition ml-auto"
+          onClick={() => navigate("/login")}
+        >
+          Login
+        </button>
+      )}
 
       {/* Mobile menu button */}
       <button
