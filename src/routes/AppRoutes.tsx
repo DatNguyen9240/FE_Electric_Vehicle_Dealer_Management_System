@@ -20,6 +20,7 @@ const Booking = lazy(() => import("@pages/Booking"));
 const AdminDashboard = lazy(() => import("@pages/Admin/AdminDashboard"));
 const StaffManager = lazy(() => import("@pages/Admin/Staffs/StaffManager"));
 const UserManager = lazy(() => import("@pages/Admin/Users/UserManager"));
+const AdminTariffs = lazy(() => import("@pages/Admin/Tariffs/Tariffs"));
 const PaymentManager = lazy(
   () => import("@pages/Admin/Payments/PaymentManager")
 );
@@ -95,6 +96,13 @@ export default function AppRoutes() {
           <Route
             path="/admin/users"
             element={createLazyRoute(UserManager, "Loading user management...")}
+          />
+          <Route
+            path="/admin/tariffs"
+            element={createLazyRoute(
+              AdminTariffs,
+              "Loading tariff management..."
+            )}
           />
           <Route
             path="/admin/payments"

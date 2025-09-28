@@ -7,7 +7,7 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (payload: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      const res = await api.post("/v1/auth/login", payload);
+      const res = await api.post("/auth/login", payload);
       setCookie("token", res.data.token);
       setCookie("user", JSON.stringify(res.data.user));
       return res.data;
@@ -22,7 +22,7 @@ export const registerUser = createAsyncThunk(
   "auth/registerUser",
   async (payload: RegisterRequest, { rejectWithValue }) => {
     try {
-      const res = await api.post("/v1/auth/signup", payload);
+      const res = await api.post("/auth/signup", payload);
       return res.data;
     } catch (error) {
       const err = error as AxiosError<{ msg?: string }>;

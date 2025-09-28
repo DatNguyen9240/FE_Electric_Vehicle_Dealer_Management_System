@@ -12,3 +12,4 @@ export { default as StaffManager } from "./Admin/Staffs/StaffManager";
 export { default as UserManager } from "./Admin/Users/UserManager";
 export { default as PaymentManager } from "./Admin/Payments/PaymentManager";
 export { default as BookingManager } from "./Admin/Bookings/BookingManager";
+export { default as AdminTariffs } from "./Admin/Tariffs/Tariffs";
