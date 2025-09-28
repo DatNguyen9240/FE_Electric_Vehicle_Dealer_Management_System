@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle } from "react";
 import { useForm } from "react-hook-form";
+import logo from "@assets/logo.png";
 
 const carModels = ["Vinfast VF9", "Vinfast VF8", "Hyundai Ioniq 5", "Kia EV6"];
 
@@ -56,12 +57,12 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
     return (
       <div className="w-full flex flex-col items-center py-4 px-4">
         <img
-          src="/logo/01.png"
+          src={logo}
           alt="Logo"
-          className="mb-4 object-contain max-h-12"
+          className="m-5 object-contain  w-20 h-20"
         />
         <form
-          className="w-full space-y-3"
+          className="w-full p-5 space-y-3"
           onSubmit={handleSubmit(handleFormSubmit)}
         >
           <div>
