@@ -2,6 +2,7 @@ import type { User } from "@interfaces/Auth";
 import { useState } from "react";
 import React, { useEffect } from "react";
 import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../redux/store/store";
 import { logoutUser } from "../../redux/slice/Auth/authThunks";
 import { useNavigate, Link } from "react-router-dom";
 const Header: React.FC = () => {
@@ -11,7 +12,7 @@ const Header: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false); // For mobile features dropdown
   const navigate = useNavigate();
   const [cookieUser, setCookieUser] = useState<User | null>(null);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     function getCookie(name: string) {
@@ -149,7 +150,7 @@ const Header: React.FC = () => {
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
                 onClick={async () => {
-                  await dispatch<any>(logoutUser());
+                  await dispatch(logoutUser());
                   navigate("/login");
                 }}
               >
