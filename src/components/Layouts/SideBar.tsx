@@ -21,6 +21,11 @@ const menu = [
     icon: <BatteryCharging size={20} />,
     to: "/admin/bookings",
   },
+  {
+    label: "Tariffs",
+    icon: <ChevronsUpDown size={20} />,
+    to: "/admin/tariffs",
+  },
 ];
 
 const SideBar: React.FC = () => {

@@ -1,11 +1,38 @@
-import React, { useState } from "react";
+import type { User } from "@interfaces/Auth";
+import { useState } from "react";
+import React, { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../../redux/store/store";
+import { logoutUser } from "../../redux/slice/Auth/authThunks";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "@assets/logo.png";
 
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [featuresDropdownOpen, setFeaturesDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false); // For mobile features dropdown
   const navigate = useNavigate();
+  const [cookieUser, setCookieUser] = useState<User | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    function getCookie(name: string) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift();
+    }
+    const userStr = getCookie("user");
+    if (userStr) {
+      try {
+        setCookieUser(JSON.parse(decodeURIComponent(userStr)));
+      } catch {
+        setCookieUser(null);
+      }
+    } else {
+      setCookieUser(null);
+    }
+  }, []);
 
   return (
     <header className="flex items-center px-20  py-2  bg-white shadow-md relative">
@@ -35,8 +62,8 @@ const Header: React.FC = () => {
         {/* Dropdown Features */}
         <div
           className="relative"
-          onMouseEnter={() => setDropdownOpen(true)}
-          onMouseLeave={() => setDropdownOpen(false)}
+          onMouseEnter={() => setFeaturesDropdownOpen(true)}
+          onMouseLeave={() => setFeaturesDropdownOpen(false)}
         >
           <button className="font-semibold text-xl  hover:text-blue-600 flex items-center gap-1">
             Features
@@ -55,7 +82,7 @@ const Header: React.FC = () => {
             </svg>
           </button>
 
-          {dropdownOpen && (
+          {featuresDropdownOpen && (
             <div className="absolute top-full left-0 w-40 bg-white shadow-md rounded-md z-[9999]">
               <Link
                 to="/booking"

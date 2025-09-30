@@ -11,6 +11,8 @@ export default defineConfig({
       "@pages": "/src/pages",
       "@contexts": "/src/contexts",
       "@assets": "/src/assets",
+      "@libs": "/src/libs",
+      "@interfaces": "/src/interfaces",
     },
   },
   build: {

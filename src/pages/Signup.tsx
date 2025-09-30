@@ -1,7 +1,55 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { registerUser } from "../redux/slice/Auth/authThunks";
+import { toast } from "react-toastify";
+import type { RootState, AppDispatch } from "../redux/store/store";
 
 const Signup: React.FC = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error, registerSuccess, registerMsg } = useSelector(
+    (state: RootState) => state.auth
+  );
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    role: "driver",
+  });
+  const [agree, setAgree] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!agree) {
+      toast.error("Bạn phải đồng ý với điều khoản sử dụng!");
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      toast.error("Password not match");
+      return;
+    }
+    dispatch(registerUser(form));
+  };
+
+  useEffect(() => {
+    if (registerSuccess && registerMsg) {
+      toast.success(registerMsg);
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
+    }
+    if (error) {
+      toast.error(error);
+    }
+  }, [registerSuccess, registerMsg, error, navigate]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
       <div className="max-w-md w-full mx-auto">
@@ -14,24 +62,59 @@ const Signup: React.FC = () => {
           to create a truly professional website.
         </p>
         <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8">
-          <form>
+          <form onSubmit={handleSubmit}>
             <input
               type="text"
-              placeholder="First & Last Name"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              placeholder="Full Name"
               className="w-full mb-4 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              required
             />
             <input
               type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
               placeholder="Email Address"
               className="w-full mb-4 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              required
+            />
+            <input
+              type="text"
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              placeholder="Phone Number"
+              className="w-full mb-4 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              required
             />
             <input
               type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
               placeholder="Create Password"
               className="w-full mb-4 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              required
+            />
+            <input
+              type="password"
+              name="confirmPassword"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              placeholder="Confirm Password"
+              className="w-full mb-4 px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              required
             />
             <div className="flex items-center mb-4 text-xs sm:text-sm">
-              <input type="checkbox" className="accent-blue-600 mr-2" />
+              <input
+                type="checkbox"
+                className="accent-blue-600 mr-2"
+                checked={agree}
+                onChange={(e) => setAgree(e.target.checked)}
+              />
               <span>
                 I agree with the{" "}
                 <a href="#" className="text-blue-600 hover:underline">
@@ -40,11 +123,18 @@ const Signup: React.FC = () => {
                 of Clarity
               </span>
             </div>
+            {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
+            {registerSuccess && (
+              <div className="text-green-600 text-sm mb-2">
+                Sign up successful!
+              </div>
+            )}
             <button
               type="submit"
               className="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition mb-4 text-sm sm:text-base"
+              disabled={loading || !agree}
             >
-              Sign Up
+              {loading ? "Signing Up..." : "Sign Up"}
             </button>
             <button
               type="button"
