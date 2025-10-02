@@ -16,6 +16,8 @@ const Signup = lazy(() => import("@pages/Signup"));
 const Pricing = lazy(() => import("@pages/Pricing"));
 const AboutUs = lazy(() => import("@pages/AboutUs"));
 const Booking = lazy(() => import("@pages/Booking"));
+const BookingSlots = lazy(() => import("@pages/BookingSlots"));
+const ChargingHistory = lazy(() => import("@pages/ChargingHistory"));
 
 const AdminDashboard = lazy(() => import("@pages/Admin/AdminDashboard"));
 const StaffManager = lazy(() => import("@pages/Admin/Staffs/StaffManager"));
@@ -66,6 +68,14 @@ export default function AppRoutes() {
           <Route
             path="/booking"
             element={createLazyRoute(Booking, "Loading booking system...")}
+          />
+          <Route
+            path="/booking-slots"
+            element={createLazyRoute(BookingSlots, "Loading slot selection...")}
+          />
+          <Route
+            path="/charging-history"
+            element={createLazyRoute(ChargingHistory, "Loading charging history...")}
           />
         </Route>
 

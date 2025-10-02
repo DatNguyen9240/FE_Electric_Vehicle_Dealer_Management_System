@@ -1,6 +1,5 @@
 import { forwardRef, useImperativeHandle } from "react";
 import { useForm } from "react-hook-form";
-import logo from "@assets/logo.png";
 
 const carModels = ["Vinfast VF9", "Vinfast VF8", "Hyundai Ioniq 5", "Kia EV6"];
 
@@ -9,6 +8,7 @@ export type FormValues = {
   email: string;
   phone: string;
   carModel: string;
+  connector: string;
 };
 
 interface BookingFormProps {
@@ -34,6 +34,7 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
         email: "",
         phone: "",
         carModel: carModels[0],
+        connector: "1",
       },
     });
 
@@ -56,11 +57,7 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
 
     return (
       <div className="w-full flex flex-col items-center py-4 px-4">
-        <img
-          src={logo}
-          alt="Logo"
-          className="m-5 object-contain  w-20 h-20"
-        />
+        
         <form
           className="w-full p-5 space-y-3"
           onSubmit={handleSubmit(handleFormSubmit)}
@@ -130,6 +127,18 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
                   {model}
                 </option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">
+              Connector
+            </label>
+            <select
+              className="w-full border-b border-gray-300 outline-none py-1 text-sm bg-white"
+              {...register("connector", { required: true })}
+            >
+              <option value="1">Connector 1</option>
+              <option value="2">Connector 2</option>
             </select>
           </div>
           {/* Hidden submit button */}

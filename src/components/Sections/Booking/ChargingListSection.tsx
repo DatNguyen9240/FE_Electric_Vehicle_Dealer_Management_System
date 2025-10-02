@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ChargingStationCard from "@components/Ui/ChargingStationCard";
 import Pagination from "@components/Ui/Pagination";
 import BookingModal from "@components/Sections/Booking/Modal/BookingModal";
@@ -15,11 +16,13 @@ const stations = Array.from({ length: 16 }, (_, i) => ({
       : "text-yellow-500",
   bookUrl: "#",
   img: "/station/01.png",
+  remainingTime: i % 3 === 0 ? "45 min" : i % 3 === 1 ? "Available" : "N/A",
 }));
 
 const ChargingListSection: React.FC = () => {
   const [openModal, setOpenModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const navigate = useNavigate();
   const itemsPerPage = 8;
   const totalPages = Math.ceil(stations.length / itemsPerPage);
 
@@ -27,6 +30,10 @@ const ChargingListSection: React.FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentStations = stations.slice(startIndex, endIndex);
+
+  const handleBookNow = () => {
+    navigate("/booking-slots");
+  };
 
   return (
     <section className="w-full py-12 bg-white">
@@ -39,7 +46,7 @@ const ChargingListSection: React.FC = () => {
             <ChargingStationCard
               key={station.id}
               {...station}
-              onBookNow={() => setOpenModal(true)}
+              onBookNow={handleBookNow}
             />
           ))}
         </div>

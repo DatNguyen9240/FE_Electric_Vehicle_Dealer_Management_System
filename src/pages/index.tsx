@@ -7,6 +7,8 @@ export { default as Signup } from "./Signup";
 export { default as Pricing } from "./Pricing";
 export { default as AboutUs } from "./AboutUs";
 export { default as Booking } from "./Booking";
+export { default as BookingSlots } from "./BookingSlots";
+export { default as ChargingHistory } from "./ChargingHistory";
 export { default as AdminDashboard } from "./Admin/AdminDashboard";
 export { default as StaffManager } from "./Admin/Staffs/StaffManager";
 export { default as UserManager } from "./Admin/Users/UserManager";

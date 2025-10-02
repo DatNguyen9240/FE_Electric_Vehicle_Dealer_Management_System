@@ -5,8 +5,9 @@ interface ChargingStationCardProps {
   status: string;
   statusColor: string;
   img: string;
+  bookUrl?: string;
   remainingTime?: string;
-  onBookNow?: () => void; // Thêm prop này
+  onBookNow?: () => void;
 }
 
 const ChargingStationCard: React.FC<ChargingStationCardProps> = ({

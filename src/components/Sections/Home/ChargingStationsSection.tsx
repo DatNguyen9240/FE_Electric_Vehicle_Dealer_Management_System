@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import ChargingStationCard from "@components/Ui/ChargingStationCard";
-import BookingModal from "@components/Sections/Booking/Modal/BookingModal";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const stations = [
   {
@@ -39,9 +38,13 @@ const stations = [
 ];
 
 const ChargingStationsSection: React.FC = () => {
-  const [openModal, setOpenModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const navigate = useNavigate();
   const totalPages = 5;
+
+  const handleBookNow = () => {
+    navigate("/booking-slots");
+  };
 
   return (
     <section className="w-full bg-white">
@@ -61,11 +64,10 @@ const ChargingStationsSection: React.FC = () => {
             <ChargingStationCard
               key={station.id}
               {...station}
-              onBookNow={() => setOpenModal(true)}
+              onBookNow={handleBookNow}
             />
           ))}
         </div>
-        <BookingModal open={openModal} onClose={() => setOpenModal(false)} />
         
         {/* Pagination */}
         <div className="flex justify-end pe-20 mt-8 gap-4">
