@@ -60,6 +60,11 @@ const Topup: React.FC = () => {
             setCustom(e.target.value);
             setAmount(Number(e.target.value));
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && amount >= 1000 && !loading) {
+              handleTopup();
+            }
+          }}
         />
       </div>
       <button
