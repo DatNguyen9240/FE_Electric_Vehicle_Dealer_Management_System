@@ -1,10 +1,14 @@
 import type { User } from "@interfaces/Auth";
 import { useState } from "react";
 import React, { useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "../../redux/store/store";
 import { logoutUser } from "../../redux/slice/Auth/authThunks";
 import { useNavigate, Link } from "react-router-dom";
+import { getCookie } from "../../libs/utils"; // Thêm dòng này
+import { fetchWalletThunk } from "../../redux/slice/Payment/PaymentThunk";
+import type { RootState } from "../../redux/store/store";
+
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [featuresDropdownOpen, setFeaturesDropdownOpen] = useState(false);
@@ -13,17 +17,14 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [cookieUser, setCookieUser] = useState<User | null>(null);
   const dispatch = useDispatch<AppDispatch>();
+  const wallet = useSelector((state: RootState) => state.payment.wallet);
 
   useEffect(() => {
-    function getCookie(name: string) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(";").shift();
-    }
     const userStr = getCookie("user");
     if (userStr) {
       try {
         setCookieUser(JSON.parse(decodeURIComponent(userStr)));
+        dispatch(fetchWalletThunk());
       } catch {
         setCookieUser(null);
       }
@@ -120,6 +121,19 @@ const Header: React.FC = () => {
 
       {cookieUser ? (
         <div className="hidden md:flex items-center ml-auto relative">
+          {/* Hiển thị số dư ví đơn giản */}
+          <Link
+            to="/wallet"
+            className="flex items-center gap-2 px-3 py-1 rounded bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 transition"
+            title="Xem ví của bạn"
+          >
+            <img src="/icon/01.png" alt="Wallet" className="w-5 h-5" />
+            <span>
+              {wallet?.balance !== undefined
+                ? `${wallet.balance.toLocaleString()}₫`
+                : "..."}
+            </span>
+          </Link>
           <button
             className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-100 transition font-semibold"
             onClick={() => setUserDropdownOpen((v) => !v)}

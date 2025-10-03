@@ -13,3 +13,7 @@ export { default as UserManager } from "./Admin/Users/UserManager";
 export { default as PaymentManager } from "./Admin/Payments/PaymentManager";
 export { default as BookingManager } from "./Admin/Bookings/BookingManager";
 export { default as AdminTariffs } from "./Admin/Tariffs/Tariffs";
+export { default as Wallet } from "./Wallet";
+export { default as Topup } from "./Topup";
+export { default as TopupSuccess } from "./TopupSuccess";
+export { default as TopupCancel } from "./TopupCancel";
