@@ -1,10 +1,18 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { fetchWalletThunk, initiateTopupPayOSThunk } from "./PaymentThunk";
 
+interface PaymentResult {
+  orderCode?: string;
+  checkoutUrl?: string;
+  // Thêm các trường khác nếu cần, ví dụ:
+  // error?: string;
+  // balance?: number;
+}
+
 interface PaymentState {
   loading: boolean;
   error: string | null;
-  result: any;
+  result: PaymentResult | null;
   wallet: { balance: number } | null;
 }
 

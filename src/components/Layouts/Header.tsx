@@ -31,7 +31,7 @@ const Header: React.FC = () => {
     } else {
       setCookieUser(null);
     }
-  }, []);
+  }, [dispatch]);
 
   return (
     <header className="flex items-center px-4 md:px-8 py-3 md:py-4 bg-white shadow-md relative">
