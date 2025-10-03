@@ -106,9 +106,13 @@ const SideBar: React.FC = () => {
             className="absolute left-16 top-20 z-20 bg-white border rounded-lg shadow-lg min-w-[160px] py-2 animate-fade-in"
             id="sidebar-avatar-dropdown-menu"
           >
-            <button className="block w-full text-left px-4 py-2 hover:bg-blue-50">
+            <Link 
+              to="/profile" 
+              className="block w-full text-left px-4 py-2 hover:bg-blue-50"
+              onClick={() => setDropdownOpen(false)}
+            >
               Thông tin cá nhân
-            </button>
+            </Link>
             <button className="block w-full text-left px-4 py-2 hover:bg-blue-50">
               Đổi mật khẩu
             </button>
