@@ -16,6 +16,10 @@ const Signup = lazy(() => import("@pages/Signup"));
 const Pricing = lazy(() => import("@pages/Pricing"));
 const AboutUs = lazy(() => import("@pages/AboutUs"));
 const Booking = lazy(() => import("@pages/Booking"));
+const Wallet = lazy(() => import("@pages/Wallet"));
+const Topup = lazy(() => import("@pages/Topup"));
+const TopupCancel = lazy(() => import("@pages/TopupCancel"));
+const TopupSuccess = lazy(() => import("@pages/TopupSuccess"));
 const BookingSlots = lazy(() => import("@pages/BookingSlots"));
 const ChargingHistory = lazy(() => import("@pages/ChargingHistory"));
 const UserProfile = lazy(() => import("@pages/UserProfile"));
@@ -80,6 +84,22 @@ export default function AppRoutes() {
           <Route
             path="/booking"
             element={createLazyRoute(Booking, "Loading booking system...")}
+          />
+          <Route
+            path="/wallet"
+            element={createLazyRoute(Wallet, "Loading wallet...")}
+          />
+          <Route
+            path="/topup"
+            element={createLazyRoute(Topup, "Loading top-up page...")}
+          />
+          <Route
+            path="/topup/cancel"
+            element={createLazyRoute(TopupCancel, "Loading cancel page...")}
+          />
+          <Route
+            path="/topup/success"
+            element={createLazyRoute(TopupSuccess, "Loading success page...")}
           />
           <Route
             path="/booking/station/:stationId"

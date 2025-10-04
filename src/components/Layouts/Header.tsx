@@ -1,38 +1,39 @@
 import type { User } from "@interfaces/Auth";
 import { useState } from "react";
 import React, { useEffect } from "react";
-// import { useDispatch } from "react-redux";
-// import type { AppDispatch } from "../../redux/store/store";
-// import { logoutUser } from "../../redux/slice/Auth/authThunks";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch } from "../../redux/store/store";
+import { logoutUser } from "../../redux/slice/Auth/authThunks";
 import { useNavigate, Link } from "react-router-dom";
+import { getCookie } from "../../libs/utils"; // Thêm dòng này
+import { fetchWalletThunk } from "../../redux/slice/Payment/PaymentThunk";
+import type { RootState } from "../../redux/store/store";
 import logo from "@assets/logo.png";
+
 
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [featuresDropdownOpen, setFeaturesDropdownOpen] = useState(false);
-  // const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false); // For mobile features dropdown
   const navigate = useNavigate();
-  const [, setCookieUser] = useState<User | null>(null);
-  // const dispatch = useDispatch<AppDispatch>();
+  const [cookieUser, setCookieUser] = useState<User | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const wallet = useSelector((state: RootState) => state.payment.wallet);
 
   useEffect(() => {
-    function getCookie(name: string) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(";").shift();
-    }
     const userStr = getCookie("user");
     if (userStr) {
       try {
         setCookieUser(JSON.parse(decodeURIComponent(userStr)));
+        dispatch(fetchWalletThunk());
       } catch {
         setCookieUser(null);
       }
     } else {
       setCookieUser(null);
     }
-  }, []);
+  }, [dispatch]);
 
   return (
     <header className="flex items-center px-20  py-2  bg-white shadow-md relative">
@@ -120,12 +121,68 @@ const Header: React.FC = () => {
         </Link>
       </nav>
 
-      <button
-        className="hidden md:block bg-blue-600 text-white px-8 py-2 rounded-[10px] hover:bg-blue-700 transition ml-auto"
-        onClick={() => navigate("/login")}
-      >
-        Login
-      </button>
+      {cookieUser ? (
+        <div className="hidden md:flex items-center ml-auto relative">
+          {/* Hiển thị số dư ví đơn giản */}
+          <Link
+            to="/wallet"
+            className="flex items-center gap-2 px-3 py-1 rounded bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 transition"
+            title="Xem ví của bạn"
+          >
+            <img src="/icon/01.png" alt="Wallet" className="w-5 h-5" />
+            <span>
+              {wallet?.balance !== undefined
+                ? `${wallet.balance.toLocaleString()}₫`
+                : "..."}
+            </span>
+          </Link>
+          <button
+            className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-100 transition font-semibold"
+            onClick={() => setUserDropdownOpen((v) => !v)}
+          >
+            <span>{cookieUser.name || cookieUser.email}</span>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          {userDropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-40 bg-white shadow-md rounded-md z-[9999]">
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => navigate("/profile")}
+              >
+                Profile
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={async () => {
+                  await dispatch(logoutUser());
+                  navigate("/login");
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <button
+          className="hidden md:block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition ml-auto"
+          onClick={() => navigate("/login")}
+        >
+          Login
+        </button>
+      )}
 
       {/* Mobile menu button */}
       <button
