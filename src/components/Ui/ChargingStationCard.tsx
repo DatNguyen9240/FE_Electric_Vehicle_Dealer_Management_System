@@ -1,12 +1,11 @@
 import React from "react";
 
 interface ChargingStationCardProps {
-  id: number;
+  id: string | number;
   status: string;
   statusColor: string;
   img: string;
   bookUrl?: string;
-  remainingTime?: string;
   onBookNow?: () => void;
 }
 
@@ -15,7 +14,6 @@ const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
   status,
   statusColor,
   img,
-  remainingTime,
   onBookNow,
 }) => (
   <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow pt-6 flex flex-col items-center">
@@ -29,9 +27,7 @@ const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
       <div className="font-semibold text-base mb-2">
         Status: <span className={statusColor}>{status}</span>
       </div>
-      <div className="font-semibold text-base mb-4">
-        Remaining Time: <span className="text-gray-600">{remainingTime}</span>
-      </div>
+      
       <button
         type="button"
         onClick={onBookNow}

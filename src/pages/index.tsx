@@ -14,5 +14,7 @@ export { default as AdminDashboard } from "./Admin/AdminDashboard";
 export { default as StaffManager } from "./Admin/Staffs/StaffManager";
 export { default as UserManager } from "./Admin/Users/UserManager";
 export { default as PaymentManager } from "./Admin/Payments/PaymentManager";
-export { default as BookingManager } from "./Admin/Bookings/BookingManager";
+export { default as StationList } from "./Admin/Bookings/StationList";
+export { default as StationConnectors } from "./Admin/Bookings/ChargerList";
+export { default as SlotList } from "./Admin/Bookings/SlotList";
 export { default as AdminTariffs } from "./Admin/Tariffs/Tariffs";

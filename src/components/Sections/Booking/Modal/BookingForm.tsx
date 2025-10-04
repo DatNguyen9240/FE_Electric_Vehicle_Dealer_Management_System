@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useImperativeHandle, useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 const carModels = ["Vinfast VF9", "Vinfast VF8", "Hyundai Ioniq 5", "Kia EV6"];
@@ -14,6 +14,13 @@ export type FormValues = {
 interface BookingFormProps {
   onSubmit: (data: FormValues) => void;
   onReset: () => void;
+  initialValues?: {
+    customerName?: string;
+    phone?: string;
+    email?: string;
+    carModel?: string;
+  };
+  isReadOnly?: boolean;
 }
 
 export interface BookingFormRef {
@@ -22,25 +29,38 @@ export interface BookingFormRef {
 }
 
 const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
-  ({ onSubmit, onReset }, ref) => {
+  ({ onSubmit, onReset, initialValues, isReadOnly = false }, ref) => {
     const {
       register,
       handleSubmit,
       reset,
+      setValue,
       formState: { errors },
     } = useForm<FormValues>({
       defaultValues: {
-        name: "",
-        email: "",
-        phone: "",
-        carModel: carModels[0],
+        name: initialValues?.customerName || "",
+        email: initialValues?.email || "",
+        phone: initialValues?.phone || "",
+        carModel: initialValues?.carModel || carModels[0],
         connector: "1",
       },
     });
 
+    // Update form when initialValues change
+    useEffect(() => {
+      if (initialValues) {
+        setValue("name", initialValues.customerName || "");
+        setValue("email", initialValues.email || "");
+        setValue("phone", initialValues.phone || "");
+        setValue("carModel", initialValues.carModel || carModels[0]);
+      }
+    }, [initialValues, setValue]);
+
     const handleFormSubmit = (data: FormValues) => {
       onSubmit(data);
-      reset();
+      if (!isReadOnly) {
+        reset();
+      }
     };
 
     const handleReset = () => {
@@ -57,7 +77,6 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
 
     return (
       <div className="w-full flex flex-col items-center py-4 px-4">
-        
         <form
           className="w-full p-5 space-y-3"
           onSubmit={handleSubmit(handleFormSubmit)}
@@ -68,8 +87,9 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
             </label>
             <input
               type="text"
-              className="w-full border-b border-gray-300 outline-none py-1 text-sm"
+              className="w-full border-b border-gray-300 outline-none py-1 text-sm disabled:bg-gray-50 disabled:text-gray-600"
               placeholder="|"
+              disabled={isReadOnly}
               {...register("name", { required: "Contact name is required" })}
             />
             {errors.name && (
@@ -82,8 +102,9 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
             <label className="block text-xs font-semibold mb-1">Email</label>
             <input
               type="email"
-              className="w-full border-b border-gray-300 outline-none py-1 text-sm"
+              className="w-full border-b border-gray-300 outline-none py-1 text-sm disabled:bg-gray-50 disabled:text-gray-600"
               placeholder="abc@gmail.com"
+              disabled={isReadOnly}
               {...register("email", {
                 required: "Email is required",
                 pattern: {
@@ -104,8 +125,9 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
             </label>
             <input
               type="tel"
-              className="w-full border-b border-gray-300 outline-none py-1 text-sm"
+              className="w-full border-b border-gray-300 outline-none py-1 text-sm disabled:bg-gray-50 disabled:text-gray-600"
               placeholder="+0123456789"
+              disabled={isReadOnly}
               {...register("phone", { required: "Phone number is required" })}
             />
             {errors.phone && (
@@ -119,7 +141,8 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
               Car Model
             </label>
             <select
-              className="w-full border-b border-gray-300 outline-none py-1 text-sm bg-white"
+              className="w-full border-b border-gray-300 outline-none py-1 text-sm bg-white disabled:bg-gray-50 disabled:text-gray-600"
+              disabled={isReadOnly}
               {...register("carModel", { required: true })}
             >
               {carModels.map((model) => (
@@ -129,18 +152,7 @@ const BookingForm = forwardRef<BookingFormRef, BookingFormProps>(
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-semibold mb-1">
-              Connector
-            </label>
-            <select
-              className="w-full border-b border-gray-300 outline-none py-1 text-sm bg-white"
-              {...register("connector", { required: true })}
-            >
-              <option value="1">Connector 1</option>
-              <option value="2">Connector 2</option>
-            </select>
-          </div>
+
           {/* Hidden submit button */}
           <button type="submit" style={{ display: "none" }} />
         </form>
