@@ -3,18 +3,18 @@ import React from "react";
 const OurMissionSectionV2: React.FC = () => {
   return (
     <section className="w-full bg-white py-12">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 px-4">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-15 px-4">
         {/* Image bên trái */}
-        <div className="md:w-1/2 w-full flex justify-center">
+        <div className="md:w-3/5 w-full flex justify-center">
           <img
             src="/about/03.png"
             alt="EV Car Charging"
-            className="w-full max-w-lg object-contain rounded"
+            className="w-full object-contain rounded"
             draggable={false}
           />
         </div>
         {/* Text bên phải */}
-        <div className="md:w-1/2 w-full">
+        <div className="md:w-2/5 w-full">
           <p className="mb-4 text-gray-800">
             <span className="font-bold">Reliable:</span> E.V.C is a reliable
             electric car charging application with charging devices from

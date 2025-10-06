@@ -1,6 +1,6 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import StationCard from "@components/Ui/StationCard";
-import { Link, useNavigate } from "react-router-dom";
 import Pagination from "@components/Ui/Pagination";
 
 const stations = [
@@ -60,7 +60,7 @@ const stations = [
   },
 ];
 
-const ChargingStationsSection: React.FC = () => {
+const StationListSection: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
   const itemsPerPage = 6;
@@ -80,19 +80,12 @@ const ChargingStationsSection: React.FC = () => {
   };
 
   return (
-    <section className="w-full bg-white py-8">
+    <section className="w-full py-12 bg-white">
       <div>
-        {/* Title & subtitle */}
-        <div className="flex flex-col items-center mb-8">
-          <h2 className="text-3xl md:text-5xl font-bold text-black mb-2 text-center">
-            Active Charging Stations
-          </h2>
-          <p className="text-gray-600 text-base md:text-lg text-center">
-            Monitor real-time status of your EV chargers and slots availability.
-          </p>
-        </div>
-        {/* Cards */}
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <h2 className="text-2xl md:text-4xl font-bold mb-8 text-center">
+          Charging Station List
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {currentStations.map((station) => (
             <StationCard
               key={station.id}
@@ -102,33 +95,14 @@ const ChargingStationsSection: React.FC = () => {
             />
           ))}
         </div>
-        
-        {/* Pagination and View All */}
-        <div className="flex justify-between items-center mt-8">
-          <Pagination 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-          <Link
-            to="/booking"
-            className="text-blue-600 font-semibold text-lg flex items-center gap-2 hover:underline"
-          >
-            View All
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-              <path
-                d="M5 12h14M13 6l6 6-6 6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-        </div>
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </section>
   );
 };
 
-export default ChargingStationsSection;
+export default StationListSection;

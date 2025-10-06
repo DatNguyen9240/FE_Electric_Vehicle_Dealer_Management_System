@@ -8,6 +8,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { getCookie } from "../../libs/utils"; // Thêm dòng này
 import { fetchWalletThunk } from "../../redux/slice/Payment/PaymentThunk";
 import type { RootState } from "../../redux/store/store";
+import logo from "@assets/logo.png";
+
 
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -34,12 +36,12 @@ const Header: React.FC = () => {
   }, [dispatch]);
 
   return (
-    <header className="flex items-center px-4 md:px-8 py-3 md:py-4 bg-white shadow-md relative">
-      <div className="flex items-center min-w-[120px] md:min-w-[320px]">
+    <header className="flex items-center px-20  py-2  bg-white shadow-md relative">
+      <div className="flex items-center min-w-[120px] md:min-w-[320px] ps-10">
         <img
-          src="/logo/01.png"
+          src={logo}
           alt="Logo"
-          className="h-10 w-25 md:h-10 md:w-30 object-contain"
+          className="h-15 w-15 object-contain"
         />
       </div>
 
@@ -47,15 +49,15 @@ const Header: React.FC = () => {
       <nav className="hidden md:flex gap-12 absolute left-1/2 -translate-x-1/2 z-[100]">
         <Link
           to="/"
-          className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600"
+          className="font-semibold text-xl  hover:text-blue-600"
         >
           Home
         </Link>
         <Link
           to="/about"
-          className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600"
+          className="font-semibold text-xl  hover:text-blue-600"
         >
-          About
+          About Us
         </Link>
 
         {/* Dropdown Features */}
@@ -64,7 +66,7 @@ const Header: React.FC = () => {
           onMouseEnter={() => setFeaturesDropdownOpen(true)}
           onMouseLeave={() => setFeaturesDropdownOpen(false)}
         >
-          <button className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600 flex items-center gap-1">
+          <button className="font-semibold text-xl  hover:text-blue-600 flex items-center gap-1">
             Features
             <svg
               className="w-4 h-4"
@@ -85,19 +87,19 @@ const Header: React.FC = () => {
             <div className="absolute top-full left-0 w-40 bg-white shadow-md rounded-md z-[9999]">
               <Link
                 to="/booking"
-                className="block px-4 py-2 text-sm hover:bg-gray-100"
+                className="block px-4 py-2 text-lg font-semibold hover:bg-[#EFF6FF] hover:text-blue-600"
               >
                 Booking
               </Link>
               <Link
                 to="/pricing"
-                className="block px-4 py-2 text-sm hover:bg-gray-100"
+                className="block px-4 py-2 text-lg font-semibold hover:bg-[#EFF6FF] hover:text-blue-600"
               >
                 Pricing
               </Link>
               <Link
                 to="/faq"
-                className="block px-4 py-2 text-sm hover:bg-gray-100"
+                className="block px-4 py-2 text-lg font-semibold hover:bg-[#EFF6FF] hover:text-blue-600"
               >
                 FAQ
               </Link>
@@ -107,13 +109,13 @@ const Header: React.FC = () => {
 
         <Link
           to="/news"
-          className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600"
+          className="font-semibold text-xl  hover:text-blue-600"
         >
           News
         </Link>
         <Link
           to="/contact"
-          className="font-semibold text-sm xl:text-base 2xl:text-lg hover:text-blue-600"
+          className="font-semibold text-xl  hover:text-blue-600"
         >
           Contact Us
         </Link>
@@ -261,21 +263,21 @@ const Header: React.FC = () => {
               <div className="flex flex-col bg-gray-50 rounded-md mx-4 mb-2">
                 <Link
                   to="/booking"
-                  className="py-2 text-sm hover:bg-gray-100"
+                  className="py-2 text-xl hover:bg-[#EFF6FF]"
                   onClick={() => setOpen(false)}
                 >
                   Booking
                 </Link>
                 <Link
                   to="/pricing"
-                  className="py-2 text-sm hover:bg-gray-100"
+                  className="py-2 text-xl hover:bg-[#EFF6FF]"
                   onClick={() => setOpen(false)}
                 >
                   Pricing
                 </Link>
                 <Link
                   to="/faq"
-                  className="py-2 text-sm hover:bg-gray-100"
+                  className="py-2 text-xl hover:bg-[#EFF6FF]"
                   onClick={() => setOpen(false)}
                 >
                   FAQ

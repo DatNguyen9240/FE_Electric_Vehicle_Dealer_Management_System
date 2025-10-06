@@ -29,6 +29,7 @@
       "@components/*": ["src/components/*"],
       "@layouts/*": ["src/layouts/*"],
       "@pages/*": ["src/pages/*"],
+      "@assets/*": ["src/assets/*"],
       "@contexts": ["src/contexts"],
       "@interfaces/*": ["src/interfaces/*"],
       "@libs/*": ["src/libs/*"],

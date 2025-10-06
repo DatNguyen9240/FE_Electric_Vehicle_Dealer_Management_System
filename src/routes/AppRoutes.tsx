@@ -20,6 +20,11 @@ const Wallet = lazy(() => import("@pages/Wallet"));
 const Topup = lazy(() => import("@pages/Topup"));
 const TopupCancel = lazy(() => import("@pages/TopupCancel"));
 const TopupSuccess = lazy(() => import("@pages/TopupSuccess"));
+const BookingSlots = lazy(() => import("@pages/BookingSlots"));
+const ChargingHistory = lazy(() => import("@pages/ChargingHistory"));
+const UserProfile = lazy(() => import("@pages/UserProfile"));
+const UserChargerList = lazy(() => import("@pages/ChargerList"));
+const UserBookingDetails = lazy(() => import("@pages/UserBookingDetails"));
 
 const AdminDashboard = lazy(() => import("@pages/Admin/AdminDashboard"));
 const StaffManager = lazy(() => import("@pages/Admin/Staffs/StaffManager"));
@@ -28,8 +33,17 @@ const AdminTariffs = lazy(() => import("@pages/Admin/Tariffs/Tariffs"));
 const PaymentManager = lazy(
   () => import("@pages/Admin/Payments/PaymentManager")
 );
-const BookingManager = lazy(
-  () => import("@pages/Admin/Bookings/BookingManager")
+const StationList = lazy(
+  () => import("@pages/Admin/Bookings/StationList")
+);
+const StationConnectors = lazy(
+  () => import("@pages/Admin/Bookings/ChargerList")
+);
+const SlotList = lazy(
+  () => import("@pages/Admin/Bookings/SlotList")
+);
+const BookingDetails = lazy(
+  () => import("@pages/Admin/Bookings/BookingDetails")
 );
 
 const createLazyRoute = (
@@ -87,6 +101,26 @@ export default function AppRoutes() {
             path="/topup/success"
             element={createLazyRoute(TopupSuccess, "Loading success page...")}
           />
+          <Route
+            path="/booking/station/:stationId"
+            element={createLazyRoute(UserChargerList, "Loading chargers...")}
+          />
+          <Route
+            path="/booking/station/:stationId/charger/:chargerId"
+            element={createLazyRoute(BookingSlots, "Loading slot selection...")}
+          />
+          <Route
+            path="/booking/station/:stationId/charger/:chargerId/book/:timeSlot"
+            element={createLazyRoute(UserBookingDetails, "Loading booking details...")}
+          />
+          <Route
+            path="/charging-history"
+            element={createLazyRoute(ChargingHistory, "Loading charging history...")}
+          />
+          <Route
+            path="/profile"
+            element={createLazyRoute(UserProfile, "Loading user profile...")}
+          />
         </Route>
 
         <Route
@@ -134,8 +168,29 @@ export default function AppRoutes() {
           <Route
             path="/admin/bookings"
             element={createLazyRoute(
-              BookingManager,
-              "Loading booking management..."
+              StationList,
+              "Loading stations..."
+            )}
+          />
+          <Route
+            path="/admin/bookings/station/:stationId"
+            element={createLazyRoute(
+              StationConnectors,
+              "Loading chargers..."
+            )}
+          />
+          <Route
+            path="/admin/bookings/station/:stationId/charger/:chargerId"
+            element={createLazyRoute(
+              SlotList,
+              "Loading time slots..."
+            )}
+          />
+          <Route
+            path="/admin/bookings/station/:stationId/charger/:chargerId/book/:timeSlot"
+            element={createLazyRoute(
+              BookingDetails,
+              "Loading booking details..."
             )}
           />
         </Route>

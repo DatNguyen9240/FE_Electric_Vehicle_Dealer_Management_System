@@ -12,7 +12,7 @@ const FeedbackSection: React.FC = () => {
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/20" />
       {/* Content */}
-      <div className="absolute inset-0 flex flex-col justify-end">
+      <div className="absolute inset-0 flex flex-col justify-end pb-25">
         <div className="flex flex-col md:flex-row items-center justify-between px-6 md:px-16 xl:px-32 pb-10">
           {/* Text */}
           <div className="max-w-lg text-white">
@@ -26,12 +26,12 @@ const FeedbackSection: React.FC = () => {
             </p>
           </div>
           {/* Button */}
-          <div className="mt-6 md:mt-0">
+          <div className="mb-10 md:mt-0 me-10">
             <a
-              href="#"
+              href="/contact"
               className="border-2 border-white text-white px-10 py-3 rounded-xl text-lg font-medium hover:bg-white hover:text-black transition"
             >
-              FILL FORM
+              Contact Us
             </a>
           </div>
         </div>

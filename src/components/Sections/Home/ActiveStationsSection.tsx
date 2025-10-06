@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import StationCard from "@components/Ui/StationCard";
-import { Link, useNavigate } from "react-router-dom";
-import Pagination from "@components/Ui/Pagination";
 
 const stations = [
   {
@@ -60,40 +60,44 @@ const stations = [
   },
 ];
 
-const ChargingStationsSection: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+const ActiveStationsSection: React.FC = () => {
   const navigate = useNavigate();
-  const itemsPerPage = 6;
-  const totalPages = Math.ceil(stations.length / itemsPerPage);
-
-  // Calculate which stations to show on current page
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentStations = stations.slice(startIndex, endIndex);
 
   const handleBookNow = (stationId: number) => {
-    navigate(`/booking/station/${stationId}`);
+    navigate(`/booking/${stationId}`);
   };
 
   const handleViewDetails = (stationId: number) => {
     navigate(`/station/${stationId}`);
   };
 
+  const handleViewAll = () => {
+    navigate("/stations");
+  };
+
   return (
-    <section className="w-full bg-white py-8">
-      <div>
-        {/* Title & subtitle */}
-        <div className="flex flex-col items-center mb-8">
-          <h2 className="text-3xl md:text-5xl font-bold text-black mb-2 text-center">
-            Active Charging Stations
-          </h2>
-          <p className="text-gray-600 text-base md:text-lg text-center">
-            Monitor real-time status of your EV chargers and slots availability.
-          </p>
+    <section className="w-full py-12 bg-gray-50">
+      <div className="container mx-auto px-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Active Charging Stations
+            </h2>
+          </div>
+          <button
+            onClick={handleViewAll}
+            className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+          >
+            View All
+            <ChevronRight size={20} />
+          </button>
         </div>
-        {/* Cards */}
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {currentStations.map((station) => (
+
+        {/* Station Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {stations.map((station) => (
             <StationCard
               key={station.id}
               {...station}
@@ -102,33 +106,10 @@ const ChargingStationsSection: React.FC = () => {
             />
           ))}
         </div>
-        
-        {/* Pagination and View All */}
-        <div className="flex justify-between items-center mt-8">
-          <Pagination 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-          <Link
-            to="/booking"
-            className="text-blue-600 font-semibold text-lg flex items-center gap-2 hover:underline"
-          >
-            View All
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-              <path
-                d="M5 12h14M13 6l6 6-6 6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-        </div>
       </div>
     </section>
   );
 };
 
-export default ChargingStationsSection;
+export default ActiveStationsSection;
+

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Pagination from "@components/Ui/Pagination";
 
 const newsList = [
@@ -42,9 +42,90 @@ const newsList = [
       "JavaScript frameworks make development easy with extensive features and functionalities.",
     sourceLink: "#",
   },
+  {
+    title: "Electric Vehicle Charging Infrastructure Growth",
+    author: "John Smith",
+    date: "March 15, 2024",
+    image: "/post/01.png",
+    link: "#",
+    excerpt: "The electric vehicle charging infrastructure market is experiencing unprecedented growth...",
+    sourceLink: "#",
+  },
+  {
+    title: "Sustainable Energy Solutions for EV Charging",
+    author: "Sarah Johnson",
+    date: "March 10, 2024",
+    image: "/post/02.png",
+    link: "#",
+    excerpt: "Renewable energy sources are becoming increasingly important for EV charging stations...",
+    sourceLink: "#",
+  },
+  {
+    title: "Future of Electric Vehicle Technology",
+    author: "Mike Chen",
+    date: "March 5, 2024",
+    image: "/post/03.png",
+    link: "#",
+    excerpt: "Advancements in battery technology and charging speeds are revolutionizing the EV industry...",
+    sourceLink: "#",
+  },
+  {
+    title: "Government Incentives for EV Adoption",
+    author: "Lisa Wang",
+    date: "February 28, 2024",
+    image: "/post/04.png",
+    link: "#",
+    excerpt: "New government policies are making electric vehicles more accessible to consumers...",
+    sourceLink: "#",
+  },
+  {
+    title: "EV Charging Station Maintenance Best Practices",
+    author: "David Lee",
+    date: "February 20, 2024",
+    image: "/post/01.png",
+    link: "#",
+    excerpt: "Proper maintenance is crucial for ensuring optimal performance of EV charging stations...",
+    sourceLink: "#",
+  },
+  {
+    title: "Smart Grid Integration for EV Charging",
+    author: "Emma Wilson",
+    date: "February 15, 2024",
+    image: "/post/02.png",
+    link: "#",
+    excerpt: "Integrating EV charging stations with smart grid technology offers numerous benefits...",
+    sourceLink: "#",
+  },
+  {
+    title: "Wireless EV Charging Technology Advances",
+    author: "Alex Rodriguez",
+    date: "February 10, 2024",
+    image: "/post/03.png",
+    link: "#",
+    excerpt: "Wireless charging technology is making significant strides in the EV industry...",
+    sourceLink: "#",
+  },
+  {
+    title: "EV Charging Station Security Measures",
+    author: "Jennifer Kim",
+    date: "February 5, 2024",
+    image: "/post/04.png",
+    link: "#",
+    excerpt: "Security considerations are paramount when designing and operating EV charging stations...",
+    sourceLink: "#",
+  },
 ];
 
 const News: React.FC = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
+  const totalPages = Math.ceil(newsList.length / itemsPerPage);
+
+  // Calculate which news to show on current page
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentNews = newsList.slice(startIndex, endIndex);
+
   return (
     <div className="min-h-screen bg-white py-10 px-2 max-w-[1200px] mx-auto px-4 md:px-12">
       <h1 className="text-4xl font-bold text-center mb-2">
@@ -56,7 +137,7 @@ const News: React.FC = () => {
       </p>
       <h2 className="text-lg font-semibold mb-4">All new posts</h2>
       <div className="grid md:grid-cols-2 gap-6 mb-8">
-        {newsList.map((news, idx) => (
+        {currentNews.map((news, idx) => (
           <div
             key={idx}
             className="bg-white rounded-lg shadow-none border border-gray-100 hover:shadow-md transition overflow-hidden flex flex-col"
@@ -102,7 +183,11 @@ const News: React.FC = () => {
           </div>
         ))}
       </div>
-      <Pagination />
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };

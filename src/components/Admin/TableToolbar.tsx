@@ -19,18 +19,18 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
     <input
       type="text"
       placeholder={searchPlaceholder}
-      className="border rounded-lg px-4 py-2 w-72 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+      className="border border-[#333333] rounded-lg px-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
       onChange={(e) => onSearchChange?.(e.target.value)}
     />
     <div className="flex gap-2">
       <button
-        className="flex items-center gap-2 border px-4 py-2 rounded-lg text-sm font-medium bg-white hover:bg-gray-50"
+        className="flex items-center gap-2 border px-5 py-1 rounded-lg text-sm font-medium bg-white hover:bg-[#333333] hover:text-white"
         onClick={onExport}
       >
         Export
       </button>
       <button
-        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
+        className="flex items-center gap-2 px-7 py-1 rounded-lg text-sm font-medium bg-[#4094F7] text-white hover:bg-blue-500"
         onClick={onCreate}
       >
         <span className="text-lg">+</span> {createLabel}

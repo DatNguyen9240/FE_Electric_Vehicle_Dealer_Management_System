@@ -36,14 +36,14 @@ const AboutSection: React.FC = () => {
           We are committed to building smart, reliable EV charging networks for
           a sustainable future.
         </p>
-        <p className="mb-6 text-xs sm:text-sm text-gray-500">
+        <p className="mb-10 text-sm text-gray-500">
           <span className="text-gray-600">developed by </span>
           <span className="font-bold text-black">E.V.C</span>
         </p>
-        <hr className="mb-6" />
+        <hr className="mb-5" />
         <Link
           to="/about"
-          className="text-blue-600 font-semibold flex items-center gap-2 hover:underline"
+          className="text-blue-600 font-semibold flex items-center gap-2 hover:underline ps-5"
         >
           Read more
           <svg width="18" height="18" fill="none" viewBox="0 0 24 24">

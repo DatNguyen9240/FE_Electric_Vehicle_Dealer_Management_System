@@ -18,7 +18,7 @@ const HeroSection: React.FC = () => {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-end w-full max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-white text-right mt-40 sm:mt-56 md:mt-80 lg:mt-[420px] max-w-full sm:max-w-md md:max-w-lg">
+        <div className="text-white text-right mt-40 sm:mt-56 md:mt-80 lg:mt-[420px] max-w-full sm:max-w-md md:max-w-xl">
           <h1 className="text-xl sm:text-3xl md:text-5xl font-bold mb-3 md:mb-4 leading-tight">
             EV CHARGER BOOKING
           </h1>
