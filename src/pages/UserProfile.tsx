@@ -50,7 +50,7 @@ const UserProfile: React.FC = () => {
   // keep editedInfo.carModel in sync with selectedVehicle
   React.useEffect(() => {
     if (!selectedVehicle) return;
-    const v = vehicles.find((x) => (x._id ?? x.id) === selectedVehicle);
+    const v = vehicles.find((x) => x.id === selectedVehicle);
     if (v) setEditedInfo((prev) => ({ ...prev, carModel: v.model }));
   }, [selectedVehicle, vehicles]);
 
@@ -255,7 +255,7 @@ const UserProfile: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent className="md:w-[420px]">
                     {vehicles.map((v: Vehicle) => {
-                      const key = v._id ?? v.id;
+                      const key = v.id;
                       return (
                         <SelectItem key={key} value={key} className="group">
                           <div className="flex items-center justify-between w-full">
@@ -328,7 +328,7 @@ const UserProfile: React.FC = () => {
       <VehicleEditModal
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
-        vehicle={vehicles.find((x) => (x._id ?? x.id) === editingVehicle) ?? null}
+        vehicle={vehicles.find((x) => x.id === editingVehicle) ?? null}
       />
     </>
   );
