@@ -1,31 +1,66 @@
-import type { User } from "@interfaces/Auth";
-import { useState } from "react";
-import React, { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch } from "../../redux/store/store";
-import { logoutUser } from "../../redux/slice/Auth/authThunks";
+import type { User } from "@interfaces/Auth";
+import type { RootState, AppDispatch } from "@redux/store/store";
 import { useNavigate, Link } from "react-router-dom";
-import { getCookie } from "../../libs/utils"; // Thêm dòng này
-import { fetchWalletThunk } from "../../redux/slice/Payment/PaymentThunk";
-import type { RootState } from "../../redux/store/store";
+import { getCookie } from "@libs/utils";
+import { logoutUser } from "@redux/slice/Auth/authThunks";
+import { fetchWalletThunk } from "@redux/slice/Payment/PaymentThunk";
 import logo from "@assets/logo.png";
 
+import  {Button}  from "@components/Ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@components/Ui/DropdownMenu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@components/Ui/Select";
 
-const Header: React.FC = () => {
-  const [open, setOpen] = useState(false);
-  const [featuresDropdownOpen, setFeaturesDropdownOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false); // For mobile features dropdown
-  const navigate = useNavigate();
+import { User as UserIcon, LogOut, Wallet, ChevronDown, Edit3 } from "lucide-react";
+import VehicleEditModal from "@components/Vehicle/VehicleEditModal";
+import { fetchVehiclesThunk } from "@redux/slice/Vehical/VehicalThunk";
+import {
+  setSelectedVehicle,
+  selectVehicles,
+  selectSelectedVehicleId,
+} from "@redux/slice/Vehical/VehicalSlice";
+import { selectVehicalLoading } from "@redux/slice/Vehical/VehicalSelector";
+
+const navItems = [
+  { label: "Home", to: "/" },
+  { label: "About Us", to: "/about" },
+  { label: "News", to: "/news" },
+  { label: "Contact Us", to: "/contact" },
+];
+
+export default function Header() {
+  const [openMobile, setOpenMobile] = useState(false);
   const [cookieUser, setCookieUser] = useState<User | null>(null);
+  // vehicles are stored in redux
+  const vehicles = useSelector(selectVehicles);
+  const selectedVehicle = useSelector(selectSelectedVehicleId);
+  const vehicalLoading = useSelector(selectVehicalLoading);
+
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const wallet = useSelector((state: RootState) => state.payment.wallet);
+  const [editingVehicle, setEditingVehicle] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const vehicleToEdit = vehicles.find((v) => v.id === editingVehicle) ?? null;
 
   useEffect(() => {
     const userStr = getCookie("user");
     if (userStr) {
       try {
-        setCookieUser(JSON.parse(decodeURIComponent(userStr)));
+        const parsedUser = JSON.parse(decodeURIComponent(userStr));
+        setCookieUser(parsedUser);
         dispatch(fetchWalletThunk());
       } catch {
         setCookieUser(null);
@@ -33,286 +68,274 @@ const Header: React.FC = () => {
     } else {
       setCookieUser(null);
     }
+
+    // fetch user's vehicles from API
+    if (userStr) {
+      dispatch(fetchVehiclesThunk());
+    }
   }, [dispatch]);
 
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
+    navigate("/login");
+  };
+
   return (
-    <header className="flex items-center px-20  py-2  bg-white shadow-md relative">
-      <div className="flex items-center min-w-[120px] md:min-w-[320px] ps-10">
-        <img
-          src={logo}
-          alt="Logo"
-          className="h-15 w-15 object-contain"
-        />
-      </div>
-
-      {/* Desktop menu */}
-      <nav className="hidden md:flex gap-12 absolute left-1/2 -translate-x-1/2 z-[100]">
-        <Link
-          to="/"
-          className="font-semibold text-xl  hover:text-blue-600"
-        >
-          Home
-        </Link>
-        <Link
-          to="/about"
-          className="font-semibold text-xl  hover:text-blue-600"
-        >
-          About Us
+    <header className="bg-white shadow-sm sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" aria-label="Home">
+          <img src={logo} alt="Logo" className="h-10 w-auto" />
         </Link>
 
-        {/* Dropdown Features */}
-        <div
-          className="relative"
-          onMouseEnter={() => setFeaturesDropdownOpen(true)}
-          onMouseLeave={() => setFeaturesDropdownOpen(false)}
-        >
-          <button className="font-semibold text-xl  hover:text-blue-600 flex items-center gap-1">
-            Features
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center space-x-12">
+          {navItems.map((n) => (
+            <Link
+              key={n.label}
+              to={n.to}
+              className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
+              {n.label}
+            </Link>
+          ))}
 
-          {featuresDropdownOpen && (
-            <div className="absolute top-full left-0 w-40 bg-white shadow-md rounded-md z-[9999]">
-              <Link
-                to="/booking"
-                className="block px-4 py-2 text-lg font-semibold hover:bg-[#EFF6FF] hover:text-blue-600"
-              >
-                Booking
-              </Link>
-              <Link
-                to="/pricing"
-                className="block px-4 py-2 text-lg font-semibold hover:bg-[#EFF6FF] hover:text-blue-600"
-              >
-                Pricing
-              </Link>
-              <Link
-                to="/faq"
-                className="block px-4 py-2 text-lg font-semibold hover:bg-[#EFF6FF] hover:text-blue-600"
-              >
-                FAQ
-              </Link>
-            </div>
-          )}
-        </div>
-
-        <Link
-          to="/news"
-          className="font-semibold text-xl  hover:text-blue-600"
-        >
-          News
-        </Link>
-        <Link
-          to="/contact"
-          className="font-semibold text-xl  hover:text-blue-600"
-        >
-          Contact Us
-        </Link>
-      </nav>
-
-      {cookieUser ? (
-        <div className="hidden md:flex items-center ml-auto relative">
-          {/* Hiển thị số dư ví đơn giản */}
-          <Link
-            to="/wallet"
-            className="flex items-center gap-2 px-3 py-1 rounded bg-blue-50 text-blue-700 font-semibold hover:bg-blue-100 transition"
-            title="Xem ví của bạn"
-          >
-            <img src="/icon/01.png" alt="Wallet" className="w-5 h-5" />
-            <span>
-              {wallet?.balance !== undefined
-                ? `${wallet.balance.toLocaleString()}₫`
-                : "..."}
-            </span>
-          </Link>
-          <button
-            className="flex items-center gap-2 px-4 py-2 rounded hover:bg-gray-100 transition font-semibold"
-            onClick={() => setUserDropdownOpen((v) => !v)}
-          >
-            <span>{cookieUser.name || cookieUser.email}</span>
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-          {userDropdownOpen && (
-            <div className="absolute right-0 top-full mt-2 w-40 bg-white shadow-md rounded-md z-[9999]">
-              <button
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                onClick={() => navigate("/profile")}
-              >
-                Profile
+          {/* Features Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="text-gray-700 hover:text-blue-600 font-medium transition-colors px-0 py-0 focus:outline-none focus:ring-0 focus-visible:underline inline-flex items-center gap-1">
+                <span>Features</span>
+                <ChevronDown className="w-4 h-4" />
               </button>
-              <button
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                onClick={async () => {
-                  await dispatch(logoutUser());
-                  navigate("/login");
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem asChild>
+                <Link to="/booking">Booking</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/pricing">Pricing</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/faq">FAQ</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </nav>
+
+        {/* Right */}
+        <div className="flex items-center space-x-3">
+          {/* Wallet */}
+          {cookieUser && (
+            <Link
+              to="/wallet"
+              className="hidden md:flex items-center gap-2 px-3 py-1 rounded bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition"
+            >
+              <Wallet className="w-5 h-5" />
+              <span>{wallet?.balance !== undefined ? `${wallet.balance.toLocaleString()}₫` : "..."}</span>
+            </Link>
+          )}
+
+          {/* Vehicle Select or register button */}
+          <div className="hidden md:block">
+            {vehicalLoading ? (
+              <div className="w-[160px] animate-pulse">
+                <div className="h-8 bg-gray-200 rounded" />
+              </div>
+            ) : cookieUser && vehicles.length === 0 ? (
+              <Button variant="default" onClick={() => navigate("/vehicles/new")}> 
+                Đăng ký xe
+              </Button>
+            ) : (
+              <Select
+                value={selectedVehicle ?? ""}
+                onValueChange={(value) => {
+                  if (value === "__register__") {
+                    navigate("/vehicles/new");
+                    return;
+                  }
+                  dispatch(setSelectedVehicle(value || null));
                 }}
               >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <button
-          className="hidden md:block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition ml-auto"
-          onClick={() => navigate("/login")}
-        >
-          Login
-        </button>
-      )}
-
-      {/* Mobile menu button */}
-      <button
-        className="md:hidden ml-auto text-blue-600"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Open menu"
-      >
-        <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
-          <rect
-            x="4"
-            y="7"
-            width="16"
-            height="2.5"
-            rx="1.25"
-            fill="currentColor"
-          />
-          <rect
-            x="4"
-            y="12"
-            width="16"
-            height="2.5"
-            rx="1.25"
-            fill="currentColor"
-          />
-          <rect
-            x="4"
-            y="17"
-            width="16"
-            height="2.5"
-            rx="1.25"
-            fill="currentColor"
-          />
-        </svg>
-      </button>
-
-      {/* Mobile menu */}
-      {open && (
-        <div className="absolute top-full left-0 w-full bg-white shadow-md flex flex-col items-center py-4 z-50 md:hidden">
-          <Link
-            to="/"
-            className="font-medium hover:text-blue-600 py-2 w-full text-center"
-            onClick={() => setOpen(false)}
-          >
-            Home
-          </Link>
-          <Link
-            to="/about"
-            className="font-medium hover:text-blue-600 py-2 w-full text-center"
-            onClick={() => setOpen(false)}
-          >
-            About
-          </Link>
-
-          {/* Dropdown in mobile */}
-          <div className="w-full text-center">
-            <button
-              className="font-medium hover:text-blue-600 py-2 w-full flex justify-center items-center gap-1"
-              onClick={() => setDropdownOpen((prev) => !prev)}
-            >
-              Features
-              <svg
-                className={`w-4 h-4 transform ${
-                  dropdownOpen ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-            {dropdownOpen && (
-              <div className="flex flex-col bg-gray-50 rounded-md mx-4 mb-2">
-                <Link
-                  to="/booking"
-                  className="py-2 text-xl hover:bg-[#EFF6FF]"
-                  onClick={() => setOpen(false)}
-                >
-                  Booking
-                </Link>
-                <Link
-                  to="/pricing"
-                  className="py-2 text-xl hover:bg-[#EFF6FF]"
-                  onClick={() => setOpen(false)}
-                >
-                  Pricing
-                </Link>
-                <Link
-                  to="/faq"
-                  className="py-2 text-xl hover:bg-[#EFF6FF]"
-                  onClick={() => setOpen(false)}
-                >
-                  FAQ
-                </Link>
-              </div>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Chọn xe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicles.map((v) => (
+                    <SelectItem key={v.id} value={v.id} className="group">
+                      <div className="flex items-center justify-between w-full">
+                        <span className="truncate">{v.model}</span>
+                        <button
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            // debug: ensure handler runs
+                            // eslint-disable-next-line no-console
+                            console.debug("Edit icon pointerdown", v.id);
+                            setEditingVehicle(v.id);
+                            setEditModalOpen(true);
+                          }}
+                          aria-label={`Edit ${v.model}`}
+                          className="ml-2 opacity-0 group-hover:opacity-100"
+                        >
+                          <Edit3 className="w-4 h-4 text-blue-600" />
+                        </button>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  {vehicles.length > 0 && (
+                    <SelectItem value="__register__">Register another</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             )}
           </div>
 
-          <Link
-            to="/news"
-            className="font-medium hover:text-blue-600 py-2 w-full text-center"
-            onClick={() => setOpen(false)}
-          >
-            News
-          </Link>
-          <Link
-            to="/contact"
-            className="font-medium hover:text-blue-600 py-2 w-full text-center"
-            onClick={() => setOpen(false)}
-          >
-            Contact Us
-          </Link>
+          {/* User */}
+          {cookieUser ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <UserIcon className="w-5 h-5" />
+                  {cookieUser.name || cookieUser.email}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="default" onClick={() => navigate("/login")}>
+              Login
+            </Button>
+          )}
+
+          {/* Mobile menu toggle */}
           <button
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition mt-2 w-3/4"
-            onClick={() => {
-              setOpen(false);
-              navigate("/login");
-            }}
+            onClick={() => setOpenMobile((v) => !v)}
+            className="md:hidden"
+            aria-label="Open menu"
           >
-            Login
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="text-gray-700"
+            >
+              <path
+                d="M4 6h16M4 12h16M4 18h16"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
         </div>
+      </div>
+
+      {/* Mobile panel */}
+      {openMobile && (
+        <div className="md:hidden border-t bg-white">
+          <div className="px-3 py-2 space-y-2">
+            {navItems.map((n) => (
+              <Link
+                key={n.label}
+                to={n.to}
+                className="block px-3 py-2 rounded hover:bg-gray-100 transition"
+                onClick={() => setOpenMobile(false)}
+              >
+                {n.label}
+              </Link>
+            ))}
+
+            <div className="px-1">
+              {vehicalLoading ? (
+                <div className="w-full animate-pulse">
+                  <div className="h-10 bg-gray-200 rounded" />
+                </div>
+              ) : (
+                <Select
+                  value={selectedVehicle ?? ""}
+                  onValueChange={(value) => {
+                    if (value === "__register__") {
+                      setOpenMobile(false);
+                      navigate("/vehicles/new");
+                      return;
+                    }
+                    dispatch(setSelectedVehicle(value || null));
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn xe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicles.map((v) => (
+                      <SelectItem key={v.id} value={v.id} className="group">
+                        <div className="flex items-center justify-between w-full">
+                          <span className="truncate">{v.model}</span>
+                          <button
+                            type="button"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              // eslint-disable-next-line no-console
+                              console.debug("Edit icon pointerdown (mobile)", v.id);
+                              setOpenMobile(false);
+                              setEditingVehicle(v.id);
+                              setEditModalOpen(true);
+                            }}
+                            aria-label={`Edit ${v.model}`}
+                            className="ml-2 opacity-0 group-hover:opacity-100"
+                          >
+                            <Edit3 className="w-4 h-4 text-blue-600" />
+                          </button>
+                        </div>
+                      </SelectItem>
+                    ))}
+                    {vehicles.length > 0 && (
+                      <SelectItem value="__register__">Register another</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* Vehicle edit modal */}
+            <VehicleEditModal
+              open={editModalOpen}
+              onClose={() => setEditModalOpen(false)}
+              vehicle={vehicles.find((x) => x.id === editingVehicle) ?? null}
+            />
+
+            {!cookieUser && (
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={() => {
+                  setOpenMobile(false);
+                  navigate("/login");
+                }}
+              >
+                Login
+              </Button>
+            )}
+          </div>
+        </div>
       )}
+      {/* Vehicle edit modal (desktop + mobile) */}
+      <VehicleEditModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        vehicle={vehicleToEdit}
+      />
     </header>
   );
-};
-
-export default Header;
+}

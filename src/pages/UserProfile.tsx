@@ -1,16 +1,22 @@
 import React, { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { selectVehicles, selectSelectedVehicleId, setSelectedVehicle } from "@redux/slice/Vehical/VehicalSlice";
+import { selectVehicalLoading } from "@redux/slice/Vehical/VehicalSelector";
+import type { AppDispatch } from "@redux/store/store";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@components/Ui/Select";
+import { Button } from "@components/Ui/Button";
 import {
   User,
   Mail,
   Phone,
   Camera,
-  
   Edit2,
   ArrowRight,
+  Edit3,
 } from "lucide-react";
+import VehicleEditModal from "@components/Vehicle/VehicleEditModal";
 import { useNavigate } from "react-router-dom";
-
-const carModels = ["Vinfast VF9", "Vinfast VF8", "Hyundai Ioniq 5", "Kia EV6"];
+import type {Vehicle} from "@redux/slice/Vehical/VehicalSlice";
 
 interface UserInfo {
   name: string;
@@ -18,7 +24,7 @@ interface UserInfo {
   phone: string;
   role: string;
   avatar: string;
-  carModel: string;
+  carModel?: string;
 }
 
 const UserProfile: React.FC = () => {
@@ -30,11 +36,23 @@ const UserProfile: React.FC = () => {
     phone: "0123456789",
     role: "Customer",
     avatar: "/avatar/01.png",
-    carModel: "Tesla Model 3",
   });
 
   const [editedInfo, setEditedInfo] = useState<UserInfo>(userInfo);
   const [previewAvatar, setPreviewAvatar] = useState<string>(userInfo.avatar);
+  const dispatch = useDispatch<AppDispatch>();
+  const vehicles = useSelector(selectVehicles);
+  const selectedVehicle = useSelector(selectSelectedVehicleId);
+  const vehicalLoading = useSelector(selectVehicalLoading);
+  const [editingVehicle, setEditingVehicle] = React.useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = React.useState(false);
+
+  // keep editedInfo.carModel in sync with selectedVehicle
+  React.useEffect(() => {
+    if (!selectedVehicle) return;
+    const v = vehicles.find((x) => (x._id ?? x.id) === selectedVehicle);
+    if (v) setEditedInfo((prev) => ({ ...prev, carModel: v.model }));
+  }, [selectedVehicle, vehicles]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,7 +85,8 @@ const UserProfile: React.FC = () => {
   };
 
   return (
-    <div className=" px-20 py-10">
+    <>
+      <div className=" px-20 py-10">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* Cover Image */}
         <div className="h-32 bg-[#E5F4FF]"></div>
@@ -204,23 +223,66 @@ const UserProfile: React.FC = () => {
                 <User size={18} className="text-blue-500" />
                 Car Model
               </label>
-              {isEditing ? (
-                <select
-                  name="carModel"
-                  value={editedInfo.carModel}
-                  onChange={(e) => setEditedInfo(prev => ({ ...prev, carModel: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-                >
-                  {carModels.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
+              {vehicalLoading ? (
+                // loading skeleton to avoid flicker while vehicles fetch
+                <div className="w-full md:w-[420px] animate-pulse">
+                  <div className="h-10 bg-gray-200 rounded" />
+                </div>
+              ) : vehicles.length === 0 ? (
+                <Button variant="default" onClick={() => navigate("/vehicles/new")}>
+                  Đăng ký xe
+                </Button>
+              ) : !isEditing ? (
+                // non-interactive label-like trigger when not editing
+                <div className="text-gray-700 inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-50 w-full md:w-[420px]">
+                  <span className="truncate">{editedInfo.carModel}</span>
+                </div>
               ) : (
-                <p className="px-4 py-2.5 bg-gray-50 rounded-lg text-gray-800 font-medium">
-                  {userInfo.carModel}
-                </p>
+                <Select
+                  value={selectedVehicle ?? ""}
+                  onValueChange={(value) => {
+                    if (value === "__register__") {
+                      navigate("/vehicles/new");
+                      return;
+                    }
+                    const v = vehicles.find((x) => x.id === value);
+                    if (v) setEditedInfo((prev) => ({ ...prev, carModel: v.model }));
+                    dispatch(setSelectedVehicle(value || null));
+                  }}
+                >
+                  <SelectTrigger className="text-gray-700 hover:text-blue-600 font-medium transition-colors px-3 py-2 focus:outline-none focus:ring-0 inline-flex items-center justify-between gap-2 w-full md:w-[420px]">
+                    <SelectValue placeholder="Select vehicle" />
+                  </SelectTrigger>
+                  <SelectContent className="md:w-[420px]">
+                    {vehicles.map((v: Vehicle) => {
+                      const key = v._id ?? v.id;
+                      return (
+                        <SelectItem key={key} value={key} className="group">
+                          <div className="flex items-center justify-between w-full">
+                            <span className="truncate">{v.model}</span>
+                            <button
+                              type="button"
+                              onPointerDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                // open edit modal for this vehicle
+                                setEditingVehicle(key);
+                                setEditModalOpen(true);
+                              }}
+                              aria-label={`Edit ${v.model}`}
+                              className="ml-2 opacity-0 group-hover:opacity-100"
+                            >
+                              <Edit3 className="w-4 h-4 text-blue-600" />
+                            </button>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                    {vehicles.length > 0 && (
+                      <SelectItem value="__register__">Register another</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               )}
             </div>
           </div>
@@ -262,7 +324,15 @@ const UserProfile: React.FC = () => {
         </div>
       </div>
     </div>
+      {/* Vehicle edit modal */}
+      <VehicleEditModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        vehicle={vehicles.find((x) => (x._id ?? x.id) === editingVehicle) ?? null}
+      />
+    </>
   );
 };
 
 export default UserProfile;
+

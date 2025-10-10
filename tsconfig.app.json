@@ -33,6 +33,7 @@
       "@contexts": ["src/contexts"],
       "@interfaces/*": ["src/interfaces/*"],
       "@libs/*": ["src/libs/*"],
+      "@redux/*": ["src/redux/*"]
     }
   },
   "include": ["src"]

@@ -13,6 +13,7 @@ export default defineConfig({
       "@assets": "/src/assets",
       "@libs": "/src/libs",
       "@interfaces": "/src/interfaces",
+      "@redux": "/src/redux",
     },
   },
   build: {

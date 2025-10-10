@@ -17,6 +17,7 @@ const Pricing = lazy(() => import("@pages/Pricing"));
 const AboutUs = lazy(() => import("@pages/AboutUs"));
 const Booking = lazy(() => import("@pages/Booking"));
 const Wallet = lazy(() => import("@pages/Wallet"));
+const NewVehicle = lazy(() => import("@pages/Vehicles/NewVehicle"));
 const Topup = lazy(() => import("@pages/Topup"));
 const TopupCancel = lazy(() => import("@pages/TopupCancel"));
 const TopupSuccess = lazy(() => import("@pages/TopupSuccess"));
@@ -120,6 +121,10 @@ export default function AppRoutes() {
           <Route
             path="/profile"
             element={createLazyRoute(UserProfile, "Loading user profile...")}
+          />
+          <Route
+            path="/vehicles/new"
+            element={createLazyRoute(NewVehicle, "Loading vehicle registration...")}
           />
         </Route>
 
