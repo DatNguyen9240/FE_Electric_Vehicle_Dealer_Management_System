@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@components/Ui/Button";
+import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@redux/store/store";
-import { createVehicleThunk } from "@redux/slice/Vehical/VehicalThunk";
+import { createVehicleThunk, fetchVehiclesThunk } from "@redux/slice/Vehical/VehicalThunk";
+import { setSelectedVehicle } from "@redux/slice/Vehical/VehicalSlice";
 
 export default function NewVehicle() {
   const [model, setModel] = useState("");
@@ -37,11 +39,22 @@ export default function NewVehicle() {
         isDefault,
       };
 
-      await dispatch(createVehicleThunk(payload)).unwrap();
-      // navigate home after creation
+      const res = await dispatch(createVehicleThunk(payload)).unwrap();
+      // refresh vehicles and set selected vehicle to the created one
+      try {
+        await dispatch(fetchVehiclesThunk());
+        const createdId = res?.vehicle?.id;
+        if (createdId) dispatch(setSelectedVehicle(createdId));
+      } catch (e) {
+       
+      }
+    
+      toast.success("Đăng ký xe thành công");
       navigate("/");
     } catch (err: any) {
-      setError(err?.response?.data?.msg || err.message || "Error registering vehicle");
+      const msg = err?.response?.data?.msg || err.message || "Error registering vehicle";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
