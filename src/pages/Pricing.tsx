@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMembershipPlansThunk } from "@redux/slice/Membership/MembershipThunk";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import { useNavigate } from "react-router-dom";
 
 const Pricing: React.FC = () => {
-  const [yearly, setYearly] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { current, plans, loading } = useSelector(
+  const { current, plans } = useSelector(
     (state: RootState) => state.membership
   );
 

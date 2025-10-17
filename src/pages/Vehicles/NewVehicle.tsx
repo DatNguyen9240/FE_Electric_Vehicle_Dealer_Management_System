@@ -45,14 +45,17 @@ export default function NewVehicle() {
         await dispatch(fetchVehiclesThunk());
         const createdId = res?.vehicle?.id;
         if (createdId) dispatch(setSelectedVehicle(createdId));
-      } catch (e) {
-       
+      } catch {
+        // Do nothing
       }
-    
+
       toast.success("Đăng ký xe thành công");
       navigate("/");
-    } catch (err: any) {
-      const msg = err?.response?.data?.msg || err.message || "Error registering vehicle";
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { msg?: string } } })?.response?.data?.msg ||
+        (err as Error).message ||
+        "Error registering vehicle";
       setError(msg);
       toast.error(msg);
     } finally {

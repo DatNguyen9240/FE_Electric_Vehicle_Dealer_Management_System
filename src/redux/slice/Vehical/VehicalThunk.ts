@@ -10,26 +10,43 @@ export const fetchVehiclesThunk = createAsyncThunk(
 				const res = await api.get("/vehicles");
 
 				// Helper: map a single API vehicle (snake_case) to our app Vehicle (camelCase).
-				const mapVehicle = (v: any): Vehicle => ({
-					id: v.id,
-					_id: v._id,
-					userId: v.user_id,
-					model: v.model,
-					make: v.make,
-					licensePlate: v.license_plate,
-					licensePlateNorm: v.license_plate_norm,
-					plugType: v.plug_type,
-					batteryKwh: v.battery_kwh,
-					isDefault: v.is_default,
-					createdAt: v.created_at,
-					updatedAt: v.updated_at,
-					deletedAt: v.deleted_at,
-				});
+				const mapVehicle = (v: unknown): Vehicle => {
+					const vehicle = v as {
+						id: string;
+						_id?: string;
+						user_id?: string;
+						model: string;
+						make?: string;
+						license_plate?: string;
+						license_plate_norm?: string;
+						plug_type?: string;
+						battery_kwh?: number;
+						is_default?: boolean;
+						created_at?: string;
+						updated_at?: string;
+						deleted_at?: string;
+					};
+					return {
+						id: vehicle.id,
+						_id: vehicle._id ?? "",
+						userId: vehicle.user_id ?? "",
+						model: vehicle.model,
+						make: vehicle.make ?? "",
+						licensePlate: vehicle.license_plate ?? "",
+						licensePlateNorm: vehicle.license_plate_norm ?? "",
+						plugType: vehicle.plug_type ?? "",
+						batteryKwh: vehicle.battery_kwh ?? 0,
+						isDefault: vehicle.is_default ?? false,
+						createdAt: vehicle.created_at ?? "",
+						updatedAt: vehicle.updated_at ?? "",
+						deletedAt: vehicle.deleted_at ?? "",
+					};
+				};
 
 				const data = res.data;
 
 				// Normalize possible server shapes to an array of raw vehicles.
-				const rawVehicles: any[] = Array.isArray(data)
+				const rawVehicles: unknown[] = Array.isArray(data)
 					? data
 					: Array.isArray(data?.vehicles)
 					? data.vehicles
@@ -47,25 +64,28 @@ export const fetchVehiclesThunk = createAsyncThunk(
 
 export const updateVehicleThunk = createAsyncThunk(
 	"vehical/updateVehicle",
-	async ({ id, data }: { id: string; data: Record<string, any> }, { rejectWithValue }) => {
+	async (
+		{ id, data }: { id: string; data: Record<string, unknown> },
+		{ rejectWithValue }
+	) => {
 			try {
 				const res = await api.put(`/vehicles/${id}`, data);
 				const v = res.data?.vehicle;
 				if (v) {
 					const mapped: Vehicle = {
 						id: v.id,
-						_id: v._id,
-						userId: v.user_id,
+						_id: v._id ?? "",
+						userId: v.user_id ?? "",
 						model: v.model,
-						make: v.make,
-						licensePlate: v.license_plate,
-						licensePlateNorm: v.license_plate_norm,
-						plugType: v.plug_type,
-						batteryKwh: v.battery_kwh,
-						isDefault: v.is_default,
-						createdAt: v.created_at,
-						updatedAt: v.updated_at,
-						deletedAt: v.deleted_at,
+						make: v.make ?? "",
+						licensePlate: v.license_plate ?? "",
+						licensePlateNorm: v.license_plate_norm ?? "",
+						plugType: v.plug_type ?? "",
+						batteryKwh: v.battery_kwh ?? 0,
+						isDefault: v.is_default ?? false,
+						createdAt: v.created_at ?? "",
+						updatedAt: v.updated_at ?? "",
+						deletedAt: v.deleted_at ?? "",
 					};
 					return { ...res.data, vehicle: mapped };
 				}
@@ -96,18 +116,18 @@ export const createVehicleThunk = createAsyncThunk(
 				if (v) {
 					const mapped: Vehicle = {
 						id: v.id,
-						_id: v._id,
-						userId: v.user_id,
+						_id: v._id ?? "",
+						userId: v.user_id ?? "",
 						model: v.model,
-						make: v.make,
-						licensePlate: v.license_plate,
-						licensePlateNorm: v.license_plate_norm,
-						plugType: v.plug_type,
-						batteryKwh: v.battery_kwh,
-						isDefault: v.is_default,
-						createdAt: v.created_at,
-						updatedAt: v.updated_at,
-						deletedAt: v.deleted_at,
+						make: v.make ?? "",
+						licensePlate: v.license_plate ?? "",
+						licensePlateNorm: v.license_plate_norm ?? "",
+						plugType: v.plug_type ?? "",
+						batteryKwh: v.battery_kwh ?? 0,
+						isDefault: v.is_default ?? false,
+						createdAt: v.created_at ?? "",
+						updatedAt: v.updated_at ?? "",
+						deletedAt: v.deleted_at ?? "",
 					};
 					return { ...res.data, vehicle: mapped };
 				}

@@ -11,6 +11,15 @@ interface UserTimeSlotBookingModalProps {
   onTimeSlotChange?: (timeSlot: string) => void;
 }
 
+// Định nghĩa kiểu dữ liệu cho form ở đầu file:
+interface BookingFormData {
+  name: string;
+  phone: string;
+  email: string;
+  vehicleId?: string;
+  // Thêm các trường khác nếu cần
+}
+
 // Mock data cho charging stations
 const chargingStations = [
   {
@@ -97,10 +106,7 @@ const UserTimeSlotBookingModal: React.FC<UserTimeSlotBookingModalProps> = ({
     setSelectedStation(null);
   };
 
- 
-
-
-  const handleFormSubmit = (data: any) => {
+  const handleFormSubmit = (data: BookingFormData) => {
     console.log({
       ...data,
       date: selectedDate,

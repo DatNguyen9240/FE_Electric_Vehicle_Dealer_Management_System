@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import BookingForm, {
-  type BookingFormRef,
-} from "@components/Sections/Booking/Modal/BookingForm";
+import BookingForm, { type BookingFormRef, type FormValues } from "@components/Sections/Booking/Modal/BookingForm";
 import { useTitle } from "@contexts";
 
 // Type definition for connector
@@ -119,7 +117,7 @@ const BookingDetails: React.FC = () => {
     setTitle("Booking Details");
   }, [setTitle]);
 
-  const handleFormSubmit = (connectorId: number) => (data: any) => {
+  const handleFormSubmit = (connectorId: number) => (data: FormValues) => {
     const selectedConnectorData = connectors.find((c) => c.id === connectorId);
     console.log({
       ...data,
@@ -166,7 +164,7 @@ const BookingDetails: React.FC = () => {
     formRef.current?.resetForm();
   };
 
-  const handleFormSubmitBooked = (connectorId: number) => (data: any) => {
+  const handleFormSubmitBooked = (connectorId: number) => (data: FormValues) => {
     const connector = connectors.find((c) => c.id === connectorId);
     console.log("Updated booking data:", {
       ...data,

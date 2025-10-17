@@ -169,9 +169,6 @@ export default function Header() {
                           onPointerDown={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
-                            // debug: ensure handler runs
-                            // eslint-disable-next-line no-console
-                            console.debug("Edit icon pointerdown", v.id);
                             setEditingVehicle(v.id);
                             setEditModalOpen(true);
                           }}
@@ -286,8 +283,6 @@ export default function Header() {
                             onPointerDown={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              // eslint-disable-next-line no-console
-                              console.debug("Edit icon pointerdown (mobile)", v.id);
                               setOpenMobile(false);
                               setEditingVehicle(v.id);
                               setEditModalOpen(true);

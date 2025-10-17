@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import BookingForm, {
   type BookingFormRef,
+  type FormValues, // Thêm dòng này
 } from "@components/Sections/Booking/Modal/BookingForm";
 
 // Type definition for connector
@@ -100,7 +101,7 @@ const UserBookingDetails: React.FC = () => {
     setSelectedConnector(null);
   };
 
-  const handleFormSubmit = (data: any) => {
+  const handleFormSubmit = (data: FormValues) => {
     const selectedConnectorData = connectors.find(
       (c: Connector) => c.id === selectedConnector
     );

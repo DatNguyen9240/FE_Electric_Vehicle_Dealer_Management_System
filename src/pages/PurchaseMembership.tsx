@@ -21,7 +21,18 @@ const PurchaseMembership: React.FC = () => {
   const [months, setMonths] = useState(1);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [plan, setPlan] = useState<any>(null);
+  const [plan, setPlan] = useState<{
+    name: string;
+    monthly_fee_vnd: number;
+    mods: {
+      pricePerKwhPctOff: number;
+      pricePerMinPctOff: number;
+      idleFeePerMinPctOff: number;
+      graceMinBonus: number;
+      minBalancePctOff: number;
+      queueBoost: number;
+    };
+  } | null>(null);
   const [planLoading, setPlanLoading] = useState(true);
 
   useEffect(() => {
@@ -42,10 +53,13 @@ const PurchaseMembership: React.FC = () => {
         months,
       });
       setMessage("🎉 Purchase successful!");
-      dispatch(fetchWalletThunk()); // Không lỗi kiểu nữa
+      dispatch(fetchWalletThunk());
       setTimeout(() => navigate("/"), 1500);
-    } catch (err: any) {
-      setMessage(err.response?.data?.msg || "Purchase failed.");
+    } catch (err: unknown) {
+      const errorMsg =
+        (err as { response?: { data?: { msg?: string } } })?.response?.data?.msg ||
+        "Purchase failed.";
+      setMessage(errorMsg);
     } finally {
       setLoading(false);
     }
