@@ -3,12 +3,14 @@ import authReducer from "../slice/Auth/AuthSlice";
 import tariffReducer from "../slice/Tariff/TariffSlice";
 import PaymentReducer from "../slice/Payment/PaymentSlice";
 import vehicalReducer from "../slice/Vehical/VehicalSlice";
+import MembershipPlan  from "../slice/Membership/MembershipSlice";
 const store = configureStore({
   reducer: {
     auth: authReducer,
     tariff: tariffReducer,
     payment: PaymentReducer,
     vehical: vehicalReducer,
+    membership: MembershipPlan,
     // Thêm các reducer khác ở đây nếu có
   },
   // middleware: (getDefaultMiddleware) => getDefaultMiddleware(), // thunk mặc định

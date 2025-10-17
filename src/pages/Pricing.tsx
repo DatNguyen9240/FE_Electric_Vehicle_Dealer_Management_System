@@ -1,58 +1,52 @@
-import React, { useState } from "react";
-
-const plans = [
-  {
-    name: "Freebie",
-    price: "$0",
-    desc: "Ideal for individuals who need quick access to basic features.",
-    features: [
-      { text: "20,000+ of PNG & SVG graphics", included: true },
-      { text: "Access to 100 million stock images", included: true },
-      { text: "Upload custom icons and fonts", included: false },
-      { text: "Unlimited Sharing", included: false },
-      { text: "Upload graphics & video in up to 4k", included: false },
-      { text: "Unlimited Projects", included: false },
-      { text: "Instant Access to our design system", included: false },
-      { text: "Create teams to collaborate on designs", included: false },
-    ],
-    highlight: false,
-  },
-  {
-    name: "Professional",
-    price: "$25",
-    desc: "Ideal for individuals who need advanced features and tools for client work.",
-    features: [
-      { text: "20,000+ of PNG & SVG graphics", included: true },
-      { text: "Access to 100 million stock images", included: true },
-      { text: "Upload custom icons and fonts", included: true },
-      { text: "Unlimited Sharing", included: true },
-      { text: "Upload graphics & video in up to 4k", included: true },
-      { text: "Unlimited Projects", included: true },
-      { text: "Instant Access to our design system", included: true },
-      { text: "Create teams to collaborate on designs", included: true },
-    ],
-    highlight: true,
-  },
-  {
-    name: "Enterprise",
-    price: "$100",
-    desc: "Ideal for businesses who need personalized services and security for large teams.",
-    features: [
-      { text: "20,000+ of PNG & SVG graphics", included: true },
-      { text: "Access to 100 million stock images", included: true },
-      { text: "Upload custom icons and fonts", included: true },
-      { text: "Unlimited Sharing", included: true },
-      { text: "Upload graphics & video in up to 4k", included: true },
-      { text: "Unlimited Projects", included: true },
-      { text: "Instant Access to our design system", included: true },
-      { text: "Create teams to collaborate on designs", included: true },
-    ],
-    highlight: false,
-  },
-];
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchMembershipPlansThunk } from "@redux/slice/Membership/MembershipThunk";
+import type { RootState, AppDispatch } from "@redux/store/store";
+import { useNavigate } from "react-router-dom";
 
 const Pricing: React.FC = () => {
   const [yearly, setYearly] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const { current, plans, loading } = useSelector(
+    (state: RootState) => state.membership
+  );
+
+  useEffect(() => {
+    dispatch(fetchMembershipPlansThunk());
+  }, [dispatch]);
+
+  // Display plans, always include Free
+  const displayPlans = [
+    {
+      name: "Freebie",
+      price: "0đ",
+      desc: "Free plan for everyone.",
+      features: [
+        { text: "Access to all public charging stations", included: true },
+        { text: "Standard queue priority", included: true },
+        { text: "No monthly fee", included: true },
+        { text: "Basic customer support", included: true },
+        { text: "No discounts on charging fees", included: false },
+        { text: "No bonus minutes", included: false },
+      ],
+      highlight: current === "FREE",
+    },
+    ...plans.map((plan) => ({
+      name: plan.name,
+      price: `${plan.monthly_fee_vnd}đ`,
+      desc: `The ${plan.name} plan with more benefits.`,
+      features: [
+        { text: `Discount ${plan.mods.pricePerKwhPctOff}% on electricity price`, included: true },
+        { text: `Discount ${plan.mods.pricePerMinPctOff}% on minute price`, included: true },
+        { text: `Discount ${plan.mods.idleFeePerMinPctOff}% on idle fee`, included: true },
+        { text: `Extra ${plan.mods.graceMinBonus} free minutes`, included: true },
+        { text: `Discount ${plan.mods.minBalancePctOff}% on minimum balance`, included: true },
+        { text: `Queue priority x${plan.mods.queueBoost}`, included: true },
+      ],
+      highlight: plan.isCurrent,
+    })),
+  ];
 
   return (
     <div className="min-h-screen bg-white py-10 px-2 max-w-7xl mx-auto">
@@ -63,51 +57,17 @@ const Pricing: React.FC = () => {
       <p className="text-center text-gray-500 mb-8">
         Choose a plan that's right for you
       </p>
-      <div className="flex flex-col items-center justify-center mb-2 relative">
-        <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              checked={!yearly}
-              onChange={() => setYearly(false)}
-              className="accent-blue-600"
-            />
-            <span className="font-medium text-gray-700">Pay Monthly</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              checked={yearly}
-              onChange={() => setYearly(true)}
-              className="accent-blue-600"
-            />
-            <span className="font-medium text-gray-700">Pay Yearly</span>
-          </label>
-        </div>
-        {yearly && (
-          <div className="flex items-center relative left-[60px] margin-top-[20px] xl:left-[200px] xl:-mt-[35px]">
-            <img
-              src="/arrow/01.png"
-              alt="arrow"
-              className="w-22 h-22 object-contain mr-1 hidden xl:block" // Tăng kích thước hình
-            />
-            <span className="text-blue-600 font-medium text-base ml-0">
-              Save 25%
-            </span>
-          </div>
-        )}
-      </div>
       <div className="flex flex-col md:flex-row gap-8 justify-center mt-6">
-        {plans.map((plan) => (
+        {displayPlans.map((plan) => (
           <div
             key={plan.name}
             className={`flex-1 max-w-sm mx-auto rounded-2xl border
-							${
+              ${
                 plan.highlight
                   ? "border-blue-700 bg-blue-700 text-white shadow-lg scale-105 z-10"
                   : "border-gray-200 bg-white text-gray-900"
               }
-							p-8 flex flex-col transition-all`}
+              p-8 flex flex-col transition-all`}
             style={
               plan.highlight
                 ? { boxShadow: "0 8px 32px 0 rgba(37,99,235,0.10)" }
@@ -146,12 +106,19 @@ const Pricing: React.FC = () => {
             </div>
             <button
               className={`mb-6 py-2 rounded-lg font-semibold transition
-								${
+                ${
                   plan.highlight
                     ? "bg-white text-blue-700 hover:bg-blue-50"
                     : "bg-white border border-blue-600 text-blue-600 hover:bg-blue-50"
                 }
-							`}
+              `}
+              onClick={() => {
+                if (plan.name === "Freebie") {
+                  navigate("/booking");
+                } else {
+                  navigate(`/membership/purchase/${plan.name.toUpperCase()}`);
+                }
+              }}
             >
               Get Started Now
             </button>

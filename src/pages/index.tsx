@@ -22,3 +22,4 @@ export { default as Wallet } from "./Wallet";
 export { default as Topup } from "./Topup";
 export { default as TopupSuccess } from "./TopupSuccess";
 export { default as TopupCancel } from "./TopupCancel";
+export { default as PurchaseMembership } from "./PurchaseMembership";
