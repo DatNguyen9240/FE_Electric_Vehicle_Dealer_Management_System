@@ -17,6 +17,7 @@ import {
 import VehicleEditModal from "@components/Vehicle/VehicleEditModal";
 import { useNavigate } from "react-router-dom";
 import type {Vehicle} from "@redux/slice/Vehical/VehicalSlice";
+import { deleteVehicleThunk } from "@redux/slice/Vehical/VehicalThunk";
 
 interface UserInfo {
   name: string;
@@ -260,20 +261,37 @@ const UserProfile: React.FC = () => {
                         <SelectItem key={key} value={key} className="group">
                           <div className="flex items-center justify-between w-full">
                             <span className="truncate">{v.model}</span>
-                            <button
-                              type="button"
-                              onPointerDown={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                // open edit modal for this vehicle
-                                setEditingVehicle(key);
-                                setEditModalOpen(true);
-                              }}
-                              aria-label={`Edit ${v.model}`}
-                              className="ml-2 opacity-0 group-hover:opacity-100"
-                            >
-                              <Edit3 className="w-4 h-4 text-blue-600" />
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  setEditingVehicle(key);
+                                  setEditModalOpen(true);
+                                }}
+                                aria-label={`Edit ${v.model}`}
+                                className="ml-2 opacity-0 group-hover:opacity-100"
+                              >
+                                <Edit3 className="w-4 h-4 text-blue-600" />
+                              </button>
+                              <button
+                                type="button"
+                                onPointerDown={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  if (window.confirm("Are you sure you want to delete this vehicle?")) {
+                                    dispatch(deleteVehicleThunk(key));
+                                  }
+                                }}
+                                aria-label={`Delete ${v.model}`}
+                                className="ml-2 opacity-0 group-hover:opacity-100"
+                              >
+                                <svg width="16" height="16" fill="none" stroke="red" strokeWidth="2" viewBox="0 0 24 24">
+                                  <path d="M3 6h18M8 6v12a2 2 0 002 2h4a2 2 0 002-2V6m-6 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                         </SelectItem>
                       );

@@ -5,7 +5,7 @@ const Booking: React.FC = () => {
   return (
     <>
       <HeroSection />
-      <div className="max-w-[1300px] mx-auto px-4 md:px-12">
+      <div className="max-w-[1700px] mx-auto px-4 md:px-12">
         <StationListSection />
       </div>
     </>
