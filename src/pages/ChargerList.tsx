@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import ChargingStationCard from "@components/Ui/ChargingStationCard";
 import Pagination from "@components/Ui/Pagination";
 import api from "@libs/axios";
+import axios from "axios";
 
 type Connector = {
   _id: string;
@@ -44,14 +45,17 @@ const ChargerList: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.get(`/stations/${stationId}/assets`);
-        const data = res.data;
+  const res = await api.get<{ chargers?: Charger[]; name?: string }>(`/stations/${stationId}/assets`);
+  const data = res.data;
         // API returns station object with `chargers` array
         setChargers(Array.isArray(data.chargers) ? data.chargers : []);
         setStationName(data.name || null);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = axios.isAxiosError(err)
+          ? (err.response?.data?.message as string) || err.message
+          : (err as Error)?.message || "Failed to load chargers";
         console.error(err);
-        setError(err?.response?.data?.message || err.message || "Failed to load chargers");
+        setError(message);
       } finally {
         setLoading(false);
       }
