@@ -32,6 +32,8 @@ const PurchaseMembership = lazy(
 const AdminDashboard = lazy(() => import("@pages/Admin/AdminDashboard"));
 const StaffManager = lazy(() => import("@pages/Admin/Staffs/StaffManager"));
 const UserManager = lazy(() => import("@pages/Admin/Users/UserManager"));
+const EditUser = lazy(() => import("@pages/Admin/Users/EditUser"));
+const UserDetail = lazy(() => import("@pages/Admin/Users/UserDetail"));
 const AdminTariffs = lazy(() => import("@pages/Admin/Tariffs/Tariffs"));
 
 const PaymentManager = lazy(
@@ -162,6 +164,14 @@ export default function AppRoutes() {
           <Route
             path="/admin/users"
             element={createLazyRoute(UserManager, "Loading user management...")}
+          />
+          <Route
+            path="/admin/users/edit/:userId"
+            element={createLazyRoute(EditUser, "Loading edit user...")}
+          />
+          <Route
+            path="/admin/users/view/:userId"
+            element={createLazyRoute(UserDetail, "Loading user details...")}
           />
           <Route
             path="/admin/tariffs"

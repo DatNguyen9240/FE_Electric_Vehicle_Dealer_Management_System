@@ -9,8 +9,8 @@ export interface User {
   phone?: string;
   role: "admin" | "staff" | "driver";
   status: "ACTIVE" | "SUSPENDED";
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 interface UserState {

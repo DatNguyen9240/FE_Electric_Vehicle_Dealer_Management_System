@@ -1,29 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Eye, Trash2, X, Check, Search, Filter, Pencil } from "lucide-react";
-import { fetchUsers, updateUser, deleteUser, getUser } from "@redux/slice/User/UserThunks";
-import { clearError, setSelectedUser } from "@redux/slice/User/UserSlice";
+import { Eye, Trash2, Search, Filter, Pencil } from "lucide-react";
+import { fetchUsers, deleteUser } from "@redux/slice/User/UserThunks";
+import { clearError } from "@redux/slice/User/UserSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import type { User } from "@redux/slice/User/UserSlice";
+import { useTitle } from "../../../contexts";
 
 const UserManager: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { data: users, loading, error, selectedUser } = useSelector((state: RootState) => state.user);
+  const navigate = useNavigate();
+  const { data: users, loading, error } = useSelector((state: RootState) => state.user);
+  const { setTitle } = useTitle();
   
-  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [editForm, setEditForm] = useState({
-    name: "",
-    phone: "",
-    role: "driver" as "admin" | "staff" | "driver",
-    status: "ACTIVE" as "ACTIVE" | "SUSPENDED"
-  });
 
   useEffect(() => {
+    setTitle("Quản lí người dùng");
     dispatch(fetchUsers());
-  }, [dispatch]);
+  }, [dispatch, setTitle]);
 
   useEffect(() => {
     if (error) {
@@ -33,31 +31,10 @@ const UserManager: React.FC = () => {
   }, [error, dispatch]);
 
   const handleEditUser = (user: User) => {
-    setEditingUser(user);
-    setEditForm({
-      name: user.name,
-      phone: user.phone || "",
-      role: user.role,
-      status: user.status
-    });
+    navigate(`/admin/users/edit/${user.id}`);
   };
 
-  const handleUpdateUser = async () => {
-    if (!editingUser) return;
-
-    try {
-      await dispatch(updateUser({
-        userId: editingUser.id,
-        userData: editForm
-      })).unwrap();
-      
-      toast.success("Cập nhật người dùng thành công!");
-      setEditingUser(null);
-      dispatch(fetchUsers()); // Refresh list
-    } catch (err) {
-      toast.error(err as string);
-    }
-  };
+  // Remove handleUpdateUser since we use separate edit page
 
   const handleDeleteUser = async (userId: string, userName: string) => {
     if (!window.confirm(`Bạn có chắc muốn xóa người dùng "${userName}"?`)) {
@@ -73,22 +50,11 @@ const UserManager: React.FC = () => {
     }
   };
 
-  const handleViewUser = async (userId: string) => {
-    try {
-      await dispatch(getUser(userId)).unwrap();
-    } catch (err) {
-      toast.error(err as string);
-    }
+  const handleViewUser = (userId: string) => {
+    navigate(`/admin/users/view/${userId}`);
   };
 
-  const getRoleTextColor = (role: string) => {
-    switch (role) {
-      case "admin": return "text-red-600";
-      case "staff": return "text-blue-600";
-      case "driver": return "text-green-600";
-      default: return "text-gray-600";
-    }
-  };
+  
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -160,16 +126,7 @@ const UserManager: React.FC = () => {
           </div>
         </div>
         
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium bg-white hover:bg-gray-50 transition-colors">
-            Export
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-            <span className="text-lg">+</span>
-            Thêm người dùng
-          </button>
-        </div>
+        
       </div>
 
       {/* User List */}
@@ -272,133 +229,9 @@ const UserManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Edit Modal */}
-      {editingUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Chỉnh sửa người dùng: {editingUser.name}
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Tên</label>
-                  <input
-                    type="text"
-                    value={editForm.name}
-                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Số điện thoại</label>
-                  <input
-                    type="text"
-                    value={editForm.phone}
-                    onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Vai trò</label>
-                  <select
-                    value={editForm.role}
-                    onChange={(e) => setEditForm({...editForm, role: e.target.value as "admin" | "staff" | "driver"})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                  >
-                    <option value="driver">Driver</option>
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Trạng thái</label>
-                  <select
-                    value={editForm.status}
-                    onChange={(e) => setEditForm({...editForm, status: e.target.value as "ACTIVE" | "SUSPENDED"})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="SUSPENDED">Suspended</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setEditingUser(null)}
-                  className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-                >
-                  <X size={16} className="mr-2" />
-                  Hủy
-                </button>
-                <button
-                  onClick={handleUpdateUser}
-                  className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  <Check size={16} className="mr-2" />
-                  Cập nhật
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Edit Modal removed - using separate edit page */}
 
-      {/* User Details Modal */}
-      {selectedUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Thông tin người dùng
-              </h3>
-              
-              <div className="space-y-3">
-                <div>
-                  <span className="font-medium">Tên:</span> {selectedUser.name}
-                </div>
-                <div>
-                  <span className="font-medium">Email:</span> {selectedUser.email}
-                </div>
-                <div>
-                  <span className="font-medium">Số điện thoại:</span> {selectedUser.phone || "Chưa cập nhật"}
-                </div>
-                <div>
-                  <span className="font-medium">Vai trò:</span> 
-                  <span className={`ml-2 font-medium ${getRoleTextColor(selectedUser.role)}`}>
-                    {selectedUser.role}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-medium">Trạng thái:</span>
-                  <span className={`ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusStyle(selectedUser.status)}`}>
-                    <span className={`w-2 h-2 rounded-full ${getStatusDotColor(selectedUser.status)}`}></span>
-                    {selectedUser.status === "ACTIVE" ? "Active" : "Suspended"}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-medium">Ngày tạo:</span> {new Date(selectedUser.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-              
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={() => dispatch(setSelectedUser(null))}
-                  className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-                >
-                  <X size={16} className="mr-2" />
-                  Đóng
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* User Details Modal removed - using separate detail page */}
     </div>
   );
 };
