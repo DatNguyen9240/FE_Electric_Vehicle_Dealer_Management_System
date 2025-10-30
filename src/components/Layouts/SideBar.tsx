@@ -4,7 +4,6 @@ import {
   Users,
   CreditCard,
   BatteryCharging,
-  UserCog,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown, // Thêm icon này
@@ -12,8 +11,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 
 const menu = [
-  { label: "Home", icon: <Home size={20} />, to: "/admin" },
-  { label: "Staff", icon: <UserCog size={20} />, to: "/admin/staffs" },
+  { label: "Dashboard", icon: <Home size={20} />, to: "/admin" },
   { label: "Users", icon: <Users size={20} />, to: "/admin/users" },
   { label: "Payment", icon: <CreditCard size={20} />, to: "/admin/payments" },
   {

@@ -12,7 +12,7 @@ const EditUser: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { data:  loading, error, selectedUser } = useSelector((state: RootState) => state.user);
+  const { loading, error, selectedUser } = useSelector((state: RootState) => state.user);
   const { setTitle } = useTitle();
   
   const [editForm, setEditForm] = useState({
