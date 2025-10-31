@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { selectVehicles, selectSelectedVehicleId, setSelectedVehicle } from "@redux/slice/Vehical/VehicalSlice";
 import { selectVehicalLoading } from "@redux/slice/Vehical/VehicalSelector";
@@ -18,6 +18,22 @@ import VehicleEditModal from "@components/Vehicle/VehicleEditModal";
 import { useNavigate } from "react-router-dom";
 import type {Vehicle} from "@redux/slice/Vehical/VehicalSlice";
 import { deleteVehicleThunk } from "@redux/slice/Vehical/VehicalThunk";
+import api from "../libs/axios";
+
+// chart.js (react-chartjs-2). If these packages are not installed run:
+// npm install chart.js react-chartjs-2
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface UserInfo {
   name: string;
@@ -48,12 +64,124 @@ const UserProfile: React.FC = () => {
   const [editingVehicle, setEditingVehicle] = React.useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = React.useState(false);
 
+  // analytics state
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [monthlyCosts, setMonthlyCosts] = useState<any | null>(null);
+  const [habits, setHabits] = useState<any | null>(null);
+
+  const monthNames = [
+    'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
+  ];
+
+  const formatCurrency = (value: number | null | undefined, currency?: string) => {
+    if (value == null) return '0';
+    if (currency) {
+      try {
+        return new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency,
+          maximumFractionDigits: 0,
+        }).format(value);
+      } catch (e) {
+        // fallback
+      }
+    }
+    return Number(value).toLocaleString();
+  };
+
+  const chartData = useMemo(() => {
+    const labels = (monthlyCosts?.months || []).map((m: any) => monthNames[(m.month || 1) - 1]);
+    const data = (monthlyCosts?.months || []).map((m: any) => m.amount || 0);
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Spending',
+          data,
+          backgroundColor: 'rgba(247, 183, 0, 0.9)',
+        },
+      ],
+    };
+  }, [monthlyCosts]);
+
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      title: { display: true, text: 'Monthly Spending' },
+      tooltip: { mode: 'index', intersect: false },
+    },
+    scales: {
+      y: { beginAtZero: true },
+    },
+  }), [monthlyCosts]);
+
+  // hourly chart for habits.when.byHour
+  const hoursChartData = useMemo(() => {
+    const hours = habits?.when?.byHour ?? [];
+    const labels = Array.from({ length: 24 }, (_, i) => String(i));
+    const data = labels.map((_, i) => hours[i] || 0);
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Sessions by hour',
+          data,
+          backgroundColor: 'rgba(36,101,234,0.9)',
+        },
+      ],
+    };
+  }, [habits]);
+
+  const hoursChartOptions = useMemo(() => ({
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      title: { display: true, text: 'Sessions by Hour' },
+      tooltip: { mode: 'index', intersect: false },
+    },
+    scales: {
+      x: { title: { display: true, text: 'Hour' } },
+      y: { beginAtZero: true, ticks: { stepSize: 1 } },
+    },
+  }), [habits]);
+
   // keep editedInfo.carModel in sync with selectedVehicle
   React.useEffect(() => {
     if (!selectedVehicle) return;
     const v = vehicles.find((x) => x.id === selectedVehicle);
     if (v) setEditedInfo((prev) => ({ ...prev, carModel: v.model }));
   }, [selectedVehicle, vehicles]);
+
+  // fetch analytics (monthly costs + charging habits)
+  useEffect(() => {
+    let mounted = true;
+    setLoadingAnalytics(true);
+    setAnalyticsError(null);
+
+    Promise.all([
+      api.get('/analytics/me/monthly-costs'),
+      api.get('/analytics/me/habits'),
+    ])
+      .then(([mcRes, habitsRes]) => {
+        if (!mounted) return;
+        setMonthlyCosts(mcRes.data || null);
+        setHabits(habitsRes.data || null);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setAnalyticsError(err?.message || 'Failed to load analytics');
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingAnalytics(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -84,6 +212,30 @@ const UserProfile: React.FC = () => {
     setPreviewAvatar(userInfo.avatar);
     setIsEditing(false);
   };
+
+  // analytics presence flags
+  const hasSpending = Boolean(monthlyCosts?.grandTotal && monthlyCosts.grandTotal > 0);
+  const hasSessions = Boolean(habits?.counts?.totalSessions && habits.counts.totalSessions > 0);
+  const hasTopStation = Boolean(habits?.where?.topStations && habits.where.topStations.length > 0);
+  const hasHourly = Array.isArray(habits?.when?.byHour) && habits.when.byHour.some((v: any) => v > 0);
+  const hasPowerBuckets = Boolean(habits?.power?.buckets && Object.values(habits.power.buckets).some((v: any) => v > 0));
+  const visibleInfoCards = [] as { id: string; label: string; value: React.ReactNode; bg?: string }[];
+  if (hasSessions) visibleInfoCards.push({ id: 'sessions', label: 'Total Charging Sessions', value: (habits?.counts?.totalSessions ?? 0).toLocaleString(), bg: 'bg-[#E5F4FF]' });
+  if (hasEnergy() || hasTopStation) {
+    // energy: prefer topStation.energyKwh if provided
+    const energyVal = habits?.where?.topStations?.[0]?.energyKwh ?? null;
+    if (energyVal) visibleInfoCards.push({ id: 'energy', label: 'Energy Used', value: `${energyVal} kWh`, bg: 'bg-gradient-to-br from-green-50 to-green-100' });
+  }
+  if (hasSpending) visibleInfoCards.push({ id: 'spending', label: 'Total Spending', value: formatCurrency(monthlyCosts?.grandTotal ?? 0, monthlyCosts?.currency), bg: 'bg-[#F7F7BF]' });
+
+  // helper function to check energy availability
+  function hasEnergy() {
+    if (habits?.where?.topStations?.length) {
+      const v = habits.where.topStations[0].energyKwh;
+      return typeof v === 'number' && v > 0;
+    }
+    return false;
+  }
 
   return (
     <>
@@ -310,22 +462,111 @@ const UserProfile: React.FC = () => {
              <h3 className="text-lg font-semibold text-gray-800 mb-4">
                Additional Information
              </h3>
-             <div className="grid md:grid-cols-3 gap-4">
-               <div className="p-4 bg-[#E5F4FF] rounded-lg">
-                 <p className="text-sm text-gray-600 mb-1">Total Charging Sessions</p>
-                 <p className="text-2xl font-bold text-blue-500">24</p>
-               </div>
-               <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-                 <p className="text-sm text-gray-600 mb-1">
-                   Energy Used
-                 </p>
-                 <p className="text-2xl font-bold text-green-600">342 kWh</p>
-               </div>
-               <div className="p-4 bg-[#F7F7BF] rounded-lg">
-                 <p className="text-sm text-gray-600 mb-1">Total Spending</p>
-                 <p className="text-2xl font-bold text-[#F7B900]">$289.50</p>
-               </div>
+             {/* Dynamic info cards: only render cards that have data */}
+             <div className="mt-2">
+               {loadingAnalytics ? (
+                 <div className="grid md:grid-cols-3 gap-4">
+                   <div className="p-4 bg-[#E5F4FF] rounded-lg animate-pulse h-20" />
+                   <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg animate-pulse h-20" />
+                   <div className="p-4 bg-[#F7F7BF] rounded-lg animate-pulse h-20" />
+                 </div>
+               ) : analyticsError ? (
+                 <p className="text-sm text-red-500">Could not load analytics</p>
+                ) : visibleInfoCards.length > 0 ? (
+                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                   {visibleInfoCards.map((c) => (
+                     <div key={c.id} className={`${c.bg} p-3 rounded-lg min-h-[72px] flex flex-col justify-center shadow-sm`}>
+                       <p className="text-sm text-gray-600 mb-1">{c.label}</p>
+                       <p className={`text-2xl font-bold ${c.id === 'spending' ? 'text-[#B47700]' : c.id === 'sessions' ? 'text-blue-600' : 'text-green-600'}`}>{c.value}</p>
+                     </div>
+                   ))}
+                 </div>
+               ) : (
+                 <p className="text-sm text-gray-500">No analytics available</p>
+               )}
              </div>
+
+             {/* Monthly breakdown (compact) */}
+             <div className="mt-4">
+               {loadingAnalytics ? (
+                 <div className="animate-pulse space-y-2">
+                   <div className="h-3 bg-gray-200 rounded w-1/3" />
+                   <div className="h-3 bg-gray-200 rounded w-1/2" />
+                 </div>
+               ) : analyticsError ? (
+                 <p className="text-sm text-red-500">Could not load monthly breakdown</p>
+               ) : monthlyCosts?.months ? (
+                 <div className="grid grid-cols-3 gap-2 mt-3">
+                   {monthlyCosts.months.map((m: any) => (
+                     <div key={m.month} className="px-3 py-1.5 bg-gray-50 rounded min-h-[40px] flex items-center justify-between">
+                       <div className="text-sm text-gray-600">{monthNames[(m.month || 1) - 1]}</div>
+                       <div className="text-sm font-medium text-gray-800">{m.amount ? formatCurrency(m.amount, monthlyCosts.currency) : '-'}</div>
+                     </div>
+                   ))}
+                 </div>
+               ) : null}
+             </div>
+
+            {/* Chart (monthly spending) */}
+            {!loadingAnalytics && !analyticsError && monthlyCosts?.months && (
+              <div className="mt-6 p-4 bg-white rounded-lg shadow">
+                <div className="text-sm text-gray-600 mb-3">Monthly Spending</div>
+                <div className="h-72">
+                  <Bar data={chartData as any} options={{ ...chartOptions, maintainAspectRatio: false } as any} />
+                </div>
+              </div>
+            )}
+
+            {/* Habits: top station, hourly chart, power buckets */}
+            {!loadingAnalytics && !analyticsError && (hasTopStation || hasHourly || hasPowerBuckets) && (
+              // use 4 columns so hourly chart can take 3/4 width when Top Station exists (a bit wider)
+              <div className="mt-6 grid md:grid-cols-4 gap-4">
+                {hasTopStation && (
+                  // smaller, denser Top Station card: less padding, smaller text, constrained width
+                  <div className="p-2 bg-white rounded-lg shadow min-h-0 self-start w-full md:w-auto md:max-w-[280px] flex flex-col items-center text-center gap-1 justify-start">
+                    <p className="text-xs text-gray-600 mb-0">Top Station (last period)</p>
+                    {habits?.where?.topStations?.length > 0 ? (
+                      (() => {
+                        const s = habits.where.topStations[0];
+                        return (
+                          <div className="flex flex-col gap-0 items-center">
+                            <div className="text-sm font-medium truncate">{s.name}</div>
+                            <div className="text-xs text-gray-600">Sessions: {s.sessions} · {s.energyKwh} kWh</div>
+                            <div className="text-sm font-semibold text-[#B47700]">Amount: {formatCurrency(s.amount, monthlyCosts?.currency)}</div>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="text-xs text-gray-500">No stations</div>
+                    )}
+                  </div>
+                )}
+
+                <div className={`${hasTopStation ? 'md:col-span-3' : 'md:col-span-4'} p-4 bg-white rounded-lg shadow`}>
+                  {hasHourly && (
+                    <div>
+                      <div className="mb-3 text-sm text-gray-600">Hourly Charging Distribution</div>
+                      <div className="h-64">
+                        <Bar data={hoursChartData as any} options={{ ...hoursChartOptions, maintainAspectRatio: false } as any} />
+                      </div>
+                    </div>
+                  )}
+
+                  {hasPowerBuckets && (
+                    <div className="mt-4">
+                      <div className="text-sm text-gray-600 mb-2">Power buckets</div>
+                      <div className="flex gap-2 flex-wrap">
+                        {Object.entries(habits.power.buckets).map(([k, v]: any) => (
+                          <div key={k} className="px-3 py-1 rounded bg-gray-100 text-sm">
+                            {k}: <span className="font-medium">{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
              <div className="flex justify-end mt-4 me-15">
                <button
                  onClick={() => navigate("/charging-history")}

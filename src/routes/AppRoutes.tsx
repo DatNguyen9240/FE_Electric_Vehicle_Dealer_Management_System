@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react";
+const FakeStationPage = lazy(() => import("@pages/FakeStationPage"));
 import { Routes, Route } from "react-router-dom";
 import LazyLoading from "@components/Ui/LazyLoading";
 
@@ -133,8 +134,16 @@ export default function AppRoutes() {
             path="/vehicles/new"
             element={createLazyRoute(NewVehicle, "Loading vehicle registration...")}
           />
+          <Route
+            path="/fake-station"
+            element={createLazyRoute(FakeStationPage, "Loading fake station...")}
+          />
+          <Route
+            path="/fake-station/:stationId"
+            element={createLazyRoute(FakeStationPage, "Loading fake station...")}
+          />
+          {/* Đã bỏ route /fake-station/:stationId/charger/:chargerId */}
         </Route>
-
         <Route
           path="/login"
           element={createLazyRoute(Login, "Loading login page...")}

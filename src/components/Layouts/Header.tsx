@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { User } from "@interfaces/Auth";
 import type { RootState, AppDispatch } from "@redux/store/store";
@@ -23,7 +23,9 @@ import {
   SelectValue
 } from "@components/Ui/Select";
 
-import { User as UserIcon, LogOut, Wallet, ChevronDown, Edit3 } from "lucide-react";
+import { User as UserIcon, LogOut, Wallet, ChevronDown, Edit3, Bell } from "lucide-react";
+import NotificationItem, { type Notification as NotificationType } from "@components/Ui/NotificationItem";
+import api from "@libs/axios";
 import VehicleEditModal from "@components/Vehicle/VehicleEditModal";
 import { fetchVehiclesThunk } from "@redux/slice/Vehical/VehicalThunk";
 import {
@@ -41,19 +43,61 @@ const navItems = [
 ];
 
 export default function Header() {
+  // Notification popup state và ref phải khai báo trước khi dùng trong useEffect
+  const [showNoti, setShowNoti] = useState(false);
+  const notiPopupRef = useRef<HTMLDivElement>(null);
+  // Đóng popup khi click ra ngoài
+  useEffect(() => {
+    if (!showNoti) return;
+    const handleClick = (e: MouseEvent) => {
+      if (notiPopupRef.current && !notiPopupRef.current.contains(e.target as Node)) {
+        setShowNoti(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showNoti]);
   const [openMobile, setOpenMobile] = useState(false);
   const [cookieUser, setCookieUser] = useState<User | null>(null);
   // vehicles are stored in redux
   const vehicles = useSelector(selectVehicles);
   const selectedVehicle = useSelector(selectSelectedVehicleId);
   const vehicalLoading = useSelector(selectVehicalLoading);
-
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const wallet = useSelector((state: RootState) => state.payment.wallet);
   const [editingVehicle, setEditingVehicle] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationType[]>([]);
+  const [loadingNoti, setLoadingNoti] = useState(false);
+  const [notiError, setNotiError] = useState<string|null>(null);
   const vehicleToEdit = vehicles.find((v) => v.id === editingVehicle) ?? null;
+
+  // Fetch notifications when popup opens
+  useEffect(() => {
+    if (!showNoti) return;
+    setLoadingNoti(true);
+    setNotiError(null);
+    api.get("/notifications")
+      .then(res => setNotifications(res.data?.data || []))
+      .catch(e => setNotiError(e?.response?.data?.msg || e.message || "Lỗi tải thông báo"))
+      .finally(() => setLoadingNoti(false));
+  }, [showNoti]);
+
+  // Mark all as read
+  const markAllRead = async () => {
+    try {
+      await api.post("/notifications/read-all");
+      setNotifications(n => n.map(x => ({ ...x, isRead: true, readAt: x.readAt || new Date().toISOString() })));
+    } catch {}
+  };
+  // Mark one as read
+  const markOneRead = async (id: string) => {
+    try {
+      await api.post(`/notifications/${id}/read`);
+      setNotifications(n => n.map(x => x.id === id ? { ...x, isRead: true, readAt: x.readAt || new Date().toISOString() } : x));
+    } catch {}
+  };
 
   useEffect(() => {
     const userStr = getCookie("user");
@@ -124,6 +168,42 @@ export default function Header() {
 
         {/* Right */}
         <div className="flex items-center space-x-3">
+          {/* Notification Bell */}
+          {cookieUser && (
+            <div className="relative">
+              <button
+                className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+                onClick={() => setShowNoti(v => !v)}
+                aria-label="Thông báo"
+              >
+                <Bell className="w-6 h-6 text-gray-700" />
+                {notifications.some(n => !n.isRead) && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+              </button>
+              {showNoti && (
+                <div ref={notiPopupRef} className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white border rounded-xl shadow-lg z-50">
+                  <div className="flex items-center justify-between px-4 py-2 border-b">
+                    <span className="font-semibold">Thông báo</span>
+                    <button className="text-xs text-blue-600 hover:underline" onClick={markAllRead}>Đánh dấu đã đọc tất cả</button>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto divide-y">
+                    {loadingNoti ? (
+                      <div className="p-4 text-center text-gray-500">Đang tải...</div>
+                    ) : notiError ? (
+                      <div className="p-4 text-center text-red-500">{notiError}</div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">Không có thông báo</div>
+                    ) : notifications.map(noti => (
+                      <div key={noti.id} className="hover:bg-gray-50 transition">
+                        <NotificationItem notification={noti} onClick={() => markOneRead(noti.id)} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {/* Wallet */}
           {cookieUser && (
             <Link
