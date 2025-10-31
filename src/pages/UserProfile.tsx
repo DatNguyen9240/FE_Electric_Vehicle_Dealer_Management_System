@@ -47,16 +47,22 @@ interface UserInfo {
 const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  // start empty; we'll fetch from backend
   const [userInfo, setUserInfo] = useState<UserInfo>({
-    name: "Đạt Nguyễn",
-    email: "dat.nguyen@example.com",
-    phone: "0123456789",
-    role: "Customer",
+    name: "",
+    email: "",
+    phone: "",
+    role: "",
     avatar: "/avatar/01.png",
   });
 
   const [editedInfo, setEditedInfo] = useState<UserInfo>(userInfo);
   const [previewAvatar, setPreviewAvatar] = useState<string>(userInfo.avatar);
+  // profile loading state
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const dispatch = useDispatch<AppDispatch>();
   const vehicles = useSelector(selectVehicles);
   const selectedVehicle = useSelector(selectSelectedVehicleId);
@@ -154,6 +160,24 @@ const UserProfile: React.FC = () => {
     if (v) setEditedInfo((prev) => ({ ...prev, carModel: v.model }));
   }, [selectedVehicle, vehicles]);
 
+  // if vehicles load after profile, make sure editedInfo.carModel is populated
+  useEffect(() => {
+    if (!vehicles || vehicles.length === 0) return;
+    // if already set, do nothing
+    if (editedInfo.carModel && editedInfo.carModel.length > 0) return;
+
+    const v = vehicles.find((x) => x.id === selectedVehicle);
+    if (v) {
+      setEditedInfo((prev) => ({ ...prev, carModel: v.model }));
+      return;
+    }
+
+    // fallback: if server returned a carModel in userInfo, use it
+    if (userInfo?.carModel) {
+      setEditedInfo((prev) => ({ ...prev, carModel: userInfo.carModel }));
+    }
+  }, [vehicles, selectedVehicle, userInfo]);
+
   // fetch analytics (monthly costs + charging habits)
   useEffect(() => {
     let mounted = true;
@@ -183,6 +207,49 @@ const UserProfile: React.FC = () => {
     };
   }, []);
 
+  // fetch current user profile from backend
+  useEffect(() => {
+    let mounted = true;
+    setLoadingProfile(true);
+    setProfileError(null);
+
+    api
+      .get('/profile')
+      .then((res) => {
+        if (!mounted) return;
+        const user = res.data && (res.data.user || res.data);
+        if (!user) {
+          setProfileError('No profile data');
+          return;
+        }
+        // prefer selectedVehicle model if available, else server-provided carModel
+        const selectedModel = vehicles.find((x) => x.id === selectedVehicle)?.model;
+        const payload: UserInfo = {
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          role: user.role || '',
+          avatar: user.avatar || '/avatar/01.png',
+          carModel: selectedModel ?? user.carModel ?? '',
+        };
+        setUserInfo(payload);
+        setEditedInfo(payload);
+        setPreviewAvatar(payload.avatar || '/avatar/01.png');
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setProfileError(err?.response?.data?.msg || err?.message || 'Failed to load profile');
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoadingProfile(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setEditedInfo((prev) => ({ ...prev, [name]: value }));
@@ -199,12 +266,44 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
-    // TODO: Call API to update user info
-    setUserInfo({ ...editedInfo, avatar: previewAvatar });
-    setIsEditing(false);
-    // Show success message
-    alert("Profile updated successfully!");
+  const handleSave = async () => {
+    // persist name/phone to backend
+    setSavingProfile(true);
+    setSaveError(null);
+    try {
+      const payload: any = {
+        name: editedInfo.name,
+        phone: editedInfo.phone,
+      };
+
+      const res = await api.patch('/profile', payload);
+      const user = res.data && (res.data.user || res.data);
+      if (!user) throw new Error('No user returned');
+
+      const updated: UserInfo = {
+        name: user.name || editedInfo.name,
+        email: user.email || editedInfo.email,
+        phone: user.phone || editedInfo.phone,
+        role: user.role || editedInfo.role || user.role,
+        avatar: user.avatar || previewAvatar || '/avatar/01.png',
+        carModel: editedInfo.carModel,
+      };
+
+      setUserInfo(updated);
+      setEditedInfo(updated);
+      setPreviewAvatar(updated.avatar || '/avatar/01.png');
+      setIsEditing(false);
+      // lightweight success feedback
+      alert('Profile updated successfully');
+    } catch (err: any) {
+      const msg = err?.response?.data?.msg || err?.message || 'Failed to save profile';
+      setSaveError(msg);
+      // also keep edit mode so user can retry
+      console.error('[Profile save] ', err);
+      alert(msg);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleCancel = () => {
@@ -292,11 +391,12 @@ const UserProfile: React.FC = () => {
                   </button>
                   <button
                     onClick={handleSave}
-                    className="flex items-center  px-7.5 py-1 bg-blue-500 text-white rounded-lg hover:bg-[#2563EB] transition-colors shadow-md"
+                    disabled={savingProfile}
+                    className={`flex items-center px-7.5 py-1 rounded-lg transition-colors shadow-md ${savingProfile ? 'bg-blue-300 text-white cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-[#2563EB]'}`}
                   >
-                    
-                    Save
+                    {savingProfile ? 'Saving...' : 'Save'}
                   </button>
+                  {saveError && <p className="text-sm text-red-500 mt-2">{saveError}</p>}
                 </>
               )}
             </div>

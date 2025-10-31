@@ -73,6 +73,17 @@ export default function Header() {
   const [notiError, setNotiError] = useState<string|null>(null);
   const vehicleToEdit = vehicles.find((v) => v.id === editingVehicle) ?? null;
 
+  // Compute membership plan code for display (PRO, BASIC, FREE)
+  const planCode: string = (cookieUser && (cookieUser as any).membership && (cookieUser as any).membership.plan_code) || 'FREE';
+
+  const renderPlanBadge = (code: string) => {
+    const c = (code || 'FREE').toUpperCase();
+    const base = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold mr-2';
+    if (c === 'PRO') return <span className={base + ' bg-green-50 text-green-700'}>{c}</span>;
+    if (c === 'BASIC') return <span className={base + ' bg-yellow-50 text-yellow-700'}>{c}</span>;
+    return <span className={base + ' bg-gray-100 text-gray-700'}>{c}</span>;
+  };
+
   // Fetch notifications when popup opens
   useEffect(() => {
     if (!showNoti) return;
@@ -104,6 +115,13 @@ export default function Header() {
     if (userStr) {
       try {
         const parsedUser = JSON.parse(decodeURIComponent(userStr));
+        // Also attempt to read membership cookie if backend stored it separately
+        const membershipStr = getCookie('membership');
+        if (membershipStr) {
+          try {
+            (parsedUser as any).membership = JSON.parse(decodeURIComponent(membershipStr));
+          } catch {}
+        }
         setCookieUser(parsedUser);
         dispatch(fetchWalletThunk());
       } catch {
@@ -272,11 +290,13 @@ export default function Header() {
           {cookieUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <UserIcon className="w-5 h-5" />
-                  {cookieUser.name || cookieUser.email}
-                </Button>
-              </DropdownMenuTrigger>
+                    <Button variant="ghost" className="flex items-center gap-2">
+                      <UserIcon className="w-5 h-5" />
+                      {/* membership badge + name */}
+                      {renderPlanBadge(planCode)}
+                      {cookieUser.name || cookieUser.email}
+                    </Button>
+                  </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem asChild>
                   <Link to="/profile">Profile</Link>

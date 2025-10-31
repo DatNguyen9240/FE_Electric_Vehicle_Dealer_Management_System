@@ -8,8 +8,14 @@ export const loginUser = createAsyncThunk(
   async (payload: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const res = await api.post("/auth/login", payload);
-      setCookie("token", res.data.token);
-      setCookie("user", JSON.stringify(res.data.user));
+        setCookie("token", res.data.token);
+        // store user and membership separately if backend returns membership
+        setCookie("user", JSON.stringify(res.data.user));
+        if (res.data.membership) {
+          setCookie("membership", JSON.stringify(res.data.membership));
+        } else if (res.data.user && (res.data.user as any).membership) {
+          setCookie("membership", JSON.stringify((res.data.user as any).membership));
+        }
       return res.data;
     } catch (error) {
       const err = error as AxiosError<{ msg?: string }>;
@@ -35,8 +41,9 @@ export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
-      deleteCookie("token");
-      deleteCookie("user");
+        deleteCookie("token");
+        deleteCookie("user");
+        deleteCookie("membership");
     } catch (error) {
       const err = error as AxiosError<{ msg?: string }>;
       return rejectWithValue(err.response?.data?.msg || "Đăng xuất thất bại");
