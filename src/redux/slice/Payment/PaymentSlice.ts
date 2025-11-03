@@ -1,5 +1,5 @@
 import { createSlice} from "@reduxjs/toolkit";
-import { fetchPayments } from "@redux/slice/Payment/PaymentThunks";
+import { fetchPayments, fetchWalletThunk, initiateTopupPayOSThunk } from "@redux/slice/Payment/PaymentThunks";
 
 export interface Payment {
   id: string;
@@ -16,6 +16,11 @@ export interface Payment {
   createdAt: string;
 }
 
+interface PaymentResult {
+  orderCode?: string;
+  checkoutUrl?: string;
+}
+
 interface PaymentState {
   data: Payment[];
   loading: boolean;
@@ -26,6 +31,9 @@ interface PaymentState {
     total: number;
     pages: number;
   };
+  // Wallet state
+  wallet: { balance: number } | null;
+  result: PaymentResult | null;
 }
 
 const initialState: PaymentState = {
@@ -38,6 +46,8 @@ const initialState: PaymentState = {
     total: 0,
     pages: 0,
   },
+  wallet: null,
+  result: null,
 };
 
 const paymentSlice = createSlice({
@@ -67,6 +77,31 @@ const paymentSlice = createSlice({
       .addCase(fetchPayments.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Wallet thunks
+      .addCase(fetchWalletThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchWalletThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.wallet = action.payload;
+      })
+      .addCase(fetchWalletThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Không lấy được số dư ví";
+      })
+      .addCase(initiateTopupPayOSThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(initiateTopupPayOSThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.result = action.payload;
+      })
+      .addCase(initiateTopupPayOSThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Nạp ví thất bại";
       });
   },
 });

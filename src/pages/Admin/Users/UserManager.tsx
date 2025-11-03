@@ -17,6 +17,8 @@ const UserManager: React.FC = () => {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
 
   useEffect(() => {
     setTitle("Quản lí người dùng");
@@ -83,6 +85,17 @@ const UserManager: React.FC = () => {
     return matchesSearch && matchesRole;
   });
 
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -136,6 +149,7 @@ const UserManager: React.FC = () => {
             <h2 className="text-lg font-medium text-gray-900">Danh sách người dùng</h2>
             <span className="text-sm text-gray-500">
               {filteredUsers.length} / {users.length} người dùng
+              {totalPages > 1 && ` • Trang ${currentPage} / ${totalPages}`}
             </span>
           </div>
         </div>
@@ -174,7 +188,7 @@ const UserManager: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
+                paginatedUsers.map((user) => (
                 <tr key={user.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {user.name}
@@ -228,6 +242,31 @@ const UserManager: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-4">
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+              className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            >
+              Trước
+            </button>
+            <span className="px-3 py-1 flex items-center">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+              className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal removed - using separate edit page */}
 

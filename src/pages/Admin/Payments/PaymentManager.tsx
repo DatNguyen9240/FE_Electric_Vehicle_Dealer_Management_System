@@ -69,6 +69,19 @@ const PaymentManager: React.FC = () => {
     }
   };
 
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case "SUBSCRIPTION": return "Mua gói";
+      case "CHARGE": return "Sạc xe";
+      case "IDLE_FEE": return "Phí chờ";
+      case "ADJUSTMENT": return "Điều chỉnh";
+      case "OTHER": return "Khác";
+      default: return category || "Không xác định";
+    }
+  };
+
+  
+
   // Filter payments based on search term
   const filteredPayments = payments.filter((payment: any) => {
     const matchesSearch = 
@@ -127,7 +140,7 @@ const PaymentManager: React.FC = () => {
             <tr className="text-gray-500 border-b">
               
               <th className="px-4 py-3 text-left font-semibold">Customer</th>
-              <th className="px-4 py-3 text-left font-semibold">Wallet</th>
+              <th className="px-4 py-3 text-left font-semibold">Loại giao dịch</th>
               <th className="px-4 py-3 text-left font-semibold">Method</th>
 
               <th className="px-4 py-3 text-left font-semibold">Amount</th>
@@ -154,7 +167,9 @@ const PaymentManager: React.FC = () => {
                     {payment.user_id}
                   </td>
                   <td className="px-4 py-3">
-                    {payment.wallet_id}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium`}>
+                      {getCategoryLabel(payment.category)}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     {payment.method}
