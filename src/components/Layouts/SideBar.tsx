@@ -4,16 +4,21 @@ import {
   Users,
   CreditCard,
   BatteryCharging,
-  UserCog,
+  ListChecks,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown, // Thêm icon này
+  ServerCog,
+  Building2,
+  Plug,
+  Zap,
+  BadgeDollarSign,
+  ChevronDown,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const menu = [
-  { label: "Home", icon: <Home size={20} />, to: "/admin" },
-  { label: "Staff", icon: <UserCog size={20} />, to: "/admin/staffs" },
+  { label: "Dashboard", icon: <Home size={20} />, to: "/admin" },
   { label: "Users", icon: <Users size={20} />, to: "/admin/users" },
   { label: "Payment", icon: <CreditCard size={20} />, to: "/admin/payments" },
   {
@@ -22,9 +27,9 @@ const menu = [
     to: "/admin/bookings",
   },
   {
-    label: "Tariffs",
-    icon: <ChevronsUpDown size={20} />,
-    to: "/admin/tariffs",
+    label: "Booking Management",
+    icon: <ListChecks size={20} />,
+    to: "/admin/bookingmanagement",
   },
 ];
 
@@ -32,6 +37,7 @@ const SideBar: React.FC = () => {
   const location = useLocation();
   const [collapsed, setCollapsed] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [infraOpen, setInfraOpen] = React.useState(false);
 
   // Đóng dropdown khi click ngoài
   React.useEffect(() => {
@@ -153,6 +159,52 @@ const SideBar: React.FC = () => {
             </Link>
           </li>
         ))}
+
+        {/* Infrastructure group */}
+        <li className="mt-2">
+          <button
+            onClick={() => setInfraOpen((v) => !v)}
+            className={`w-full flex items-center justify-between px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              location.pathname.startsWith("/admin/infrastructure")
+                ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white shadow-lg border-l-4 border-blue-300"
+                : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <ServerCog size={20} />
+              <span className={`${collapsed ? "hidden" : "block"}`}>Quản lí hạ tầng</span>
+            </span>
+            {!collapsed && <ChevronDown className={`${infraOpen ? "rotate-180" : ""} transition-transform`} size={16} />}
+          </button>
+          {infraOpen && !collapsed && (
+            <ul className="mt-1 ml-8 flex flex-col gap-1">
+              <li>
+                <Link to="/admin/infrastructure/stations" className={`flex items-center gap-3 px-3 py-2 rounded-lg ${location.pathname === "/admin/infrastructure/stations" ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-blue-50"}`}>
+                  <Building2 size={18} />
+                  Trạm
+                </Link>
+              </li>
+              <li>
+                <Link to="/admin/infrastructure/chargers" className={`flex items-center gap-3 px-3 py-2 rounded-lg ${location.pathname === "/admin/infrastructure/chargers" ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-blue-50"}`}>
+                  <Zap size={18} />
+                  Trụ
+                </Link>
+              </li>
+              <li>
+                <Link to="/admin/infrastructure/connectors" className={`flex items-center gap-3 px-3 py-2 rounded-lg ${location.pathname === "/admin/infrastructure/connectors" ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-blue-50"}`}>
+                  <Plug size={18} />
+                  Đầu sạc
+                </Link>
+              </li>
+              <li>
+                <Link to="/admin/infrastructure/tariffs" className={`flex items-center gap-3 px-3 py-2 rounded-lg ${location.pathname === "/admin/infrastructure/tariffs" ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-blue-50"}`}>
+                  <BadgeDollarSign size={18} />
+                  Biểu phí
+                </Link>
+              </li>
+            </ul>
+          )}
+        </li>
       </ul>
       {/* Footer */}
       <div

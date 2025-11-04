@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect } from "react";
-import { fetchWalletThunk } from "../redux/slice/Payment/PaymentThunk";
+import { fetchWalletThunk } from "../redux/slice/Payment/PaymentThunks";
 import type { RootState, AppDispatch } from "../redux/store/store";
 import { Link } from "react-router-dom";
 

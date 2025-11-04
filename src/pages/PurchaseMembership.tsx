@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "@libs/axios";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@redux/store/store"; // Đảm bảo đã export AppDispatch từ store
-import { fetchWalletThunk } from "@redux/slice/Payment/PaymentThunk";
+import { fetchWalletThunk } from "@redux/slice/Payment/PaymentThunks";
 
 const featureIcons = [
   "⚡", // Discount on electricity price
