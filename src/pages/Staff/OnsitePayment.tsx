@@ -1,15 +1,22 @@
 import React from "react";
 import api from "@libs/axios";
 
+type OnsitePaymentPayload = {
+  amount: number;
+  method: string;
+  sessionId?: string;
+  invoiceId?: string;
+};
+
 const OnsitePayment: React.FC = () => {
   const [sessionId, setSessionId] = React.useState("");
   const [invoiceId, setInvoiceId] = React.useState("");
   const [amount, setAmount] = React.useState("");
   const [method, setMethod] = React.useState("CASH");
 
-  const submit = (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const payload: any = { amount: parseFloat(amount), method };
+    const payload: OnsitePaymentPayload = { amount: parseFloat(amount || "0"), method };
     if (sessionId) payload.sessionId = sessionId;
     if (invoiceId) payload.invoiceId = invoiceId;
 
@@ -21,7 +28,7 @@ const OnsitePayment: React.FC = () => {
         setInvoiceId("");
         setAmount("");
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error(err);
         alert("Failed to record payment");
       });

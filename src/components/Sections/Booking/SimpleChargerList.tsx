@@ -21,6 +21,12 @@ interface Charger {
   connectors?: Connector[];
 }
 
+interface Booking {
+  _id?: string;
+  canStartNow?: boolean;
+  startAction?: unknown;
+}
+
 const SimpleChargerList: React.FC<{ stationId?: string }> = ({ stationId: propStationId }) => {
   const params = useParams<{ stationId: string }>();
   const stationId = propStationId || params.stationId;
@@ -30,7 +36,7 @@ const SimpleChargerList: React.FC<{ stationId?: string }> = ({ stationId: propSt
   // Không cần state modal QR nữa, luôn mở trang HTML mới
 
   // Hàm mở trang HTML mới với QR và nút Sạc ngay
-  const openQrPage = (token: string, booking: any) => {
+  const openQrPage = (token: string, booking: Booking | null) => {
     const win = window.open('', '_blank');
     if (!win) return toast.error('Không thể mở trang mới');
     const qrImg = `<img src='https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(token)}' alt='QR code' style='width:224px;height:224px;object-fit:contain;border-radius:12px;border:1px solid #eee;margin-bottom:16px;'/><div style='font-size:12px;color:#666;word-break:break-all;margin-bottom:16px;'>${token}</div>`;
@@ -39,7 +45,8 @@ const SimpleChargerList: React.FC<{ stationId?: string }> = ({ stationId: propSt
       btn = `<button id='startBtn' style='padding:12px 32px;background:#16a34a;color:#fff;font-weight:600;border:none;border-radius:8px;font-size:16px;cursor:pointer;'>Sạc ngay</button>`;
     }
     const apiUrl = import.meta.env.VITE_API_URL || window.location.origin + '/api/v1';
-    win.document.write(`<!DOCTYPE html><html><head><title>QR Connector</title></head><body style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#f9f9f9;'><div style='background:#fff;padding:32px 24px;border-radius:16px;box-shadow:0 4px 24px #0001;display:flex;flex-direction:column;align-items:center;'>${qrImg}${btn}</div><script>window.apiUrl='${apiUrl}';window.bookingId='${booking?._id || ''}';document.getElementById('startBtn')?.addEventListener('click',async()=>{try{const res=await fetch(window.apiUrl+'/sessions/start',{method:'POST',headers:{"Content-Type":"application/json"},body:JSON.stringify({bookingId:window.bookingId}),credentials:'include'});if(res.ok){alert('Bắt đầu sạc thành công!');window.close();}else{const d=await res.json();alert(d.msg||'Không thể bắt đầu sạc');}}catch(e){alert('Không thể bắt đầu sạc');}});</script></body></html>`);
+    const bookingIdForScript = booking?._id ?? '';
+    win.document.write(`<!DOCTYPE html><html><head><title>QR Connector</title></head><body style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#f9f9f9;'><div style='background:#fff;padding:32px 24px;border-radius:16px;box-shadow:0 4px 24px #0001;display:flex;flex-direction:column;align-items:center;'>${qrImg}${btn}</div><script>window.apiUrl='${apiUrl}';window.bookingId='${bookingIdForScript}';document.getElementById('startBtn')?.addEventListener('click',async()=>{try{const res=await fetch(window.apiUrl+'/sessions/start',{method:'POST',headers:{"Content-Type":"application/json"},body:JSON.stringify({bookingId:window.bookingId}),credentials:'include'});if(res.ok){alert('Bắt đầu sạc thành công!');window.close();}else{const d=await res.json();alert(d.msg||'Không thể bắt đầu sạc');}}catch(e){alert('Không thể bắt đầu sạc');}});</script></body></html>`);
     win.document.close();
   };
 
@@ -47,12 +54,22 @@ const SimpleChargerList: React.FC<{ stationId?: string }> = ({ stationId: propSt
     if (!stationId) return;
     setLoading(true);
     setError(null);
-    api.get<{ chargers?: Charger[] }>(`/stations/${stationId}/assets`)
-      .then(res => {
+    api
+      .get<{ chargers?: Charger[] }>(`/stations/${stationId}/assets`)
+      .then((res) => {
         setChargers(Array.isArray(res.data.chargers) ? res.data.chargers : []);
       })
-      .catch(err => {
-        setError(err?.response?.data?.msg || err.message || "Failed to load chargers");
+      .catch((err: unknown) => {
+        let message = "Failed to load chargers";
+        if (err instanceof Error) message = err.message;
+        else if (typeof err === "object" && err !== null) {
+          const r = err as Record<string, unknown>;
+          const response = r["response"] as Record<string, unknown> | undefined;
+          const data = response?.["data"] as Record<string, unknown> | undefined;
+          const msg = data?.["msg"] as string | undefined;
+          if (msg) message = msg;
+        }
+        setError(message);
       })
       .finally(() => setLoading(false));
   }, [stationId]);
@@ -111,10 +128,24 @@ const SimpleChargerList: React.FC<{ stationId?: string }> = ({ stationId: propSt
                               if (!connector.code) return toast.error("Connector không có mã code");
                               try {
                                 const res = await api.get(`/connectors/scan/${connector.code}`);
-                                const token = res.data?.connector?.qr?.token;
-                                openQrPage(token, res.data?.booking || {});
-                              } catch (err: any) {
-                                toast.error(err?.response?.data?.msg || err.message || "Quét thất bại");
+                                const data = res.data as Record<string, unknown> | undefined;
+                                const connectorObj = data?.["connector"] as Record<string, unknown> | undefined;
+                                const qrObj = connectorObj?.["qr"] as Record<string, unknown> | undefined;
+                                const token = (qrObj?.["token"] as string | undefined) ?? "";
+                                // pass booking object or null
+                                const bookingObj = (data?.["booking"] as Record<string, unknown> | undefined) ?? null;
+                                openQrPage(token, (bookingObj as unknown) as Booking | null);
+                              } catch (err: unknown) {
+                                let message = "Quét thất bại";
+                                if (err instanceof Error) message = err.message;
+                                else if (typeof err === "object" && err !== null) {
+                                  const r = err as Record<string, unknown>;
+                                  const response = r["response"] as Record<string, unknown> | undefined;
+                                  const data = response?.["data"] as Record<string, unknown> | undefined;
+                                  const msg = data?.["msg"] as string | undefined;
+                                  if (msg) message = msg;
+                                }
+                                toast.error(message);
                               }
                             }}
                           >

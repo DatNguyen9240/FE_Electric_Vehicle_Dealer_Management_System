@@ -31,9 +31,12 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import type { ChartData, ChartOptions } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 interface UserInfo {
   name: string;
@@ -73,12 +76,22 @@ const UserProfile: React.FC = () => {
   // analytics state
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
-  const [monthlyCosts, setMonthlyCosts] = useState<any | null>(null);
-  const [habits, setHabits] = useState<any | null>(null);
 
-  const monthNames = [
-    'Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
-  ];
+  type MonthlyCostMonth = { month: number; amount: number };
+  type MonthlyCosts = { months?: MonthlyCostMonth[]; grandTotal?: number; currency?: string } | null;
+
+  type TopStation = { name?: string; sessions?: number; energyKwh?: number; amount?: number };
+  type Habits = {
+    when?: { byHour?: number[] } | null;
+    counts?: { totalSessions?: number } | null;
+    where?: { topStations?: TopStation[] } | null;
+    power?: { buckets?: Record<string, number> } | null;
+  } | null;
+
+  const [monthlyCosts, setMonthlyCosts] = useState<MonthlyCosts>(null);
+  const [habits, setHabits] = useState<Habits>(null);
+
+  
 
   const formatCurrency = (value: number | null | undefined, currency?: string) => {
     if (value == null) return '0';
@@ -89,16 +102,26 @@ const UserProfile: React.FC = () => {
           currency,
           maximumFractionDigits: 0,
         }).format(value);
-      } catch (e) {
+      } catch {
         // fallback
       }
     }
     return Number(value).toLocaleString();
   };
 
-  const chartData = useMemo(() => {
-    const labels = (monthlyCosts?.months || []).map((m: any) => monthNames[(m.month || 1) - 1]);
-    const data = (monthlyCosts?.months || []).map((m: any) => m.amount || 0);
+  const getErrorMessage = (err: unknown) => {
+    if (err instanceof Error) return err.message;
+    try {
+      return String(err ?? '');
+    } catch {
+      return 'An error occurred';
+    }
+  };
+
+  const chartData = useMemo<ChartData<'bar', number[], string>>(() => {
+    const months = monthlyCosts?.months ?? [];
+  const labels = months.map((m) => MONTH_NAMES[(m.month || 1) - 1]);
+    const data = months.map((m) => m.amount || 0);
     return {
       labels,
       datasets: [
@@ -111,7 +134,7 @@ const UserProfile: React.FC = () => {
     };
   }, [monthlyCosts]);
 
-  const chartOptions = useMemo(() => ({
+  const chartOptions = useMemo<ChartOptions<'bar'>>(() => ({
     responsive: true,
     plugins: {
       legend: { display: false },
@@ -121,10 +144,10 @@ const UserProfile: React.FC = () => {
     scales: {
       y: { beginAtZero: true },
     },
-  }), [monthlyCosts]);
+  }), []); // static options
 
   // hourly chart for habits.when.byHour
-  const hoursChartData = useMemo(() => {
+  const hoursChartData = useMemo<ChartData<'bar', number[], string>>(() => {
     const hours = habits?.when?.byHour ?? [];
     const labels = Array.from({ length: 24 }, (_, i) => String(i));
     const data = labels.map((_, i) => hours[i] || 0);
@@ -140,7 +163,7 @@ const UserProfile: React.FC = () => {
     };
   }, [habits]);
 
-  const hoursChartOptions = useMemo(() => ({
+  const hoursChartOptions = useMemo<ChartOptions<'bar'>>(() => ({
     responsive: true,
     plugins: {
       legend: { display: false },
@@ -151,7 +174,7 @@ const UserProfile: React.FC = () => {
       x: { title: { display: true, text: 'Hour' } },
       y: { beginAtZero: true, ticks: { stepSize: 1 } },
     },
-  }), [habits]);
+  }), []);
 
   // keep editedInfo.carModel in sync with selectedVehicle
   React.useEffect(() => {
@@ -176,7 +199,7 @@ const UserProfile: React.FC = () => {
     if (userInfo?.carModel) {
       setEditedInfo((prev) => ({ ...prev, carModel: userInfo.carModel }));
     }
-  }, [vehicles, selectedVehicle, userInfo]);
+  }, [vehicles, selectedVehicle, userInfo, editedInfo.carModel]);
 
   // fetch analytics (monthly costs + charging habits)
   useEffect(() => {
@@ -193,9 +216,9 @@ const UserProfile: React.FC = () => {
         setMonthlyCosts(mcRes.data || null);
         setHabits(habitsRes.data || null);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (!mounted) return;
-        setAnalyticsError(err?.message || 'Failed to load analytics');
+        setAnalyticsError(getErrorMessage(err) || 'Failed to load analytics');
       })
       .finally(() => {
         if (!mounted) return;
@@ -236,9 +259,9 @@ const UserProfile: React.FC = () => {
         setEditedInfo(payload);
         setPreviewAvatar(payload.avatar || '/avatar/01.png');
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (!mounted) return;
-        setProfileError(err?.response?.data?.msg || err?.message || 'Failed to load profile');
+        setProfileError(getErrorMessage(err) || 'Failed to load profile');
       })
       .finally(() => {
         if (!mounted) return;
@@ -248,7 +271,7 @@ const UserProfile: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [vehicles, selectedVehicle]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -271,7 +294,7 @@ const UserProfile: React.FC = () => {
     setSavingProfile(true);
     setSaveError(null);
     try {
-      const payload: any = {
+      const payload = {
         name: editedInfo.name,
         phone: editedInfo.phone,
       };
@@ -295,8 +318,9 @@ const UserProfile: React.FC = () => {
       setIsEditing(false);
       // lightweight success feedback
       alert('Profile updated successfully');
-    } catch (err: any) {
-      const msg = err?.response?.data?.msg || err?.message || 'Failed to save profile';
+    } catch (err: unknown) {
+      // try to extract useful message
+      const msg = getErrorMessage(err) || 'Failed to save profile';
       setSaveError(msg);
       // also keep edit mode so user can retry
       console.error('[Profile save] ', err);
@@ -316,13 +340,14 @@ const UserProfile: React.FC = () => {
   const hasSpending = Boolean(monthlyCosts?.grandTotal && monthlyCosts.grandTotal > 0);
   const hasSessions = Boolean(habits?.counts?.totalSessions && habits.counts.totalSessions > 0);
   const hasTopStation = Boolean(habits?.where?.topStations && habits.where.topStations.length > 0);
-  const hasHourly = Array.isArray(habits?.when?.byHour) && habits.when.byHour.some((v: any) => v > 0);
-  const hasPowerBuckets = Boolean(habits?.power?.buckets && Object.values(habits.power.buckets).some((v: any) => v > 0));
+  const hasHourly = Array.isArray(habits?.when?.byHour) && (habits?.when?.byHour ?? []).some((v) => v > 0);
+  const hasPowerBuckets = Boolean(habits?.power?.buckets && Object.values(habits.power.buckets ?? {}).some((v) => v > 0));
+  const topStations = habits?.where?.topStations ?? [];
   const visibleInfoCards = [] as { id: string; label: string; value: React.ReactNode; bg?: string }[];
-  if (hasSessions) visibleInfoCards.push({ id: 'sessions', label: 'Total Charging Sessions', value: (habits?.counts?.totalSessions ?? 0).toLocaleString(), bg: 'bg-[#E5F4FF]' });
+  if (hasSessions) visibleInfoCards.push({ id: 'sessions', label: 'Total Charging Sessions', value: String(habits?.counts?.totalSessions ?? 0).toLocaleString?.() ?? String(habits?.counts?.totalSessions ?? 0), bg: 'bg-[#E5F4FF]' });
   if (hasEnergy() || hasTopStation) {
     // energy: prefer topStation.energyKwh if provided
-    const energyVal = habits?.where?.topStations?.[0]?.energyKwh ?? null;
+  const energyVal = habits?.where?.topStations?.[0]?.energyKwh ?? null;
     if (energyVal) visibleInfoCards.push({ id: 'energy', label: 'Energy Used', value: `${energyVal} kWh`, bg: 'bg-gradient-to-br from-green-50 to-green-100' });
   }
   if (hasSpending) visibleInfoCards.push({ id: 'spending', label: 'Total Spending', value: formatCurrency(monthlyCosts?.grandTotal ?? 0, monthlyCosts?.currency), bg: 'bg-[#F7F7BF]' });
@@ -339,6 +364,12 @@ const UserProfile: React.FC = () => {
   return (
     <>
       <div className=" px-20 py-10">
+        {loadingProfile && (
+          <div className="text-sm text-gray-500 mb-2">Loading profile...</div>
+        )}
+        {profileError && (
+          <div className="text-sm text-red-500 mb-2">{profileError}</div>
+        )}
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* Cover Image */}
         <div className="h-32 bg-[#E5F4FF]"></div>
@@ -597,9 +628,9 @@ const UserProfile: React.FC = () => {
                  <p className="text-sm text-red-500">Could not load monthly breakdown</p>
                ) : monthlyCosts?.months ? (
                  <div className="grid grid-cols-3 gap-2 mt-3">
-                   {monthlyCosts.months.map((m: any) => (
+                    {monthlyCosts.months.map((m: MonthlyCostMonth) => (
                      <div key={m.month} className="px-3 py-1.5 bg-gray-50 rounded min-h-[40px] flex items-center justify-between">
-                       <div className="text-sm text-gray-600">{monthNames[(m.month || 1) - 1]}</div>
+                       <div className="text-sm text-gray-600">{MONTH_NAMES[(m.month || 1) - 1]}</div>
                        <div className="text-sm font-medium text-gray-800">{m.amount ? formatCurrency(m.amount, monthlyCosts.currency) : '-'}</div>
                      </div>
                    ))}
@@ -612,7 +643,7 @@ const UserProfile: React.FC = () => {
               <div className="mt-6 p-4 bg-white rounded-lg shadow">
                 <div className="text-sm text-gray-600 mb-3">Monthly Spending</div>
                 <div className="h-72">
-                  <Bar data={chartData as any} options={{ ...chartOptions, maintainAspectRatio: false } as any} />
+                  <Bar data={chartData} options={{ ...chartOptions, maintainAspectRatio: false }} />
                 </div>
               </div>
             )}
@@ -625,14 +656,14 @@ const UserProfile: React.FC = () => {
                   // smaller, denser Top Station card: less padding, smaller text, constrained width
                   <div className="p-2 bg-white rounded-lg shadow min-h-0 self-start w-full md:w-auto md:max-w-[280px] flex flex-col items-center text-center gap-1 justify-start">
                     <p className="text-xs text-gray-600 mb-0">Top Station (last period)</p>
-                    {habits?.where?.topStations?.length > 0 ? (
+                    {topStations.length > 0 ? (
                       (() => {
-                        const s = habits.where.topStations[0];
+                        const s = topStations[0];
                         return (
                           <div className="flex flex-col gap-0 items-center">
-                            <div className="text-sm font-medium truncate">{s.name}</div>
-                            <div className="text-xs text-gray-600">Sessions: {s.sessions} · {s.energyKwh} kWh</div>
-                            <div className="text-sm font-semibold text-[#B47700]">Amount: {formatCurrency(s.amount, monthlyCosts?.currency)}</div>
+                            <div className="text-sm font-medium truncate">{s?.name ?? 'Unknown'}</div>
+                            <div className="text-xs text-gray-600">Sessions: {s?.sessions ?? 0} · {s?.energyKwh ?? 0} kWh</div>
+                            <div className="text-sm font-semibold text-[#B47700]">Amount: {formatCurrency(s?.amount ?? 0, monthlyCosts?.currency)}</div>
                           </div>
                         );
                       })()
@@ -646,8 +677,8 @@ const UserProfile: React.FC = () => {
                   {hasHourly && (
                     <div>
                       <div className="mb-3 text-sm text-gray-600">Hourly Charging Distribution</div>
-                      <div className="h-64">
-                        <Bar data={hoursChartData as any} options={{ ...hoursChartOptions, maintainAspectRatio: false } as any} />
+                        <div className="h-64">
+                        <Bar data={hoursChartData} options={{ ...hoursChartOptions, maintainAspectRatio: false }} />
                       </div>
                     </div>
                   )}
@@ -656,7 +687,7 @@ const UserProfile: React.FC = () => {
                     <div className="mt-4">
                       <div className="text-sm text-gray-600 mb-2">Power buckets</div>
                       <div className="flex gap-2 flex-wrap">
-                        {Object.entries(habits.power.buckets).map(([k, v]: any) => (
+                        {Object.entries(habits?.power?.buckets ?? {}).map(([k, v]: [string, number]) => (
                           <div key={k} className="px-3 py-1 rounded bg-gray-100 text-sm">
                             {k}: <span className="font-medium">{v}</span>
                           </div>

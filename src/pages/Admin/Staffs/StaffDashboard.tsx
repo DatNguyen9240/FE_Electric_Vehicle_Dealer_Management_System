@@ -1,6 +1,6 @@
 import React from "react";
 import { useTitle } from "@contexts";
-import { Users, Calendar, Activity, PieChart } from "lucide-react";
+import { Users, Calendar, Activity } from "lucide-react";
 
 const StatCard: React.FC<{ title: string; value: string; icon?: React.ReactNode }> = ({ title, value, icon }) => (
   <div className="bg-white rounded-lg shadow p-4 flex items-center gap-4">

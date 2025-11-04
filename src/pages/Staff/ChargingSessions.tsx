@@ -1,9 +1,22 @@
 import React from "react";
 import api from "@libs/axios";
 import { Loader2, Play, Square, ChevronLeft, ChevronRight } from "lucide-react";
-import { useUi } from "../../contexts/UiContext";
+import { useUi } from "../../contexts/uiContextCore";
 
-type Session = any;
+type Session = {
+  id?: string;
+  _id?: string;
+  user?: { name?: string; fullName?: string } | null;
+  customerName?: string | null;
+  bookingRef?: string | null;
+  bookingId?: string | null;
+  booking?: { id?: string } | null;
+  station?: { name?: string } | null;
+  stationName?: string | null;
+  connector?: { code?: string; name?: string } | null;
+  startedAt?: string | null;
+  status?: string | null;
+};
 
 const ChargingSessions: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
@@ -14,63 +27,69 @@ const ChargingSessions: React.FC = () => {
 
   const { showToast, confirm } = useUi();
 
-  const fetch = React.useCallback((p: number = page) => {
+  const fetch = React.useCallback((p: number) => {
     setLoading(true);
     api
       .get("/staff/sessions", { params: { page: p, limit } })
       .then((res) => {
-        const d = res.data as any;
-        if (d?.pagination) {
-          setPagination({
-            page: d.pagination.page || p,
-            limit: d.pagination.limit || limit,
-            total: d.pagination.total || 0,
-            pages: d.pagination.pages || 0,
-          });
+        const d = res.data as unknown;
+        if (typeof d === "object" && d && !Array.isArray(d)) {
+          const rec = d as Record<string, unknown>;
+          const pag = rec["pagination"] as Record<string, unknown> | undefined;
+          if (pag) {
+            setPagination({
+              page: (pag["page"] as number) || p,
+              limit: (pag["limit"] as number) || limit,
+              total: (pag["total"] as number) || 0,
+              pages: (pag["pages"] as number) || 0,
+            });
+          }
+
+          const tryArrays = ["items", "data", "sessions"] as const;
+          for (const key of tryArrays) {
+            const val = rec[key];
+            if (Array.isArray(val)) return setSessions(val as Session[]);
+          }
         }
-        if (Array.isArray(d)) return setSessions(d);
-        if (Array.isArray(d?.items)) return setSessions(d.items);
-        if (Array.isArray(d?.sessions)) return setSessions(d.sessions);
-        if (Array.isArray(d?.data)) return setSessions(d.data);
+        if (Array.isArray(d)) return setSessions(d as Session[]);
         setSessions([]);
       })
-      .catch(console.error)
+      .catch((err: unknown) => {
+        console.error(err);
+        setSessions([]);
+      })
       .finally(() => setLoading(false));
-  }, [limit, page]);
-
-  React.useEffect(() => {
-    fetch();
-  }, [fetch]);
+  }, [limit]);
 
   React.useEffect(() => {
     fetch(page);
-  }, [page]);
+  }, [fetch, page]);
 
-  const stopSession = async (id: string) => {
+  const stopSession = async (id?: string) => {
+    if (!id) return showToast("Missing session id", "error");
     const ok = await confirm("Stop this session?");
     if (!ok) return;
     api
       .post(`/sessions/${id}/stop`)
       .then(() => {
         showToast("Session stopped", "success");
-        fetch();
+        fetch(page);
       })
       .catch(() => showToast("Failed to stop session", "error"));
   };
 
   const startSession = async (bookingId?: string) => {
-    // showToast available from top-level useUi
     const payload = { bookingId, paymentMethod: "ONSITE" };
     api
       .post(`/sessions/start`, payload)
       .then(() => {
         showToast("Session started", "success");
-        fetch();
+        fetch(page);
       })
       .catch(() => showToast("Failed to start session", "error"));
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string | null) => {
     const base = "px-2 py-1 rounded-full text-xs font-medium";
     switch (status) {
       case "ACTIVE":
@@ -123,7 +142,7 @@ const ChargingSessions: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              sessions.map((s: any, i: number) => (
+              sessions.map((s: Session, i: number) => (
                 <tr
                   key={s.id ?? s._id ?? i}
                   className="border-t hover:bg-gray-50 transition-colors"
@@ -149,7 +168,7 @@ const ChargingSessions: React.FC = () => {
                       </button>
                     ) : (s.booking?.id || s.bookingId) ? (
                       <button
-                        onClick={() => startSession(s.booking?.id ?? s.bookingId)}
+                        onClick={() => startSession(s.booking?.id ?? s.bookingId ?? undefined)}
                         className="inline-flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-xs transition"
                       >
                         <Play size={14} />

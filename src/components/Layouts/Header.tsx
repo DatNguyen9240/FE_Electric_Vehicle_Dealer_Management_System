@@ -74,7 +74,10 @@ export default function Header() {
   const vehicleToEdit = vehicles.find((v) => v.id === editingVehicle) ?? null;
 
   // Compute membership plan code for display (PRO, BASIC, FREE)
-  const planCode: string = (cookieUser && (cookieUser as any).membership && (cookieUser as any).membership.plan_code) || 'FREE';
+  const planCode: string = (
+    (cookieUser as unknown as { membership?: { plan_code?: string } })?.membership?.plan_code ||
+    "FREE"
+  );
 
   const renderPlanBadge = (code: string) => {
     const c = (code || 'FREE').toUpperCase();
@@ -99,15 +102,19 @@ export default function Header() {
   const markAllRead = async () => {
     try {
       await api.post("/notifications/read-all");
-      setNotifications(n => n.map(x => ({ ...x, isRead: true, readAt: x.readAt || new Date().toISOString() })));
-    } catch {}
+      setNotifications((n) => n.map((x) => ({ ...x, isRead: true, readAt: x.readAt || new Date().toISOString() })));
+    } catch (e) {
+      console.error("Failed to mark all notifications as read", e);
+    }
   };
   // Mark one as read
   const markOneRead = async (id: string) => {
     try {
       await api.post(`/notifications/${id}/read`);
-      setNotifications(n => n.map(x => x.id === id ? { ...x, isRead: true, readAt: x.readAt || new Date().toISOString() } : x));
-    } catch {}
+      setNotifications((n) => n.map((x) => (x.id === id ? { ...x, isRead: true, readAt: x.readAt || new Date().toISOString() } : x)));
+    } catch (e) {
+      console.error(`Failed to mark notification ${id} as read`, e);
+    }
   };
 
   useEffect(() => {
@@ -116,13 +123,17 @@ export default function Header() {
       try {
         const parsedUser = JSON.parse(decodeURIComponent(userStr));
         // Also attempt to read membership cookie if backend stored it separately
-        const membershipStr = getCookie('membership');
+        const membershipStr = getCookie("membership");
+        let userWithMembership: unknown = parsedUser;
         if (membershipStr) {
           try {
-            (parsedUser as any).membership = JSON.parse(decodeURIComponent(membershipStr));
-          } catch {}
+            const parsedMembership = JSON.parse(decodeURIComponent(membershipStr));
+            userWithMembership = { ...(parsedUser as Record<string, unknown>), membership: parsedMembership };
+          } catch (e) {
+            console.warn("Failed to parse membership cookie", e);
+          }
         }
-        setCookieUser(parsedUser);
+        setCookieUser(userWithMembership as User);
         dispatch(fetchWalletThunk());
       } catch {
         setCookieUser(null);

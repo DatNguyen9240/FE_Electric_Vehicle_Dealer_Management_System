@@ -1,8 +1,20 @@
 import React from "react";
 import api from "@libs/axios";
 
+type Incident = {
+  id?: string;
+  _id?: string;
+  station?: { id?: string; name?: string } | null;
+  stationId?: string | null;
+  description?: string | null;
+  level?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
 const Incidents: React.FC = () => {
-  const [list, setList] = React.useState<any[]>([]);
+  const [list, setList] = React.useState<Incident[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [page, setPage] = React.useState<number>(1);
   const [limit] = React.useState<number>(20);
@@ -10,39 +22,43 @@ const Incidents: React.FC = () => {
 
   const [form, setForm] = React.useState({ stationId: "", description: "", level: "LOW" });
 
-  const fetch = (p: number = page) => {
+  const fetch = React.useCallback((p: number = page) => {
     setLoading(true);
     api
       .get("/staff/incidents", { params: { page: p, limit } })
       .then((res) => {
-        const d = res.data as any;
-        // set pagination if present
-        if (d?.pagination) {
-          setPagination({
-            page: d.pagination.page || p,
-            limit: d.pagination.limit || limit,
-            total: d.pagination.total || 0,
-            pages: d.pagination.pages || 0,
-          });
+        const d = res.data as unknown;
+        if (typeof d === "object" && d && !Array.isArray(d)) {
+          const rec = d as Record<string, unknown>;
+          const pag = rec["pagination"] as Record<string, unknown> | undefined;
+          if (pag) {
+            setPagination({
+              page: (pag["page"] as number) || p,
+              limit: (pag["limit"] as number) || limit,
+              total: (pag["total"] as number) || 0,
+              pages: (pag["pages"] as number) || 0,
+            });
+          }
+
+          const tryArrays = ["items", "data", "incidents"] as const;
+          for (const key of tryArrays) {
+            const val = rec[key];
+            if (Array.isArray(val)) return setList(val as Incident[]);
+          }
         }
-        if (Array.isArray(d)) return setList(d);
-        if (Array.isArray(d?.items)) return setList(d.items);
-        if (Array.isArray(d?.data)) return setList(d.data);
-        if (Array.isArray(d?.incidents)) return setList(d.incidents);
-        // fallback
+        if (Array.isArray(d)) return setList(d as Incident[]);
         setList([]);
       })
-      .catch(console.error)
+      .catch((err: unknown) => {
+        console.error(err);
+        setList([]);
+      })
       .finally(() => setLoading(false));
-  };
-
-  React.useEffect(() => fetch(), []);
+  }, [limit, page]);
 
   React.useEffect(() => {
-    // refetch when page changes
     fetch(page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [fetch, page]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,9 +68,9 @@ const Incidents: React.FC = () => {
       .then(() => {
         alert("Incident reported");
         setForm({ stationId: "", description: "", level: "LOW" });
-        fetch();
+        fetch(page);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error(err);
         alert("Failed to report");
       });
@@ -63,8 +79,8 @@ const Incidents: React.FC = () => {
   const updateStatus = (id: string, status: string) => {
     api
       .patch(`/staff/incidents/${id}/status`, { status })
-      .then(() => fetch())
-      .catch((err) => {
+      .then(() => fetch(page))
+      .catch((err: unknown) => {
         console.error(err);
         alert("Failed to update");
       });
@@ -108,7 +124,7 @@ const Incidents: React.FC = () => {
                 </div>
               ) : (
                 <ul className="space-y-2 mt-2">
-                  {list.map(it => (
+                  {list.map((it: Incident) => (
                     <li key={it.id ?? it._id} className="p-2 border rounded flex justify-between items-start">
                       <div>
                         <div className="font-medium">{it.station?.id ?? it.stationId} — {it.level}</div>
@@ -116,8 +132,8 @@ const Incidents: React.FC = () => {
                         <div className="text-xs text-gray-400">{it.status}</div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <button className="text-sm bg-yellow-400 px-2 py-1 rounded" onClick={() => updateStatus(it.id ?? it._id, 'IN_PROGRESS')}>In Progress</button>
-                        <button className="text-sm bg-green-500 text-white px-2 py-1 rounded" onClick={() => updateStatus(it.id ?? it._id, 'RESOLVED')}>Resolve</button>
+                        <button className="text-sm bg-yellow-400 px-2 py-1 rounded" onClick={() => updateStatus(it.id ?? it._id ?? "", 'IN_PROGRESS')}>In Progress</button>
+                        <button className="text-sm bg-green-500 text-white px-2 py-1 rounded" onClick={() => updateStatus(it.id ?? it._id ?? "", 'RESOLVED')}>Resolve</button>
                       </div>
                     </li>
                   ))}

@@ -7,10 +7,7 @@ type ConfirmState = {
   resolve: (v: boolean) => void;
 } | null;
 
-const UiContext = React.createContext<{
-  showToast: (message: string, type?: Toast["type"]) => void;
-  confirm: (message: string) => Promise<boolean>;
-} | null>(null);
+import { UiContext } from "./uiContextCore";
 
 export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
@@ -88,10 +85,4 @@ export const UiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   );
 };
 
-export const useUi = () => {
-  const ctx = React.useContext(UiContext);
-  if (!ctx) throw new Error("useUi must be used within UiProvider");
-  return ctx;
-};
 
-export default UiContext;

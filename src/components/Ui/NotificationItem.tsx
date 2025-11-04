@@ -6,7 +6,7 @@ export interface Notification {
   title: string;
   body?: string;
   type: string;
-  data?: any;
+  data?: unknown;
   readAt?: string | null;
   createdAt?: string;
   updatedAt?: string;

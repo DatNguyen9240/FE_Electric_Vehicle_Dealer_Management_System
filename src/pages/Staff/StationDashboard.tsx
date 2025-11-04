@@ -4,7 +4,35 @@ import { Loader2, Zap, Plug, Gauge, Power, Building2 } from "lucide-react";
 
 const StationDashboard: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
-  const [data, setData] = React.useState<any>(null);
+  type Connector = {
+    id?: string;
+    code?: string;
+    type?: string;
+    status?: string;
+    powerKw?: number | string;
+  };
+
+  type Charger = {
+    id?: string;
+    name?: string;
+    code?: string;
+    status?: string;
+    powerKw?: number | string;
+  };
+
+  type StationOverview = {
+    station?: { id?: string; name?: string; status?: string } | null;
+    metrics?: {
+      statusCounts?: Record<string, number>;
+      powerKw?: { total?: number; charging?: number; available?: number } | null;
+      lastUpdatedAt?: string | null;
+      totalConnectors?: number | null;
+    } | null;
+    connectors?: Connector[];
+    chargers?: Charger[];
+  };
+
+  const [data, setData] = React.useState<{ stations?: StationOverview[] } | null>(null);
   const [filterStationId, setFilterStationId] = React.useState<string>("ALL");
 
   React.useEffect(() => {
@@ -30,7 +58,7 @@ const StationDashboard: React.FC = () => {
       </div>
     );
 
-  const stationsArr: any[] = Array.isArray(data?.stations) ? data.stations : [];
+  const stationsArr: StationOverview[] = Array.isArray(data?.stations) ? (data.stations as StationOverview[]) : [];
 
   const aggregated = stationsArr.reduce(
     (acc, cur) => {
@@ -70,7 +98,7 @@ const StationDashboard: React.FC = () => {
       ? Math.round((aggregated.power.charging / aggregated.power.total) * 100)
       : 0;
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string | null) => {
     const base = "px-2 py-1 rounded-full text-xs font-medium";
     switch (status) {
       case "ONLINE":
@@ -80,7 +108,7 @@ const StationDashboard: React.FC = () => {
       case "MAINTENANCE":
         return <span className={`${base} bg-yellow-100 text-yellow-700`}>Maintenance</span>;
       default:
-        return <span className={`${base} bg-gray-100 text-gray-700`}>{status || "Unknown"}</span>;
+        return <span className={`${base} bg-gray-100 text-gray-700`}>{status ?? "Unknown"}</span>;
     }
   };
 
@@ -99,9 +127,9 @@ const StationDashboard: React.FC = () => {
             className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500"
           >
             <option value="ALL">All Stations</option>
-            {stationsArr.map((s) => (
-              <option key={s.station.id} value={s.station.id}>
-                {s.station.name}
+            {stationsArr.map((s: StationOverview, idx: number) => (
+              <option key={s.station?.id ?? idx} value={s.station?.id ?? ""}>
+                {s.station?.name ?? `Station ${idx + 1}`}
               </option>
             ))}
           </select>
@@ -174,15 +202,15 @@ const StationDashboard: React.FC = () => {
 
       {/* Per Station Details */}
       <div className="space-y-5">
-        {filteredStations.map((s) => (
+          {filteredStations.map((s: StationOverview, idx: number) => (
           <div
-            key={s.station.id}
+            key={s.station?.id ?? idx}
             className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition"
           >
             <div className="flex justify-between items-start mb-4">
               <div>
                 <div className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  {s.station.name} {getStatusBadge(s.station.status)}
+                  {s.station?.name ?? "Unknown"} {getStatusBadge(s.station?.status)}
                 </div>
                 <div className="text-sm text-gray-500">
                   Last updated: {s.metrics?.lastUpdatedAt ?? "N/A"}
@@ -201,11 +229,11 @@ const StationDashboard: React.FC = () => {
                 <div className="font-medium mb-2 flex items-center gap-1 text-gray-700">
                   <Plug size={16} /> Connectors
                 </div>
-                {s.connectors.length === 0 ? (
+                {(s.connectors ?? []).length === 0 ? (
                   <div className="text-sm text-gray-500">No connectors</div>
                 ) : (
                   <ul className="text-sm space-y-2">
-                    {s.connectors.map((c: any) => (
+                    {(s.connectors ?? []).map((c: Connector) => (
                       <li
                         key={c.id}
                         className="flex justify-between bg-gray-50 p-2 rounded-lg border border-gray-100 hover:bg-gray-100 transition"
@@ -228,11 +256,11 @@ const StationDashboard: React.FC = () => {
                 <div className="font-medium mb-2 flex items-center gap-1 text-gray-700">
                   <Power size={16} /> Chargers
                 </div>
-                {s.chargers.length === 0 ? (
+                {(s.chargers ?? []).length === 0 ? (
                   <div className="text-sm text-gray-500">No chargers</div>
                 ) : (
                   <ul className="text-sm space-y-2">
-                    {s.chargers.map((ch: any) => (
+                    {(s.chargers ?? []).map((ch: Charger) => (
                       <li
                         key={ch.id}
                         className="bg-gray-50 p-2 rounded-lg border border-gray-100 hover:bg-gray-100 transition"

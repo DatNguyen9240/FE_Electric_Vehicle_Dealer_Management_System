@@ -1,54 +1,88 @@
 import React from "react";
 import api from "@libs/axios";
-import { useUi } from "../../contexts/UiContext";
+import { useUi } from "../../contexts/uiContextCore";
+
+type Booking = {
+  id?: string;
+  _id?: string;
+  reference?: string;
+  user?: { name?: string; fullName?: string };
+  customerName?: string;
+  vehicle?: { make?: string; model?: string } | null;
+  vehicleId?: string;
+  station?: { name?: string } | null;
+  stationName?: string;
+  connector?: { code?: string; type?: string } | null;
+  slotStart?: string | null;
+  slotEnd?: string | null;
+  booking?: { slotStart?: string; slotEnd?: string; id?: string } | null;
+  session?: { id?: string; status?: string } | null;
+  sessionId?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 const Bookings: React.FC = () => {
-  const [list, setList] = React.useState<any[]>([]);
+  const [list, setList] = React.useState<Booking[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [page, setPage] = React.useState<number>(1);
   const [limit] = React.useState<number>(20);
   const [pagination, setPagination] = React.useState({ page: 1, limit: 20, total: 0, pages: 0 });
-  const [selected, setSelected] = React.useState<any | null>(null);
+  const [selected, setSelected] = React.useState<Booking | null>(null);
 
   const { showToast, confirm } = useUi();
 
-  const fetch = (p: number = page) => {
+  const fetch = React.useCallback((p: number) => {
     setLoading(true);
     api
       .get("/staff/bookings", { params: { page: p, limit } })
       .then((res) => {
-        const d = res.data as any;
-        if (d?.pagination) {
-          setPagination({
-            page: d.pagination.page || p,
-            limit: d.pagination.limit || limit,
-            total: d.pagination.total || 0,
-            pages: d.pagination.pages || 0,
-          });
+        const d = res.data as unknown;
+        if (typeof d === "object" && d && !Array.isArray(d)) {
+          const rec = d as Record<string, unknown>;
+          const pag = rec["pagination"] as Record<string, unknown> | undefined;
+          if (pag) {
+            setPagination({
+              page: (pag["page"] as number) || p,
+              limit: (pag["limit"] as number) || limit,
+              total: (pag["total"] as number) || 0,
+              pages: (pag["pages"] as number) || 0,
+            });
+          }
+
+          const tryArrays = ["items", "data", "bookings"] as const;
+          for (const key of tryArrays) {
+            const val = rec[key];
+            if (Array.isArray(val)) return setList(val as Booking[]);
+          }
         }
-        if (Array.isArray(d)) return setList(d);
-        if (Array.isArray(d?.items)) return setList(d.items);
-        if (Array.isArray(d?.data)) return setList(d.data);
-        if (Array.isArray(d?.bookings)) return setList(d.bookings);
+        if (Array.isArray(d)) return setList(d as Booking[]);
         setList([]);
       })
-      .catch(console.error)
+      .catch((err: unknown) => {
+        // keep simple: log and toast
+        console.error(err);
+        showToast("Failed to load bookings", "error");
+      })
       .finally(() => setLoading(false));
-  };
+  }, [limit, showToast]);
 
-  React.useEffect(() => fetch(), []);
-  React.useEffect(() => {
-    fetch(page);
-  }, [page]);
+  React.useEffect(() => { fetch(1); }, [fetch]);
+  React.useEffect(() => { fetch(page); }, [page, fetch]);
 
-  const startFromBooking = async (bookingId: string) => {
+  const startFromBooking = async (bookingId?: string) => {
+    if (!bookingId) {
+      showToast("Missing booking id", "error");
+      return;
+    }
     const ok = await confirm("Start session from this booking?");
     if (!ok) return;
     api
       .post(`/sessions/start`, { bookingId, paymentMethod: "ONSITE" })
       .then(() => {
         showToast("Session started", "success");
-        fetch();
+        fetch(page);
       })
       .catch(() => showToast("Failed to start session", "error"));
   };
@@ -109,7 +143,7 @@ const Bookings: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {list.map((b: any, i) => (
+                {list.map((b: Booking, i) => (
                   <tr
                     key={b.id ?? i}
                     className="border-t hover:bg-gray-50 dark:hover:bg-gray-800 transition"
@@ -125,7 +159,7 @@ const Bookings: React.FC = () => {
                     </td>
                     <td className="p-3">{b.station?.name ?? b.stationName ?? "-"}</td>
                     <td className="p-3">
-                      {b.slotStart
+                      {b.slotStart && b.slotEnd
                         ? `${new Date(b.slotStart).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
