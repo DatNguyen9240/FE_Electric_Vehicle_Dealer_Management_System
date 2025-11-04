@@ -9,9 +9,7 @@ import {
 } from "../../../redux/slice/Tariff/TariffThunks";
 import { clearError } from "../../../redux/slice/Tariff/TariffSlice";
 import type { RootState, AppDispatch } from "../../../redux/store/store";
-import type { Tariff } from "../../../redux/slice/Tariff/TariffSlice";
 import { useTitle } from "../../../contexts";
-import api from "../../../libs/axios";
 
 interface Station {
   _id: string;
@@ -30,6 +28,11 @@ const TariffManager: React.FC = () => {
   const [filterActive, setFilterActive] = useState<string>("all");
   const [stations, setStations] = useState<Station[]>([]);
 
+  const { setTitle } = useTitle();
+
+  useEffect(() => {
+    setTitle("Tariff Management");
+  }, [setTitle]);
   useEffect(() => {
     setTitle("Quản lý biểu giá sạc");
     dispatch(fetchTariffs());
