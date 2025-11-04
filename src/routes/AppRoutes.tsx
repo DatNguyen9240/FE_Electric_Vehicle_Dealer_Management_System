@@ -35,6 +35,10 @@ const StaffManager = lazy(() => import("@pages/Admin/Staffs/StaffManager"));
 const UserManager = lazy(() => import("@pages/Admin/Users/UserManager"));
 const AdminTariffs = lazy(() => import("@pages/Admin/Tariffs/Tariffs"));
 
+const StaffDashboard = lazy(() => import("@pages/Admin/Staffs/StaffDashboard"));
+const StaffLayout = lazy(() => import("@layouts/StaffLayout"));
+
+
 const PaymentManager = lazy(
   () => import("@pages/Admin/Payments/PaymentManager")
 );
@@ -168,6 +172,7 @@ export default function AppRoutes() {
               "Loading staff management..."
             )}
           />
+        
           <Route
             path="/admin/users"
             element={createLazyRoute(UserManager, "Loading user management...")}
@@ -214,6 +219,10 @@ export default function AppRoutes() {
               "Loading booking details..."
             )}
           />
+        </Route>
+        <Route element={<StaffLayout />}>
+          <Route path="/staff" element={createLazyRoute(StaffDashboard, "Loading staff dashboard...")} />
+          <Route path="/staff/manage" element={createLazyRoute(StaffManager, "Loading staff management...")} />
         </Route>
       </Routes>
     </Suspense>
