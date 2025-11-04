@@ -71,6 +71,21 @@ export const deleteTariff = createAsyncThunk(
   }
 );
 
+export const getTariff = createAsyncThunk(
+  "tariff/getTariff",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/tariffs/${id}`);
+      return res.data;
+    } catch (error) {
+      const err = error as AxiosError<{ msg?: string }>;
+      return rejectWithValue(
+        err.response?.data?.msg || "Lấy thông tin biểu giá thất bại"
+      );
+    }
+  }
+);
+
 export const getTariffEffective = createAsyncThunk(
   "tariff/getTariffEffective",
   async (

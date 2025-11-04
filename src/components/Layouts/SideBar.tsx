@@ -44,6 +44,7 @@ const SideBar: React.FC<SideBarProps> = ({
   const collapsed = typeof collapsedProp === "boolean" ? collapsedProp : internalCollapsed;
 
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [infraOpen, setInfraOpen] = React.useState(false);
 
   // Đóng dropdown khi click ngoài
   React.useEffect(() => {

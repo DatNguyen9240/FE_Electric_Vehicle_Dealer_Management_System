@@ -1,180 +1,123 @@
 import React from "react";
+import api from "../../../libs/axios";
 
-const transactions = [
-  {
-    status: "Completed",
-    statusColor: "bg-green-100 text-green-600",
-    card: "Visa card **** 4831",
-    type: "Card payment",
-    amount: "$182.94",
-    date: "Jan 17, 2022",
-    charger: "Charger #1",
-  },
-  {
-    status: "Completed",
-    statusColor: "bg-green-100 text-green-600",
-    card: "Mastercard **** 6442",
-    type: "Card payment",
-    amount: "$99.00",
-    date: "Jan 17, 2022",
-    charger: "Charger #2",
-  },
-  {
-    status: "Pending",
-    statusColor: "bg-yellow-100 text-yellow-600",
-    card: "Account **** 882",
-    type: "Bank payment",
-    amount: "$249.94",
-    date: "Jan 17, 2022",
-    charger: "Charger #3",
-  },
-  {
-    status: "Canceled",
-    statusColor: "bg-red-100 text-red-600",
-    card: "Amex card **** 5666",
-    type: "Card payment",
-    amount: "$199.24",
-    date: "Jan 17, 2022",
-    charger: "Charger #4",
-  },
-  {
-    status: "Canceled",
-    statusColor: "bg-red-100 text-red-600",
-    card: "Amex card **** 5666",
-    type: "Card payment",
-    amount: "$199.24",
-    date: "Jan 17, 2022",
-    charger: "Charger #4",
-  },
-];
+type TopStation = {
+  stationId: string | null;
+  name: string | null;
+  lat: number | null;
+  lng: number | null;
+  sessions: number;
+  revenue: number;
+  energyKwh: number;
+};
 
-const customers = [
-  {
-    name: "Jenny Wilson",
-    email: "w.lawson@example.com",
-    amount: "$11,234",
-    charger: "Charger #1",
-    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-  },
-  {
-    name: "Devon Lane",
-    email: "dat.roberts@example.com",
-    amount: "$11,159",
-    charger: "Charger #2",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-  },
-  {
-    name: "Jane Cooper",
-    email: "jgraham@example.com",
-    amount: "$10,483",
-    charger: "Charger #3",
-    avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-  },
-  {
-    name: "Dianne Russell",
-    email: "curtis.d@example.com",
-    amount: "$9,084",
-    charger: "Charger #4",
-    avatar: "https://randomuser.me/api/portraits/women/65.jpg",
-  },
-  {
-    name: "Dianne Russell",
-    email: "curtis.d@example.com",
-    amount: "$9,084",
-    charger: "Charger #4",
-    avatar: "https://randomuser.me/api/portraits/women/65.jpg",
-  },
-];
+type OverviewResponse = {
+  revenue: { currency: string };
+  charging: { topStationsLast30Days: TopStation[] };
+};
 
-const TableSection: React.FC = () => (
-  <div className="flex gap-6 mt-8">
-    {/* Transactions Table */}
-    <div className="bg-white rounded-xl border p-6 flex-1 min-w-0">
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <div className="font-semibold text-lg">Transactions</div>
-          <div className="text-xs text-gray-400">
-            Lorem ipsum dolor sit amet, consectetur adipis.
-          </div>
-        </div>
-        <a
-          href="#"
-          className="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1"
-        >
-          See All Transactions <span>&#8250;</span>
-        </a>
+const TableSection: React.FC = () => {
+  const [loading, setLoading] = React.useState(false);
+  const [rows, setRows] = React.useState<TopStation[]>([]);
+  const [currency, setCurrency] = React.useState("VND");
+  const [connectorCounts, setConnectorCounts] = React.useState<Record<string, number>>({});
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await api.get<OverviewResponse>("/analytics/admin/overview");
+        if (!mounted) return;
+        const list = res.data.charging.topStationsLast30Days || [];
+        setRows(list);
+        setCurrency(res.data.revenue.currency || "VND");
+
+        // Fetch connectors count per station using chargers endpoint with large limit
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          list
+            .filter((s) => !!s.stationId)
+            .map(async (s) => {
+              try {
+                const r = await api.get(`/chargers`, {
+                  params: { stationId: s.stationId, limit: 1000 },
+                });
+                const chargers = Array.isArray(r.data) ? r.data : [];
+                const sum = chargers.reduce((acc: number, ch: any) => acc + (Array.isArray(ch.connectors) ? ch.connectors.length : 0), 0);
+                counts[String(s.stationId)] = sum;
+              } catch {
+                counts[String(s.stationId)] = 0;
+              }
+            })
+        );
+        if (mounted) setConnectorCounts(counts);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const formatCurrency = (amount: number) => {
+    if (currency === "VND") return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
+    } catch {
+      return String(amount);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border p-6 mt-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="font-semibold text-lg">Bảng trạm trong 30 ngày</div>
       </div>
-      <div>
-        {transactions.map((t, i) => (
-          <div
-            key={i}
-            className="flex items-center py-3 border-b last:border-b-0 text-sm"
-          >
-            {/* Status */}
-            <div className="w-32 flex items-center gap-2">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  t.statusColor.split(" ")[0]
-                }`}
-              ></span>
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${t.statusColor}`}
-              >
-                {t.status}
-              </span>
-            </div>
-            {/* Card */}
-            <div className="flex-1">
-              <div className="font-medium">{t.card}</div>
-              <div className="text-xs text-gray-400">{t.type}</div>
-            </div>
-            {/* Amount */}
-            <div className="w-24 font-semibold">{t.amount}</div>
-            {/* Date */}
-            <div className="w-28 text-gray-500">{t.date}</div>
-            {/* Charger */}
-            <div className="w-28 text-gray-500">{t.charger}</div>
-            {/* More */}
-            <div className="w-8 text-gray-400 text-xl text-center">...</div>
-          </div>
-        ))}
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="text-left text-gray-500">
+              <th className="py-3 px-4">Trạm</th>
+              <th className="py-3 px-4">Địa điểm</th>
+              <th className="py-3 px-4">Số Connectors</th>
+              <th className="py-3 px-4">Sessions </th>
+              <th className="py-3 px-4">kWh </th>
+              <th className="py-3 px-4">Doanh thu</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td className="py-6 px-4 text-gray-400" colSpan={5}>Đang tải...</td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td className="py-6 px-4 text-gray-400" colSpan={5}>Không có dữ liệu</td>
+              </tr>
+            ) : (
+              rows.map((s, idx) => {
+                const key = s.stationId ? String(s.stationId) : `row-${idx}`;
+                const location = s.lat != null && s.lng != null ? `${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}` : "—";
+                const connectors = connectorCounts[key] ?? 0;
+                return (
+                  <tr key={key} className="border-t">
+                    <td className="py-3 px-4 font-medium text-gray-900">{s.name || `Station ${idx + 1}`}</td>
+                    <td className="py-3 px-4">{location}</td>
+                    <td className="py-3 px-4">{connectors}</td>
+                    <td className="py-3 px-4">{s.sessions}</td>
+                    <td className="py-3 px-4">{Number(s.energyKwh || 0).toFixed(1)}</td>
+                    <td className="py-3 px-4 text-blue-600 font-semibold">{formatCurrency(s.revenue)}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
-    {/* Recent Customers */}
-    <div className="bg-white rounded-xl border p-6 w-80 flex-shrink-0">
-      <div className="font-semibold text-lg mb-1">Recent Customers</div>
-      <div className="text-xs text-gray-400 mb-4">
-        Lorem ipsum dolor sit ametis.
-      </div>
-      <div className="flex flex-col gap-4">
-        {customers.map((c, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img
-                src={c.avatar}
-                alt={c.name}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <div>
-                <div className="font-medium text-sm">{c.name}</div>
-                <div className="text-xs text-gray-400">{c.email}</div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="font-semibold text-sm">{c.amount}</div>
-              <div className="text-xs text-gray-400">{c.charger}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <a
-        href="#"
-        className="block text-xs text-blue-600 font-medium mt-6 hover:underline"
-      >
-        SEE ALL CUSTOMERS &nbsp; &gt;
-      </a>
-    </div>
-  </div>
-);
+  );
+};
 
 export default TableSection;

@@ -5,7 +5,7 @@ import type { RootState, AppDispatch } from "@redux/store/store";
 import { useNavigate, Link } from "react-router-dom";
 import { getCookie } from "@libs/utils";
 import { logoutUser } from "@redux/slice/Auth/authThunks";
-import { fetchWalletThunk } from "@redux/slice/Payment/PaymentThunk";
+import { fetchWalletThunk } from "@redux/slice/Payment/PaymentThunks";
 import logo from "@assets/logo.png";
 
 import  {Button}  from "@components/Ui/Button";
