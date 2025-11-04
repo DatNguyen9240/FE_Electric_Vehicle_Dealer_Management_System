@@ -2,6 +2,7 @@ import React from "react";
 import api from "@libs/axios";
 import { Loader2, Play, Square, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUi } from "../../contexts/uiContextCore";
+import { useTitle } from "../../contexts";
 
 type Session = {
   id?: string;
@@ -26,6 +27,11 @@ const ChargingSessions: React.FC = () => {
   const [pagination, setPagination] = React.useState({ page: 1, limit: 20, total: 0, pages: 0 });
 
   const { showToast, confirm } = useUi();
+
+    const { setTitle } = useTitle();
+    React.useEffect(() => {
+      setTitle("Charging Sessions");
+    }, [setTitle]);
 
   const fetch = React.useCallback((p: number) => {
     setLoading(true);

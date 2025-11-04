@@ -4,8 +4,11 @@ import { Outlet} from "react-router-dom";
 import LableTitle from "@components/Layouts/LableTitle";
 import { Home, CreditCard, Zap, AlertCircle, CalendarCheck } from "lucide-react";
 import type { SidebarMenuItem } from "@components/Layouts/SideBar";
-
+import { useTitle } from "../contexts";
+  
 const StaffLayout: React.FC = () => {
+  const { title } = useTitle();
+
   const staffMenu: SidebarMenuItem[] = [
     { key: "dashboard", label: "Dashboard", icon: <Home size={20} />, to: "/staff" },
     { key: "sessions", label: "Sessions", icon: <Zap size={20} />, to: "/staff/sessions" },
@@ -20,7 +23,7 @@ const StaffLayout: React.FC = () => {
       <main className="flex-1 bg-gray-50 overflow-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <LableTitle>Staff area</LableTitle>
+            <LableTitle>{title}</LableTitle>
           </div>
           <div className="p-4">
             <Outlet />

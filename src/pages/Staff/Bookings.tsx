@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import api from "@libs/axios";
 import { useUi } from "../../contexts/uiContextCore";
+import { useTitle } from "../../contexts";
 
 type Booking = {
   id?: string;
@@ -30,8 +31,14 @@ const Bookings: React.FC = () => {
   const [limit] = React.useState<number>(20);
   const [pagination, setPagination] = React.useState({ page: 1, limit: 20, total: 0, pages: 0 });
   const [selected, setSelected] = React.useState<Booking | null>(null);
-
+  
   const { showToast, confirm } = useUi();
+  
+    const { setTitle } = useTitle();
+  
+    useEffect(() => {
+      setTitle("Staff Bookings");
+    }, [setTitle]);
 
   const fetch = React.useCallback((p: number) => {
     setLoading(true);

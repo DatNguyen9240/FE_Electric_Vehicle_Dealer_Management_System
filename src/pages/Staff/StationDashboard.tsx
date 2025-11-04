@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import api from "@libs/axios";
 import { Loader2, Zap, Plug, Gauge, Power, Building2 } from "lucide-react";
+import { useTitle } from "../../contexts";
 
 const StationDashboard: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
@@ -34,6 +35,12 @@ const StationDashboard: React.FC = () => {
 
   const [data, setData] = React.useState<{ stations?: StationOverview[] } | null>(null);
   const [filterStationId, setFilterStationId] = React.useState<string>("ALL");
+
+  const { setTitle } = useTitle();
+  
+  useEffect(() => {
+    setTitle("Station Dashboard");
+  }, [setTitle]);
 
   React.useEffect(() => {
     let mounted = true;

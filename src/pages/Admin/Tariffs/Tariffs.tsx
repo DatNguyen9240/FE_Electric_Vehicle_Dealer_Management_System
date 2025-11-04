@@ -3,6 +3,7 @@ import { TariffList } from "../../../components/TariffList";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTariffs } from "../../../redux/slice/Tariff/TariffThunks";
 import type { RootState, AppDispatch } from "../../../redux/store/store";
+import { useTitle } from "../../../contexts";
 
 const AdminTariffs: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -12,6 +13,11 @@ const AdminTariffs: React.FC = () => {
     error,
   } = useSelector((state: RootState) => state.tariff);
 
+  const { setTitle } = useTitle();
+
+  useEffect(() => {
+    setTitle("Tariff Management");
+  }, [setTitle]);
   useEffect(() => {
     dispatch(fetchTariffs());
   }, [dispatch]);
