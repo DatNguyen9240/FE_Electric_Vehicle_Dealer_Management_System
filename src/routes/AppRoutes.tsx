@@ -35,8 +35,13 @@ const StaffManager = lazy(() => import("@pages/Admin/Staffs/StaffManager"));
 const UserManager = lazy(() => import("@pages/Admin/Users/UserManager"));
 const AdminTariffs = lazy(() => import("@pages/Admin/Tariffs/Tariffs"));
 
-const StaffDashboard = lazy(() => import("@pages/Admin/Staffs/StaffDashboard"));
 const StaffLayout = lazy(() => import("@layouts/StaffLayout"));
+// Staff pages (staff-facing)
+const StaffStationDashboard = lazy(() => import("@pages/Staff/StationDashboard"));
+const StaffChargingSessions = lazy(() => import("@pages/Staff/ChargingSessions"));
+const StaffOnsitePayment = lazy(() => import("@pages/Staff/OnsitePayment"));
+const StaffIncidents = lazy(() => import("@pages/Staff/Incidents"));
+const StaffBookings = lazy(() => import("@pages/Staff/Bookings"));
 
 
 const PaymentManager = lazy(
@@ -221,7 +226,11 @@ export default function AppRoutes() {
           />
         </Route>
         <Route element={<StaffLayout />}>
-          <Route path="/staff" element={createLazyRoute(StaffDashboard, "Loading staff dashboard...")} />
+          <Route path="/staff" element={createLazyRoute(StaffStationDashboard, "Loading staff dashboard...")} />
+          <Route path="/staff/sessions" element={createLazyRoute(StaffChargingSessions, "Loading sessions...")} />
+          <Route path="/staff/payments" element={createLazyRoute(StaffOnsitePayment, "Loading onsite payment...")} />
+          <Route path="/staff/incidents" element={createLazyRoute(StaffIncidents, "Loading incidents...")} />
+          <Route path="/staff/bookings" element={createLazyRoute(StaffBookings, "Loading bookings...")} />
           <Route path="/staff/manage" element={createLazyRoute(StaffManager, "Loading staff management...")} />
         </Route>
       </Routes>
