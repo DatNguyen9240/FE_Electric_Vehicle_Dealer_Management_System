@@ -32,21 +32,38 @@ const ConnectorsManager: React.FC = () => {
 
 	React.useEffect(() => { setTitle("Quản lí đầu sạc"); }, [setTitle]);
 
+	const asRecord = (v: unknown): Record<string, unknown> | null =>
+		v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+
+	const getErrorMessage = (e: unknown) => {
+		try {
+			const ae = e as { response?: { data?: { message?: string } }; message?: string };
+			return ae?.response?.data?.message || ae?.message || "Không tải được danh sách đầu sạc";
+		} catch {
+			return "Không tải được danh sách đầu sạc";
+		}
+	};
+
 	const load = React.useCallback(async () => {
 		setLoading(true);
 		setError(null);
 		try {
 			const [coRes, sRes, chRes] = await Promise.all([
-				api.get<any>("/connectors", { params: { limit: 1000 } }),
-				api.get<any>("/stations", { params: { limit: 1000 } }),
-				api.get<any>("/chargers", { params: { limit: 1000 } }),
+				api.get("/connectors", { params: { limit: 1000 } }),
+				api.get("/stations", { params: { limit: 1000 } }),
+				api.get("/chargers", { params: { limit: 1000 } }),
 			]);
-			const list: Connector[] = Array.isArray(coRes.data) ? coRes.data : (coRes.data?.items || []);
+			const cData: unknown = coRes.data;
+			const sData: unknown = sRes.data;
+			const chData: unknown = chRes.data;
+			const list = (Array.isArray(cData) ? (cData as Connector[]) : (asRecord(cData)?.items ?? asRecord(cData)?.data ?? [])) as Connector[];
+			const sts = (Array.isArray(sData) ? (sData as Station[]) : (asRecord(sData)?.items ?? asRecord(sData)?.data ?? [])) as Station[];
+			const chs = (Array.isArray(chData) ? (chData as Charger[]) : (asRecord(chData)?.items ?? asRecord(chData)?.data ?? [])) as Charger[];
 			setRows(list);
-			setStations(Array.isArray(sRes.data) ? sRes.data : (sRes.data?.items || []));
-			setChargers(Array.isArray(chRes.data) ? chRes.data : (chRes.data?.items || []));
-		} catch (e: any) {
-			setError(e?.response?.data?.message || e?.message || "Không tải được danh sách đầu sạc");
+			setStations(sts);
+			setChargers(chs);
+		} catch (err: unknown) {
+			setError(getErrorMessage(err));
 		} finally {
 			setLoading(false);
 		}
@@ -61,12 +78,26 @@ const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/
 
 	const remove = async (id: string) => {
 		if (!confirm("Xoá đầu sạc này?")) return;
-		try { await api.delete(`/connectors/${id}`); await load(); } catch (e: any) { alert(e?.response?.data?.message || e?.message || "Lỗi xoá đầu sạc"); }
+		try {
+			await api.delete(`/connectors/${id}`);
+			await load();
+		} catch (err: unknown) {
+			const msg = getErrorMessage(err) || "Lỗi xoá đầu sạc";
+			console.error("Failed to delete connector", err);
+			setError(msg);
+		}
 	};
 
 	const toggleStatus = async (c: Connector) => {
 		const next = c.status === "IDLE" ? "OFFLINE" : "IDLE";
-		try { await api.patch(`/connectors/${c._id}/status`, { status: next }); await load(); } catch (e: any) { alert(e?.response?.data?.message || e?.message || "Lỗi đổi trạng thái"); }
+		try {
+			await api.patch(`/connectors/${c._id}/status`, { status: next });
+			await load();
+		} catch (err: unknown) {
+			const msg = getErrorMessage(err) || "Lỗi đổi trạng thái";
+			console.error("Failed to toggle connector status", err);
+			setError(msg);
+		}
 	};
 
 	const filtered = rows.filter((c) => {

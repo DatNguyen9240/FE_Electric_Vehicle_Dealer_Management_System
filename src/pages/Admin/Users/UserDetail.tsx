@@ -8,6 +8,20 @@ import { clearError } from "@redux/slice/User/UserSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import api from "@libs/axios";
 
+const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
+const getErrorMessage = (eVal: unknown, fallback = "Có lỗi xảy ra") => {
+  if (!eVal) return fallback;
+  if (typeof eVal === "string") return eVal;
+  if (eVal instanceof Error) return eVal.message;
+  const r = asRecord(eVal);
+  if (typeof r.message === "string") return r.message;
+  const response = asRecord(r.response);
+  const data = asRecord(response.data);
+  if (typeof data?.error === "string") return data.error;
+  if (typeof data?.message === "string") return data.message;
+  return fallback;
+};
+
 const UserDetail: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { userId } = useParams<{ userId: string }>();
@@ -35,8 +49,8 @@ const UserDetail: React.FC = () => {
           createdAt: data?.wallet?.createdAt,
           updatedAt: data?.wallet?.updatedAt,
         });
-      } catch (e: any) {
-        toast.error(e?.response?.data?.error || "Không lấy được thông tin ví");
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err, "Không lấy được thông tin ví"));
       } finally {
         setWalletLoading(false);
       }

@@ -77,9 +77,17 @@ const BookingManagementDetail: React.FC = () => {
         const res = await api.get<GetResponse>(`/admin/bookings/${bookingId}`);
         if (!mounted) return;
         setData(res.data.booking || null);
-      } catch (e: any) {
+      } catch (err: unknown) {
         if (!mounted) return;
-        setError(e?.response?.data?.message || e?.message || "Không tải được chi tiết đặt chỗ");
+        const getErrorMessage = (e: unknown) => {
+          try {
+            const ae = e as { response?: { data?: { message?: string } }; message?: string };
+            return ae?.response?.data?.message || ae?.message || "Không tải được chi tiết đặt chỗ";
+          } catch {
+            return "Không tải được chi tiết đặt chỗ";
+          }
+        };
+        setError(getErrorMessage(err));
       } finally {
         if (mounted) setLoading(false);
       }

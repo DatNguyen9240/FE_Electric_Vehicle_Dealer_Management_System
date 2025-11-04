@@ -5,13 +5,15 @@ import { useTitle } from "@contexts";
 
 type ChargerPayload = { stationId: string; name: string; code: string; connectorType: string; powerKw: number; status: string };
 
+type Station = { _id: string; name?: string; code?: string };
+
 const ChargersCreateEdit: React.FC = () => {
   const { setTitle } = useTitle();
   const { chargerId } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(chargerId);
 
-  const [stations, setStations] = React.useState<any[]>([]);
+  const [stations, setStations] = React.useState<Station[]>([]);
   const [form, setForm] = React.useState<ChargerPayload>({ stationId: "", name: "", code: "", connectorType: "AC", powerKw: 7.2, status: "ONLINE" });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -22,10 +24,21 @@ const ChargersCreateEdit: React.FC = () => {
     (async () => {
       try {
         const s = await api.get("/stations", { params: { limit: 1000 } });
-        const list = Array.isArray(s.data) ? s.data : (s.data?.items || []);
+        const d: unknown = s.data;
+        const list = (Array.isArray(d)
+          ? (d as Station[])
+          : (d && typeof d === "object"
+            ? ((d as Record<string, unknown>).items ?? (d as Record<string, unknown>).data ?? (d as Record<string, unknown>).stations ?? [])
+            : [])) as Station[];
         setStations(list);
-        if (!form.stationId && list[0]?._id) setForm((f) => ({ ...f, stationId: list[0]._id }));
-      } catch {}
+        // Set default stationId only if it's not already set — use functional update to avoid reading `form` from closure
+        if (list[0]?._id) {
+          setForm((f) => (f.stationId ? f : { ...f, stationId: list[0]._id }));
+        }
+      } catch (err: unknown) {
+        console.error("Failed to load stations", err);
+        setStations([]);
+      }
     })();
   }, []);
 
@@ -35,10 +48,21 @@ const ChargersCreateEdit: React.FC = () => {
       try {
         setLoading(true);
         const r = await api.get(`/chargers/${chargerId}`);
-        const c = r.data;
-        setForm({ stationId: c.stationId, name: c.name, code: c.code, connectorType: c.connectorType, powerKw: c.powerKw, status: c.status });
-      } catch (e: any) {
-        setError(e?.response?.data?.message || e?.message || "Không tải được trụ");
+        const c: unknown = r.data;
+        if (c && typeof c === "object") {
+          const obj = c as Record<string, unknown>;
+          setForm({
+            stationId: (obj["stationId"] as string) || "",
+            name: (obj["name"] as string) || "",
+            code: (obj["code"] as string) || "",
+            connectorType: (obj["connectorType"] as string) || "AC",
+            powerKw: typeof obj["powerKw"] === "number" ? (obj["powerKw"] as number) : Number(obj["powerKw"] ?? 7.2),
+            status: (obj["status"] as string) || "ONLINE",
+          });
+        }
+      } catch (err: unknown) {
+          const ae = err as { response?: { data?: { message?: string } }; message?: string };
+          setError(ae?.response?.data?.message || ae?.message || "Không tải được trụ");
       } finally {
         setLoading(false);
       }
@@ -52,8 +76,9 @@ const ChargersCreateEdit: React.FC = () => {
       if (isEdit) await api.put(`/chargers/${chargerId}`, form);
       else await api.post(`/chargers`, form);
       navigate("/admin/infrastructure/chargers");
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Lỗi lưu trụ");
+    } catch (err: unknown) {
+      const ae = err as { response?: { data?: { message?: string } }; message?: string };
+      setError(ae?.response?.data?.message || ae?.message || "Lỗi lưu trụ");
     } finally {
       setLoading(false);
     }

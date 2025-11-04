@@ -98,8 +98,17 @@ const BookingManagement: React.FC = () => {
     let mounted = true;
     (async () => {
       try {
-        const res = await api.get<any>("/stations", { params: { limit: 1000 } });
-        const list = Array.isArray(res.data) ? res.data : (res.data?.items || []);
+        const res = await api.get("/stations", { params: { limit: 1000 } });
+        const d: unknown = res.data;
+        const list = (() => {
+          if (Array.isArray(d)) return d as Station[];
+          if (d && typeof d === "object" && !Array.isArray(d)) {
+            const obj = d as Record<string, unknown>;
+            const maybe = obj.items ?? obj.data ?? obj.stations;
+            if (Array.isArray(maybe)) return maybe as Station[];
+          }
+          return [] as Station[];
+        })();
         if (mounted) setStations(list);
       } catch {
         if (mounted) setStations([]);
@@ -126,8 +135,17 @@ const BookingManagement: React.FC = () => {
       setRows(res.data.items);
       setTotal(res.data.pagination.total);
       setPages(res.data.pagination.pages);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Lỗi khi tải dữ liệu");
+    } catch (err: unknown) {
+      const getErrorMessage = (e: unknown) => {
+        try {
+          // axios shape
+          const ae = e as { response?: { data?: { message?: string } }; message?: string };
+          return ae?.response?.data?.message || ae?.message || "Lỗi khi tải dữ liệu";
+        } catch {
+          return "Lỗi khi tải dữ liệu";
+        }
+      };
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
