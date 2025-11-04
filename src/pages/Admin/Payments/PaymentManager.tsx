@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 import { fetchPayments } from "@redux/slice/Payment/PaymentThunks";
 import { clearError } from "@redux/slice/Payment/PaymentSlice";
+import type { Payment } from "@redux/slice/Payment/PaymentSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import { useTitle } from "../../../contexts";
 
@@ -11,8 +12,8 @@ const tabs = ["Succeeded", "Refunded", "All"];
 
 const PaymentManager: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const paymentState = useSelector((state: RootState) => state.payment) as any;
-  const { data: payments, loading, error, pagination } = paymentState;
+  const paymentState = useSelector((state: RootState) => state.payment);
+  const { data: payments = [], loading, error, pagination } = paymentState;
   const { setTitle } = useTitle();
   
   const [activeTab, setActiveTab] = useState("Succeeded");
@@ -69,7 +70,7 @@ const PaymentManager: React.FC = () => {
     }
   };
 
-  const getCategoryLabel = (category: string) => {
+  const getCategoryLabel = (category?: string) => {
     switch (category) {
       case "SUBSCRIPTION": return "Mua gói";
       case "CHARGE": return "Sạc xe";
@@ -83,13 +84,13 @@ const PaymentManager: React.FC = () => {
   
 
   // Filter payments based on search term
-  const filteredPayments = payments.filter((payment: any) => {
-    const matchesSearch = 
-      payment.idempotency_key.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.method.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
+  const filteredPayments = payments.filter((payment: Payment) => {
+    const needle = searchTerm.trim().toLowerCase();
+    if (!needle) return true;
+    const idemp = (payment.idempotency_key || "").toString().toLowerCase();
+    const user = (payment.user_id || "").toString().toLowerCase();
+    const method = (payment.method || "").toString().toLowerCase();
+    return idemp.includes(needle) || user.includes(needle) || method.includes(needle);
   });
 
   if (loading) {
@@ -157,7 +158,7 @@ const PaymentManager: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              filteredPayments.map((payment: any) => (
+              filteredPayments.map((payment: Payment) => (
                 <tr
                   key={payment.id}
                   className="border-b last:border-b-0 hover:bg-gray-50"

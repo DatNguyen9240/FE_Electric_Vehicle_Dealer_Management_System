@@ -11,13 +11,28 @@ const ConnectorsCreateEdit: React.FC = () => {
   const navigate = useNavigate();
   const isEdit = Boolean(connectorId);
 
-  const [stations, setStations] = React.useState<any[]>([]);
-  const [chargers, setChargers] = React.useState<any[]>([]);
+  type Station = { _id: string; name?: string; code?: string };
+  type Charger = { _id: string; stationId?: string; name?: string; code?: string };
+
+  const [stations, setStations] = React.useState<Station[]>([]);
+  const [chargers, setChargers] = React.useState<Charger[]>([]);
   const [form, setForm] = React.useState<ConnectorPayload>({ stationId: "", chargerId: "", type: "AC", powerKw: 7.2, status: "IDLE", code: "" });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => { setTitle(isEdit ? "Sửa đầu sạc" : "Thêm đầu sạc"); }, [isEdit, setTitle]);
+
+  const asRecord = (v: unknown): Record<string, unknown> | null =>
+    v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+
+  const getErrorMessage = (e: unknown) => {
+    try {
+      const ae = e as { response?: { data?: { message?: string } }; message?: string };
+      return ae?.response?.data?.message || ae?.message || "Không tải được dữ liệu";
+    } catch {
+      return "Không tải được dữ liệu";
+    }
+  };
 
   React.useEffect(() => {
     (async () => {
@@ -26,13 +41,18 @@ const ConnectorsCreateEdit: React.FC = () => {
           api.get("/stations", { params: { limit: 1000 } }),
           api.get("/chargers", { params: { limit: 1000 } }),
         ]);
-        const sl = Array.isArray(s.data) ? s.data : (s.data?.items || []);
-        const cl = Array.isArray(ch.data) ? ch.data : (ch.data?.items || []);
+        const sd: unknown = s.data;
+        const cd: unknown = ch.data;
+        const sl = (Array.isArray(sd) ? sd : (asRecord(sd)?.items ?? asRecord(sd)?.data ?? [])) as Station[];
+        const cl = (Array.isArray(cd) ? cd : (asRecord(cd)?.items ?? asRecord(cd)?.data ?? [])) as Charger[];
         setStations(sl);
         setChargers(cl);
-        if (!form.stationId && sl[0]?._id) setForm((f) => ({ ...f, stationId: sl[0]._id }));
-        if (!form.chargerId && cl[0]?._id) setForm((f) => ({ ...f, chargerId: cl[0]._id }));
-      } catch {}
+        // set defaults using functional updates to avoid reading `form` from closure
+        if (sl[0]?._id) setForm((f) => (f.stationId ? f : { ...f, stationId: sl[0]._id }));
+        if (cl[0]?._id) setForm((f) => (f.chargerId ? f : { ...f, chargerId: cl[0]._id }));
+      } catch (err: unknown) {
+        console.error("Failed to load stations/chargers", err);
+      }
     })();
   }, []);
 
@@ -42,10 +62,20 @@ const ConnectorsCreateEdit: React.FC = () => {
       try {
         setLoading(true);
         const r = await api.get(`/connectors/${connectorId}`);
-        const c = r.data;
-        setForm({ stationId: c.stationId, chargerId: c.chargerId, type: c.type, powerKw: c.powerKw, status: c.status, code: c.code });
-      } catch (e: any) {
-        setError(e?.response?.data?.message || e?.message || "Không tải được đầu sạc");
+        const c: unknown = r.data;
+        if (c && typeof c === "object") {
+          const o = c as Record<string, unknown>;
+          setForm({
+            stationId: (o["stationId"] as string) || "",
+            chargerId: (o["chargerId"] as string) || "",
+            type: (o["type"] as string) || "AC",
+            powerKw: typeof o["powerKw"] === "number" ? (o["powerKw"] as number) : Number(o["powerKw"] ?? 7.2),
+            status: (o["status"] as string) || "IDLE",
+            code: (o["code"] as string) || "",
+          });
+        }
+      } catch (err: unknown) {
+        setError(getErrorMessage(err) || "Không tải được đầu sạc");
       } finally { setLoading(false); }
     })();
   }, [isEdit, connectorId]);
@@ -56,7 +86,7 @@ const ConnectorsCreateEdit: React.FC = () => {
       if (isEdit) await api.put(`/connectors/${connectorId}`, form);
       else await api.post(`/connectors`, form);
       navigate("/admin/infrastructure/connectors");
-    } catch (e: any) { setError(e?.response?.data?.message || e?.message || "Lỗi lưu đầu sạc"); }
+  } catch (err: unknown) { setError(getErrorMessage(err) || "Lỗi lưu đầu sạc"); }
     finally { setLoading(false); }
   };
 

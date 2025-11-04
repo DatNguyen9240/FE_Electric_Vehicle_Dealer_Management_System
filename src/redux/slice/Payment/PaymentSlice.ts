@@ -12,7 +12,7 @@ export interface Payment {
   status: "SUCCEEDED" | "PENDING" | "FAILED";
   resulting_balance?: number;
   idempotency_key: string;
-  meta?: any;
+  meta?: Record<string, unknown>;
   createdAt: string;
 }
 

@@ -14,17 +14,18 @@ import {
 
 const ChartSection: React.FC = () => {
   const [loading, setLoading] = React.useState<boolean>(false);
-  const [data, setData] = React.useState<any>(null);
+  const [data, setData] = React.useState<unknown | null>(null);
 
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get<any>("/analytics/admin/overview");
-        if (mounted) setData(res.data);
-      } catch (e) {
-        // silent fail for UI; could add toast
+        const res = await api.get("/analytics/admin/overview");
+        if (mounted) setData(res.data as unknown);
+      } catch (err) {
+        // keep a console trace for debugging without failing the UI
+        console.error("Failed to load admin overview:", err);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -36,8 +37,28 @@ const ChartSection: React.FC = () => {
 
   // old KPI variables removed for classic layout
 
-  const currency = data?.revenue?.currency || "VND";
-  const chartData = (data?.revenue?.monthly || []).map((m: any) => ({ name: m.month, value: m.total }));
+  const asRecord = (v: unknown): Record<string, unknown> | null =>
+    v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+
+  const currency = (() => {
+    const d = asRecord(data);
+    const rev = d && asRecord(d["revenue"]);
+    const c = rev && rev["currency"];
+    return typeof c === "string" ? c : "VND";
+  })();
+
+  const chartData: { name: string; value: number }[] = (() => {
+    const d = asRecord(data);
+    const rev = d && asRecord(d["revenue"]);
+    const monthly = rev ? rev["monthly"] : null;
+    if (!Array.isArray(monthly)) return [];
+    return (monthly as unknown[]).map((m) => {
+      const item = asRecord(m) || {};
+      const name = typeof item["month"] === "string" ? (item["month"] as string) : String(item["month"] ?? "");
+      const value = typeof item["total"] === "number" ? (item["total"] as number) : Number(item["total"] ?? 0);
+      return { name, value };
+    });
+  })();
   const [range, setRange] = React.useState<'3M' | '6M'>('6M');
   const displayedChartData = React.useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
@@ -51,14 +72,44 @@ const ChartSection: React.FC = () => {
     return new Intl.NumberFormat("vi-VN").format(amount) + (currency === "VND" ? " VNĐ" : "");
   };
 
-  const totalUsers = data?.totals?.users?.total ?? 0;
-  const newUsers30 = data?.totals?.users?.newLast30Days ?? 0;
+  const totalUsers = (() => {
+    const d = asRecord(data);
+    const totals = d && asRecord(d["totals"]);
+    const users = totals && asRecord(totals["users"]);
+    const v = users ? users["total"] : undefined;
+    return typeof v === "number" ? v : Number(v ?? 0);
+  })();
+  const newUsers30 = (() => {
+    const d = asRecord(data);
+    const totals = d && asRecord(d["totals"]);
+    const users = totals && asRecord(totals["users"]);
+    const v = users ? users["newLast30Days"] : undefined;
+    return typeof v === "number" ? v : Number(v ?? 0);
+  })();
   // sub-status values not displayed in compact card
 
-  const bookingsTotal = data?.totals?.bookings?.total ?? 0;
+  const bookingsTotal = (() => {
+    const d = asRecord(data);
+    const totals = d && asRecord(d["totals"]);
+    const bookings = totals && asRecord(totals["bookings"]);
+    const v = bookings ? bookings["total"] : undefined;
+    return typeof v === "number" ? v : Number(v ?? 0);
+  })();
   // status breakdown not displayed in compact card
-  const sessions30Days = data?.charging?.last30Days?.sessions ?? 0;
-  const totalFee30 = data?.revenue?.last30Days?.total ?? 0;
+  const sessions30Days = (() => {
+    const d = asRecord(data);
+    const charging = d && asRecord(d["charging"]);
+    const last30 = charging && asRecord(charging["last30Days"]);
+    const v = last30 ? last30["sessions"] : undefined;
+    return typeof v === "number" ? v : Number(v ?? 0);
+  })();
+  const totalFee30 = (() => {
+    const d = asRecord(data);
+    const rev = d && asRecord(d["revenue"]);
+    const last30 = rev && asRecord(rev["last30Days"]);
+    const v = last30 ? last30["total"] : undefined;
+    return typeof v === "number" ? v : Number(v ?? 0);
+  })();
 
   return (
     <div className="flex gap-6 p-4">
@@ -88,9 +139,12 @@ const ChartSection: React.FC = () => {
           <span className="text-4xl font-bold text-blue-600 ps-6">{loading ? "..." : formatCurrency(totalFee30)}</span>
           <span className="text-sm font-medium absolute bottom-4 right-4">
             {(() => {
-              const monthly = data?.revenue?.monthly || [];
+              const d = asRecord(data);
+              const rev = d && asRecord(d["revenue"]);
+              const monthly = Array.isArray(rev?.["monthly"] as unknown) ? (rev?.["monthly"] as unknown[]) : [];
               const len = monthly.length;
-              const prev = len >= 2 ? monthly[len - 2].total : null;
+              const prevItem = len >= 2 ? asRecord(monthly[len - 2]) : null;
+              const prev = prevItem && typeof prevItem["total"] === "number" ? (prevItem["total"] as number) : Number(prevItem?.["total"] ?? 0);
               if (prev == null || prev === 0 || !Number.isFinite(prev)) return <span className="text-gray-400">—</span>;
               const diff = ((totalFee30 - prev) / prev) * 100;
               const isUp = diff >= 0;

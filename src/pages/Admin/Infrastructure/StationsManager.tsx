@@ -14,6 +14,19 @@ type Station = {
 
 // form moved to create/edit page
 
+const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
+const getErrorMessage = (eVal: unknown, fallback = "Có lỗi xảy ra") => {
+	if (!eVal) return fallback;
+	if (typeof eVal === "string") return eVal;
+	if (eVal instanceof Error) return eVal.message;
+	const r = asRecord(eVal);
+	if (typeof r.message === "string") return r.message;
+	const response = asRecord(r.response);
+	const data = asRecord(response.data);
+	if (typeof data.message === "string") return data.message;
+	return fallback;
+};
+
 const StationsManager: React.FC = () => {
 	const { setTitle } = useTitle();
 	const [rows, setRows] = React.useState<Station[]>([]);
@@ -28,11 +41,18 @@ const StationsManager: React.FC = () => {
 		setLoading(true);
 		setError(null);
 		try {
-			const res = await api.get<any>("/stations", { params: { limit: 1000 } });
-			const list: Station[] = Array.isArray(res.data) ? res.data : (res.data?.items || []);
+			const res = await api.get("/stations", { params: { limit: 1000 } });
+			const data = res.data as unknown;
+			let list: Station[] = [];
+			if (Array.isArray(data)) list = data as Station[];
+			else {
+				const r = asRecord(data);
+				const items = r.items ?? r.data ?? r.stations ?? r.list;
+				if (Array.isArray(items)) list = items as Station[];
+			}
 			setRows(list);
-		} catch (e: any) {
-			setError(e?.response?.data?.message || e?.message || "Không tải được danh sách trạm");
+		} catch (err: unknown) {
+			setError(getErrorMessage(err, "Không tải được danh sách trạm"));
 		} finally {
 			setLoading(false);
 		}
@@ -50,8 +70,8 @@ const StationsManager: React.FC = () => {
 		try {
 			await api.delete(`/stations/${id}`);
 			await load();
-		} catch (e: any) {
-			alert(e?.response?.data?.message || e?.message || "Lỗi xoá trạm");
+		} catch (err: unknown) {
+			alert(getErrorMessage(err, "Lỗi xoá trạm"));
 		}
 	};
 

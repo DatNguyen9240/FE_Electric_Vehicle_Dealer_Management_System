@@ -29,9 +29,21 @@ const StationsCreateEdit: React.FC = () => {
         if (!mounted) return;
         const s = res.data;
         setForm({ name: s.name, lat: s.lat, lng: s.lng, status: s.status });
-      } catch (e: any) {
+      } catch (err: unknown) {
         if (!mounted) return;
-        setError(e?.response?.data?.message || e?.message || "Không tải được trạm");
+        const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
+        const getErrorMessage = (eVal: unknown, fallback: string) => {
+          if (!eVal) return fallback;
+          if (typeof eVal === "string") return eVal;
+          if (eVal instanceof Error) return eVal.message;
+          const r = asRecord(eVal);
+          if (typeof r.message === "string") return r.message;
+          const response = asRecord(r.response);
+          const data = asRecord(response.data);
+          if (typeof data.message === "string") return data.message;
+          return fallback;
+        };
+        setError(getErrorMessage(err, "Không tải được trạm"));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -46,8 +58,20 @@ const StationsCreateEdit: React.FC = () => {
       if (isEdit) await api.put(`/stations/${stationId}`, form);
       else await api.post(`/stations`, form);
       navigate("/admin/infrastructure/stations");
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Lỗi lưu trạm");
+    } catch (err: unknown) {
+      const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
+      const getErrorMessage = (eVal: unknown, fallback: string) => {
+        if (!eVal) return fallback;
+        if (typeof eVal === "string") return eVal;
+        if (eVal instanceof Error) return eVal.message;
+        const r = asRecord(eVal);
+        if (typeof r.message === "string") return r.message;
+        const response = asRecord(r.response);
+        const data = asRecord(response.data);
+        if (typeof data.message === "string") return data.message;
+        return fallback;
+      };
+      setError(getErrorMessage(err, "Lỗi lưu trạm"));
     } finally {
       setLoading(false);
     }
