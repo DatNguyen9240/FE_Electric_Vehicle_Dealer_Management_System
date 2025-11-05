@@ -27,9 +27,9 @@ ChartJS.register(
 );
 
 const periods = [
-  { value: "3m", label: "3 tháng" },
-  { value: "6m", label: "6 tháng" },
-  { value: "1y", label: "1 năm" },
+  { value: "3m", label: "3 months" },
+  { value: "6m", label: "6 months" },
+  { value: "1y", label: "1 year" },
 ];
 
 type Station = {
@@ -96,7 +96,7 @@ const AIForecast: React.FC = () => {
     try {
       const user = JSON.parse(decodeURIComponent(raw));
       if (!user || (user.role !== "admin" && user.role !== "staff")) {
-        setError("Bạn không có quyền truy cập trang này.");
+        setError("You do not have permission to access this page.");
       }
     } catch {
       navigate("/login");
@@ -226,10 +226,10 @@ const AIForecast: React.FC = () => {
             disabled={loadingStations}
           >
             {loadingStations ? (
-              <option>Đang tải...</option>
+              <option>Loading...</option>
             ) : (
               <>
-                <option value="">-- Chọn trạm --</option>
+                <option value="">-- Select station --</option>
                 {stations.map((s) => (
                   <option key={s._id} value={s._id}>
                     {s.name || s.title || s._id}
@@ -256,18 +256,18 @@ const AIForecast: React.FC = () => {
             disabled={!stationId || loadingAI}
             className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
           >
-            {loadingAI ? "Đang phân tích..." : "Làm mới dữ liệu"}
+            {loadingAI ? "Analyzing..." : "Refresh data"}
           </button>
         </div>
       </div>
 
       {/* Danh sách trạm */}
       <div>
-        <h3 className="text-lg font-medium mb-2">Danh sách trạm</h3>
+        <h3 className="text-lg font-medium mb-2">Station list</h3>
         {loadingStations ? (
-          <div>Đang tải danh sách...</div>
+          <div>Loading stations...</div>
         ) : stations.length === 0 ? (
-          <div>Không có trạm nào.</div>
+          <div>No stations available.</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {stations.map((s) => (
@@ -292,16 +292,16 @@ const AIForecast: React.FC = () => {
       </div>
 
       {/* Loading / no data */}
-      {loadingAI && <div>Đang gọi AI, vui lòng chờ...</div>}
-      {!loadingAI && !data && <div>Chưa có dữ liệu để hiển thị.</div>}
+  {loadingAI && <div>Calling AI, please wait...</div>}
+  {!loadingAI && !data && <div>No data to display.</div>}
 
       {/* Kết quả */}
       {data && (
         <>
-          {/* Tổng quan */}
+          {/* Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="p-4 bg-white rounded shadow col-span-full md:col-span-4">
-              <div className="text-sm text-gray-500">Trạm đang phân tích</div>
+              <div className="text-sm text-gray-500">Station under analysis</div>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <div>
                   <div className="text-lg font-semibold">{selectedStation?.name ?? "—"}</div>
@@ -314,18 +314,18 @@ const AIForecast: React.FC = () => {
                   <div className="text-sm text-gray-600">Lat: {selectedStation?.lat ?? "—"}, Lng: {selectedStation?.lng ?? "—"}</div>
                 </div>
               </div>
-              <div className="text-xs text-gray-500 mt-2">Tạo: {selectedStation?.createdAt ? new Date(selectedStation.createdAt).toLocaleString() : '—'} — Cập nhật: {selectedStation?.updatedAt ? new Date(selectedStation.updatedAt).toLocaleString() : '—'}</div>
+                  <div className="text-xs text-gray-500 mt-2">Created: {selectedStation?.createdAt ? new Date(selectedStation.createdAt).toLocaleString() : '—'} — Updated: {selectedStation?.updatedAt ? new Date(selectedStation.updatedAt).toLocaleString() : '—'}</div>
             </div>
             <div className="p-4 bg-white rounded shadow">
-              <div className="text-sm text-gray-500">Tổng phiên sạc</div>
+              <div className="text-sm text-gray-500">Total charging sessions</div>
               <div className="text-2xl font-semibold">{data?.summary?.sessions ?? "-"}</div>
             </div>
             <div className="p-4 bg-white rounded shadow">
-              <div className="text-sm text-gray-500">Tổng năng lượng (kWh)</div>
+              <div className="text-sm text-gray-500">Total energy (kWh)</div>
               <div className="text-2xl font-semibold">{data?.summary?.energy ?? "-"}</div>
             </div>
             <div className="p-4 bg-white rounded shadow">
-              <div className="text-sm text-gray-500">Số trạm phân tích</div>
+              <div className="text-sm text-gray-500">Stations analyzed</div>
               <div className="text-2xl font-semibold">{data?.summary?.stationsAnalyzed ?? "-"}</div>
             </div>
           </div>
@@ -333,18 +333,18 @@ const AIForecast: React.FC = () => {
           {/* Biểu đồ */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="p-4 bg-white rounded shadow">
-              <h3 className="font-medium mb-2">Xu hướng số phiên & năng lượng</h3>
+              <h3 className="font-medium mb-2">Sessions & Energy Trend</h3>
               {lineChartData ? <Line data={lineChartData} /> : "Không có dữ liệu"}
             </div>
             <div className="p-4 bg-white rounded shadow">
-              <h3 className="font-medium mb-2">Giờ cao điểm dự báo</h3>
+              <h3 className="font-medium mb-2">Forecasted Peak Hours</h3>
               {barChartData ? (
                 <Bar data={barChartData} />
               ) : (
                 <div className="text-gray-600">
                   {typeof data?.forecast?.next_3_months?.peak_hours === "string"
                     ? data.forecast.next_3_months.peak_hours
-                    : "Không có dữ liệu giờ cao điểm."}
+                    : "No peak hours data."}
                 </div>
               )}
             </div>
@@ -359,16 +359,16 @@ const AIForecast: React.FC = () => {
               const f = data.forecast.next_3_months;
               return (
                 <div className="mb-3">
-                  <strong>Dự báo 3 tháng tới:</strong>
-                  <div>Số phiên: {f.estimated_sessions}</div>
-                  <div>Năng lượng: {f.estimated_kwh} kWh</div>
+                  <strong>3-month forecast:</strong>
+                  <div>Sessions: {f.estimated_sessions}</div>
+                  <div>Energy: {f.estimated_kwh} kWh</div>
                   <div>
-                    Giờ cao điểm:{" "}
+                    Peak hours: {" "}
                     {typeof f.peak_hours === "string"
                       ? f.peak_hours
                       : Array.isArray(f.peak_hours)
                       ? f.peak_hours.join(", ")
-                      : "Không xác định"}
+                      : "Unknown"}
                   </div>
                 </div>
               );
@@ -376,7 +376,7 @@ const AIForecast: React.FC = () => {
 
             {Array.isArray(data.recommendations) && data.recommendations.length > 0 && (
               <div>
-                <strong>Gợi ý nâng cấp:</strong>
+                <strong>Upgrade recommendations:</strong>
                 <ul className="list-disc ml-5 mt-2 text-gray-700">
                   {data.recommendations.map((r: string | Record<string, unknown>, i: number) => {
                     if (typeof r === "string") return (
@@ -396,15 +396,15 @@ const AIForecast: React.FC = () => {
           {/* Dữ liệu gốc */}
           {data.raw && data.raw.length > 0 && (
             <div className="p-4 bg-white rounded shadow">
-              <h3 className="font-medium mb-2">Dữ liệu gốc</h3>
+              <h3 className="font-medium mb-2">Raw data</h3>
               <table className="w-full text-sm text-gray-700 border">
                 <thead className="border-b font-semibold">
                   <tr>
-                    <th className="text-left p-2">Tháng</th>
-                    <th className="text-left p-2">Số phiên</th>
-                    <th className="text-left p-2">Năng lượng (kWh)</th>
-                    <th className="text-left p-2">Thời gian TB (phút)</th>
-                    <th className="text-left p-2">Loại cổng</th>
+                    <th className="text-left p-2">Month</th>
+                    <th className="text-left p-2">Sessions</th>
+                    <th className="text-left p-2">Energy (kWh)</th>
+                    <th className="text-left p-2">Avg duration (min)</th>
+                    <th className="text-left p-2">Connector type</th>
                   </tr>
                 </thead>
                 <tbody>
