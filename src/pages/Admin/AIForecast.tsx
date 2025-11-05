@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@libs/axios";
 import { getCookie } from "@libs/utils";
@@ -32,14 +32,59 @@ const periods = [
   { value: "1y", label: "1 năm" },
 ];
 
+type Station = {
+  _id: string;
+  name?: string;
+  lat?: number;
+  lng?: number;
+  location?: { type?: string; coordinates?: number[] };
+  title?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type RawSampleItem = {
+  month?: string;
+  sessionsCount?: number;
+  sessions?: number;
+  kwh?: number;
+  totalEnergyKwh?: number;
+  avgChargingMinutes?: number;
+  connectorType?: string;
+  stationId?: string;
+  stationName?: string;
+};
+
+type PeakHours = Record<string, number> | string | string[];
+
+type Forecast = {
+  next_3_months?: {
+    estimated_sessions?: number;
+    estimated_kwh?: number;
+    peak_hours?: PeakHours;
+  };
+} & Record<string, unknown>;
+
+type NormalizedData = {
+  summary?: { sessions?: number | string; energy?: number | string; stationsAnalyzed?: number | string };
+  monthly?: { months: string[]; sessions: number[]; energy: number[] };
+  analysis?: string;
+  forecast?: Forecast;
+  recommendations?: Array<string | Record<string, unknown> | string>;
+  raw?: RawSampleItem[];
+  peakHours?: PeakHours;
+  insights?: string;
+};
+
 const AIForecast: React.FC = () => {
   const navigate = useNavigate();
-  const [stations, setStations] = useState<Array<any>>([]);
+  const [stations, setStations] = useState<Station[]>([]);
   const [stationId, setStationId] = useState<string | "">("");
   const [period, setPeriod] = useState<string>("3m");
   const [loadingStations, setLoadingStations] = useState(false);
   const [loadingAI, setLoadingAI] = useState(false);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<NormalizedData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,7 +98,7 @@ const AIForecast: React.FC = () => {
       if (!user || (user.role !== "admin" && user.role !== "staff")) {
         setError("Bạn không có quyền truy cập trang này.");
       }
-    } catch (e) {
+    } catch {
       navigate("/login");
     }
   }, [navigate]);
@@ -63,7 +108,7 @@ const AIForecast: React.FC = () => {
       setLoadingStations(true);
       try {
         const res = await api.get("/stations");
-        setStations(res.data || []);
+        setStations((res.data || []) as Station[]);
       } catch (err) {
         console.error(err);
       } finally {
@@ -73,7 +118,7 @@ const AIForecast: React.FC = () => {
     loadStations();
   }, []);
 
-  const fetchAI = async () => {
+  const fetchAI = useCallback(async () => {
     setError(null);
     setLoadingAI(true);
     setData(null);
@@ -89,11 +134,11 @@ const AIForecast: React.FC = () => {
       const recommendations = aiInsight?.recommendations ?? payload?.recommendations;
       const analysis = aiInsight?.analysis ?? payload?.analysis;
 
-      const months = raw.map((r: any) => r.month);
-      const sessions = raw.map((r: any) => r.sessionsCount ?? 0);
-      const energy = raw.map((r: any) => r.totalEnergyKwh ?? 0);
+      const months = raw.map((r: RawSampleItem) => r.month ?? "");
+      const sessions = raw.map((r: RawSampleItem) => r.sessionsCount ?? 0);
+      const energy = raw.map((r: RawSampleItem) => r.totalEnergyKwh ?? 0);
 
-      const normalized: any = {
+      const normalized: NormalizedData = {
         summary: {
           sessions: summary?.totalSessions ?? "-",
           energy: summary?.totalKwh ?? "-",
@@ -113,12 +158,12 @@ const AIForecast: React.FC = () => {
     } finally {
       setLoadingAI(false);
     }
-  };
+  }, [stationId, period]);
 
   useEffect(() => {
     if (!stationId || loadingStations) return;
     fetchAI();
-  }, [stationId, period, loadingStations]);
+  }, [stationId, period, loadingStations, fetchAI]);
 
   // currently selected station object (may be undefined)
   const selectedStation = stations.find((s) => s._id === stationId);
@@ -150,8 +195,10 @@ const AIForecast: React.FC = () => {
     if (!data?.forecast?.next_3_months?.peak_hours) return null;
     const peak = data.forecast.next_3_months.peak_hours;
     if (typeof peak === "string") return null;
-    const labels = Object.keys(peak);
-    const values = labels.map((l) => peak[l]);
+    if (Array.isArray(peak)) return null; // array of labels only - no numeric values for chart
+    const peakRecord = peak as Record<string, number>;
+    const labels = Object.keys(peakRecord);
+    const values = labels.map((l) => peakRecord[l] ?? 0);
     return {
       labels,
       datasets: [
@@ -271,15 +318,15 @@ const AIForecast: React.FC = () => {
             </div>
             <div className="p-4 bg-white rounded shadow">
               <div className="text-sm text-gray-500">Tổng phiên sạc</div>
-              <div className="text-2xl font-semibold">{data.summary.sessions}</div>
+              <div className="text-2xl font-semibold">{data?.summary?.sessions ?? "-"}</div>
             </div>
             <div className="p-4 bg-white rounded shadow">
               <div className="text-sm text-gray-500">Tổng năng lượng (kWh)</div>
-              <div className="text-2xl font-semibold">{data.summary.energy}</div>
+              <div className="text-2xl font-semibold">{data?.summary?.energy ?? "-"}</div>
             </div>
             <div className="p-4 bg-white rounded shadow">
               <div className="text-sm text-gray-500">Số trạm phân tích</div>
-              <div className="text-2xl font-semibold">{data.summary.stationsAnalyzed}</div>
+              <div className="text-2xl font-semibold">{data?.summary?.stationsAnalyzed ?? "-"}</div>
             </div>
           </div>
 
@@ -331,11 +378,16 @@ const AIForecast: React.FC = () => {
               <div>
                 <strong>Gợi ý nâng cấp:</strong>
                 <ul className="list-disc ml-5 mt-2 text-gray-700">
-                  {data.recommendations.map((r: any, i: number) => (
-                    <li key={i} className="py-1">
-                      {typeof r === "string" ? r : r.reason ?? JSON.stringify(r)}
-                    </li>
-                  ))}
+                  {data.recommendations.map((r: string | Record<string, unknown>, i: number) => {
+                    if (typeof r === "string") return (
+                      <li key={i} className="py-1">{r}</li>
+                    );
+                    const rr = r as Record<string, unknown>;
+                    const reason = rr["reason"];
+                    return (
+                      <li key={i} className="py-1">{reason ? String(reason) : JSON.stringify(rr)}</li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -356,7 +408,7 @@ const AIForecast: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.raw.map((r: any, i: number) => (
+                  {data.raw.map((r: RawSampleItem, i: number) => (
                     <tr key={i} className="border-b">
                       <td className="p-2">{r.month}</td>
                       <td className="p-2">{r.sessionsCount}</td>
