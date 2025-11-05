@@ -154,7 +154,7 @@ const AIForecast: React.FC = () => {
       setData(normalized);
     } catch (err) {
       console.error(err);
-      setError("Không thể lấy dữ liệu AI. Hãy thử lại sau.");
+      setError("Unable to fetch AI data. Please try again later.");
     } finally {
       setLoadingAI(false);
     }
@@ -174,14 +174,14 @@ const AIForecast: React.FC = () => {
       labels: data.monthly.months,
       datasets: [
         {
-          label: "Số phiên",
+          label: "Sessions",
           data: data.monthly.sessions,
           borderColor: "#3b82f6",
           backgroundColor: "rgba(59,130,246,0.2)",
           tension: 0.3,
         },
         {
-          label: "Năng lượng (kWh)",
+          label: "Energy (kWh)",
           data: data.monthly.energy,
           borderColor: "#10b981",
           backgroundColor: "rgba(16,185,129,0.2)",
@@ -203,7 +203,7 @@ const AIForecast: React.FC = () => {
       labels,
       datasets: [
         {
-          label: "Dự báo giờ cao điểm (số phiên)",
+          label: "Forecasted peak hours (sessions)",
           data: values,
           backgroundColor: "#f97316",
         },
@@ -216,8 +216,8 @@ const AIForecast: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-2xl font-semibold">AI Dự báo & Nâng cấp Hạ tầng</h2>
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <h2 className="text-2xl font-semibold">AI Forecast & Infrastructure Upgrades</h2>
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={stationId}
@@ -261,7 +261,7 @@ const AIForecast: React.FC = () => {
         </div>
       </div>
 
-      {/* Danh sách trạm */}
+  {/* Station list */}
       <div>
         <h3 className="text-lg font-medium mb-2">Station list</h3>
         {loadingStations ? (
@@ -283,19 +283,19 @@ const AIForecast: React.FC = () => {
                   <div className={`text-sm px-2 py-1 rounded ${s.status === 'ONLINE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{s.status}</div>
                 </div>
                 <div className="text-sm text-gray-600">Lat: {s.lat ?? (s.location?.coordinates?.[1]) ?? '-'}, Lng: {s.lng ?? (s.location?.coordinates?.[0]) ?? '-'}</div>
-                <div className="text-xs text-gray-500 mt-1">Tạo: {s.createdAt ? new Date(s.createdAt).toLocaleString() : '-'}</div>
-                <div className="text-xs text-gray-500">Cập nhật: {s.updatedAt ? new Date(s.updatedAt).toLocaleString() : '-'}</div>
+                <div className="text-xs text-gray-500 mt-1">Created: {s.createdAt ? new Date(s.createdAt).toLocaleString() : '-'}</div>
+                <div className="text-xs text-gray-500">Updated: {s.updatedAt ? new Date(s.updatedAt).toLocaleString() : '-'}</div>
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Loading / no data */}
+  {/* Loading / no data */}
   {loadingAI && <div>Calling AI, please wait...</div>}
   {!loadingAI && !data && <div>No data to display.</div>}
 
-      {/* Kết quả */}
+  {/* Results */}
       {data && (
         <>
           {/* Overview */}
@@ -330,12 +330,12 @@ const AIForecast: React.FC = () => {
             </div>
           </div>
 
-          {/* Biểu đồ */}
+          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="p-4 bg-white rounded shadow">
-              <h3 className="font-medium mb-2">Sessions & Energy Trend</h3>
-              {lineChartData ? <Line data={lineChartData} /> : "Không có dữ liệu"}
-            </div>
+                <h3 className="font-medium mb-2">Sessions & Energy Trend</h3>
+                {lineChartData ? <Line data={lineChartData} /> : "No data"}
+              </div>
             <div className="p-4 bg-white rounded shadow">
               <h3 className="font-medium mb-2">Forecasted Peak Hours</h3>
               {barChartData ? (
@@ -350,7 +350,7 @@ const AIForecast: React.FC = () => {
             </div>
           </div>
 
-          {/* Phân tích và dự báo */}
+          {/* Analysis & Forecast */}
           <div className="p-4 bg-white rounded shadow">
             <h3 className="font-medium mb-2">AI Insight</h3>
             {data.analysis && <p className="text-gray-700 mb-3">{data.analysis}</p>}
@@ -393,7 +393,7 @@ const AIForecast: React.FC = () => {
             )}
           </div>
 
-          {/* Dữ liệu gốc */}
+          {/* Raw data */}
           {data.raw && data.raw.length > 0 && (
             <div className="p-4 bg-white rounded shadow">
               <h3 className="font-medium mb-2">Raw data</h3>
