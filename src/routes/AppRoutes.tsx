@@ -44,6 +44,7 @@ const ChargersCreateEdit = lazy(() => import("@pages/Admin/Infrastructure/Charge
 const ConnectorsCreateEdit = lazy(() => import("@pages/Admin/Infrastructure/ConnectorsCreateEdit"));
 const EditTariff = lazy(() => import("@pages/Admin/Tariffs/EditTariff"));
 const CreateTariff = lazy(() => import("@pages/Admin/Tariffs/CreateTariff"));
+const AIForecast = lazy(() => import("@pages/Admin/AIForecast"));
 
 const StaffLayout = lazy(() => import("@layouts/StaffLayout"));
 // Staff pages (staff-facing)
@@ -224,6 +225,10 @@ export default function AppRoutes() {
             element={createLazyRoute(CreateTariff, "Loading create tariff...")}
           />
           <Route
+            path="/admin/ai-forecast"
+            element={createLazyRoute(AIForecast, "Loading AI forecast...")}
+          />
+          <Route
             path="/admin/tariffs/edit/:tariffId"
             element={createLazyRoute(EditTariff, "Loading edit tariff...")}
           />
@@ -279,6 +284,7 @@ export default function AppRoutes() {
         </Route>
         <Route element={<StaffLayout />}>
           <Route path="/staff" element={createLazyRoute(StaffStationDashboard, "Loading staff dashboard...")} />
+          <Route path="/staff/ai-forecast" element={createLazyRoute(AIForecast, "Loading AI forecast...")} />
           <Route path="/staff/sessions" element={createLazyRoute(StaffChargingSessions, "Loading sessions...")} />
           <Route path="/staff/payments" element={createLazyRoute(StaffOnsitePayment, "Loading onsite payment...")} />
           <Route path="/staff/incidents" element={createLazyRoute(StaffIncidents, "Loading incidents...")} />

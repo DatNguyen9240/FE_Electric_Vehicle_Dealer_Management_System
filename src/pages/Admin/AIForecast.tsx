@@ -1,0 +1,430 @@
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "@libs/axios";
+import { getCookie } from "@libs/utils";
+import { Line, Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title as ChartTitle,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ChartTitle,
+  Tooltip,
+  Legend
+);
+
+const periods = [
+  { value: "3m", label: "3 months" },
+  { value: "6m", label: "6 months" },
+  { value: "1y", label: "1 year" },
+];
+
+type Station = {
+  _id: string;
+  name?: string;
+  lat?: number;
+  lng?: number;
+  location?: { type?: string; coordinates?: number[] };
+  title?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type RawSampleItem = {
+  month?: string;
+  sessionsCount?: number;
+  sessions?: number;
+  kwh?: number;
+  totalEnergyKwh?: number;
+  avgChargingMinutes?: number;
+  connectorType?: string;
+  stationId?: string;
+  stationName?: string;
+};
+
+type PeakHours = Record<string, number> | string | string[];
+
+type Forecast = {
+  next_3_months?: {
+    estimated_sessions?: number;
+    estimated_kwh?: number;
+    peak_hours?: PeakHours;
+  };
+} & Record<string, unknown>;
+
+type NormalizedData = {
+  summary?: { sessions?: number | string; energy?: number | string; stationsAnalyzed?: number | string };
+  monthly?: { months: string[]; sessions: number[]; energy: number[] };
+  analysis?: string;
+  forecast?: Forecast;
+  recommendations?: Array<string | Record<string, unknown> | string>;
+  raw?: RawSampleItem[];
+  peakHours?: PeakHours;
+  insights?: string;
+};
+
+const AIForecast: React.FC = () => {
+  const navigate = useNavigate();
+  const [stations, setStations] = useState<Station[]>([]);
+  const [stationId, setStationId] = useState<string | "">("");
+  const [period, setPeriod] = useState<string>("3m");
+  const [loadingStations, setLoadingStations] = useState(false);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [data, setData] = useState<NormalizedData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = getCookie("user");
+    if (!raw) {
+      navigate("/login");
+      return;
+    }
+    try {
+      const user = JSON.parse(decodeURIComponent(raw));
+      if (!user || (user.role !== "admin" && user.role !== "staff")) {
+        setError("You do not have permission to access this page.");
+      }
+    } catch {
+      navigate("/login");
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    async function loadStations() {
+      setLoadingStations(true);
+      try {
+        const res = await api.get("/stations");
+        setStations((res.data || []) as Station[]);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingStations(false);
+      }
+    }
+    loadStations();
+  }, []);
+
+  const fetchAI = useCallback(async () => {
+    setError(null);
+    setLoadingAI(true);
+    setData(null);
+    try {
+      const params = { stationId: stationId || null, period };
+      const res = await api.get(`/ai/forecast/infrastructure`, { params });
+      const payload = res.data?.data ?? res.data;
+
+      const summary = payload?.summary;
+      const raw = payload?.rawDataSample ?? [];
+      const aiInsight = payload?.aiInsight ?? {};
+      const forecast = aiInsight?.forecast ?? payload?.forecast;
+      const recommendations = aiInsight?.recommendations ?? payload?.recommendations;
+      const analysis = aiInsight?.analysis ?? payload?.analysis;
+
+      const months = raw.map((r: RawSampleItem) => r.month ?? "");
+      const sessions = raw.map((r: RawSampleItem) => r.sessionsCount ?? 0);
+      const energy = raw.map((r: RawSampleItem) => r.totalEnergyKwh ?? 0);
+
+      const normalized: NormalizedData = {
+        summary: {
+          sessions: summary?.totalSessions ?? "-",
+          energy: summary?.totalKwh ?? "-",
+          stationsAnalyzed: summary?.stationsAnalyzed ?? "-",
+        },
+        monthly: { months, sessions, energy },
+        analysis,
+        forecast,
+        recommendations,
+        raw,
+      };
+
+      setData(normalized);
+    } catch (err) {
+      console.error(err);
+      setError("Unable to fetch AI data. Please try again later.");
+    } finally {
+      setLoadingAI(false);
+    }
+  }, [stationId, period]);
+
+  useEffect(() => {
+    if (!stationId || loadingStations) return;
+    fetchAI();
+  }, [stationId, period, loadingStations, fetchAI]);
+
+  // currently selected station object (may be undefined)
+  const selectedStation = stations.find((s) => s._id === stationId);
+
+  const lineChartData = useMemo(() => {
+    if (!data?.monthly) return null;
+    return {
+      labels: data.monthly.months,
+      datasets: [
+        {
+          label: "Sessions",
+          data: data.monthly.sessions,
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59,130,246,0.2)",
+          tension: 0.3,
+        },
+        {
+          label: "Energy (kWh)",
+          data: data.monthly.energy,
+          borderColor: "#10b981",
+          backgroundColor: "rgba(16,185,129,0.2)",
+          tension: 0.3,
+        },
+      ],
+    };
+  }, [data]);
+
+  const barChartData = useMemo(() => {
+    if (!data?.forecast?.next_3_months?.peak_hours) return null;
+    const peak = data.forecast.next_3_months.peak_hours;
+    if (typeof peak === "string") return null;
+    if (Array.isArray(peak)) return null; // array of labels only - no numeric values for chart
+    const peakRecord = peak as Record<string, number>;
+    const labels = Object.keys(peakRecord);
+    const values = labels.map((l) => peakRecord[l] ?? 0);
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Forecasted peak hours (sessions)",
+          data: values,
+          backgroundColor: "#f97316",
+        },
+      ],
+    };
+  }, [data]);
+
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <h2 className="text-2xl font-semibold">AI Forecast & Infrastructure Upgrades</h2>
+        <div className="flex flex-wrap gap-3 items-center">
+          <select
+            value={stationId}
+            onChange={(e) => setStationId(e.target.value)}
+            className="border rounded px-3 py-2"
+            disabled={loadingStations}
+          >
+            {loadingStations ? (
+              <option>Loading...</option>
+            ) : (
+              <>
+                <option value="">-- Select station --</option>
+                {stations.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name || s.title || s._id}
+                  </option>
+                ))}
+              </>
+            )}
+          </select>
+
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="border rounded px-3 py-2"
+          >
+            {periods.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={fetchAI}
+            disabled={!stationId || loadingAI}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            {loadingAI ? "Analyzing..." : "Refresh data"}
+          </button>
+        </div>
+      </div>
+
+  {/* Station list */}
+      <div>
+        <h3 className="text-lg font-medium mb-2">Station list</h3>
+        {loadingStations ? (
+          <div>Loading stations...</div>
+        ) : stations.length === 0 ? (
+          <div>No stations available.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {stations.map((s) => (
+              <button
+                key={s._id}
+                onClick={() => setStationId(s._id)}
+                className={`text-left p-4 bg-white rounded shadow hover:shadow-md transition ${
+                  stationId === s._id ? "ring-2 ring-blue-500" : ""
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold">{s.name}</div>
+                  <div className={`text-sm px-2 py-1 rounded ${s.status === 'ONLINE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{s.status}</div>
+                </div>
+                <div className="text-sm text-gray-600">Lat: {s.lat ?? (s.location?.coordinates?.[1]) ?? '-'}, Lng: {s.lng ?? (s.location?.coordinates?.[0]) ?? '-'}</div>
+                <div className="text-xs text-gray-500 mt-1">Created: {s.createdAt ? new Date(s.createdAt).toLocaleString() : '-'}</div>
+                <div className="text-xs text-gray-500">Updated: {s.updatedAt ? new Date(s.updatedAt).toLocaleString() : '-'}</div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+  {/* Loading / no data */}
+  {loadingAI && <div>Calling AI, please wait...</div>}
+  {!loadingAI && !data && <div>No data to display.</div>}
+
+  {/* Results */}
+      {data && (
+        <>
+          {/* Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-white rounded shadow col-span-full md:col-span-4">
+              <div className="text-sm text-gray-500">Station under analysis</div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div>
+                  <div className="text-lg font-semibold">{selectedStation?.name ?? "—"}</div>
+                  <div className="text-sm text-gray-600">ID: {selectedStation?._id ?? "—"}</div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className={`text-sm px-2 py-1 rounded ${selectedStation?.status === 'ONLINE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                    {selectedStation?.status ?? "—"}
+                  </div>
+                  <div className="text-sm text-gray-600">Lat: {selectedStation?.lat ?? "—"}, Lng: {selectedStation?.lng ?? "—"}</div>
+                </div>
+              </div>
+                  <div className="text-xs text-gray-500 mt-2">Created: {selectedStation?.createdAt ? new Date(selectedStation.createdAt).toLocaleString() : '—'} — Updated: {selectedStation?.updatedAt ? new Date(selectedStation.updatedAt).toLocaleString() : '—'}</div>
+            </div>
+            <div className="p-4 bg-white rounded shadow">
+              <div className="text-sm text-gray-500">Total charging sessions</div>
+              <div className="text-2xl font-semibold">{data?.summary?.sessions ?? "-"}</div>
+            </div>
+            <div className="p-4 bg-white rounded shadow">
+              <div className="text-sm text-gray-500">Total energy (kWh)</div>
+              <div className="text-2xl font-semibold">{data?.summary?.energy ?? "-"}</div>
+            </div>
+            <div className="p-4 bg-white rounded shadow">
+              <div className="text-sm text-gray-500">Stations analyzed</div>
+              <div className="text-2xl font-semibold">{data?.summary?.stationsAnalyzed ?? "-"}</div>
+            </div>
+          </div>
+
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-4 bg-white rounded shadow">
+                <h3 className="font-medium mb-2">Sessions & Energy Trend</h3>
+                {lineChartData ? <Line data={lineChartData} /> : "No data"}
+              </div>
+            <div className="p-4 bg-white rounded shadow">
+              <h3 className="font-medium mb-2">Forecasted Peak Hours</h3>
+              {barChartData ? (
+                <Bar data={barChartData} />
+              ) : (
+                <div className="text-gray-600">
+                  {typeof data?.forecast?.next_3_months?.peak_hours === "string"
+                    ? data.forecast.next_3_months.peak_hours
+                    : "No peak hours data."}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Analysis & Forecast */}
+          <div className="p-4 bg-white rounded shadow">
+            <h3 className="font-medium mb-2">AI Insight</h3>
+            {data.analysis && <p className="text-gray-700 mb-3">{data.analysis}</p>}
+
+            {data.forecast?.next_3_months && (() => {
+              const f = data.forecast.next_3_months;
+              return (
+                <div className="mb-3">
+                  <strong>3-month forecast:</strong>
+                  <div>Sessions: {f.estimated_sessions}</div>
+                  <div>Energy: {f.estimated_kwh} kWh</div>
+                  <div>
+                    Peak hours: {" "}
+                    {typeof f.peak_hours === "string"
+                      ? f.peak_hours
+                      : Array.isArray(f.peak_hours)
+                      ? f.peak_hours.join(", ")
+                      : "Unknown"}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {Array.isArray(data.recommendations) && data.recommendations.length > 0 && (
+              <div>
+                <strong>Upgrade recommendations:</strong>
+                <ul className="list-disc ml-5 mt-2 text-gray-700">
+                  {data.recommendations.map((r: string | Record<string, unknown>, i: number) => {
+                    if (typeof r === "string") return (
+                      <li key={i} className="py-1">{r}</li>
+                    );
+                    const rr = r as Record<string, unknown>;
+                    const reason = rr["reason"];
+                    return (
+                      <li key={i} className="py-1">{reason ? String(reason) : JSON.stringify(rr)}</li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Raw data */}
+          {data.raw && data.raw.length > 0 && (
+            <div className="p-4 bg-white rounded shadow">
+              <h3 className="font-medium mb-2">Raw data</h3>
+              <table className="w-full text-sm text-gray-700 border">
+                <thead className="border-b font-semibold">
+                  <tr>
+                    <th className="text-left p-2">Month</th>
+                    <th className="text-left p-2">Sessions</th>
+                    <th className="text-left p-2">Energy (kWh)</th>
+                    <th className="text-left p-2">Avg duration (min)</th>
+                    <th className="text-left p-2">Connector type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.raw.map((r: RawSampleItem, i: number) => (
+                    <tr key={i} className="border-b">
+                      <td className="p-2">{r.month}</td>
+                      <td className="p-2">{r.sessionsCount}</td>
+                      <td className="p-2">{r.totalEnergyKwh}</td>
+                      <td className="p-2">{r.avgChargingMinutes}</td>
+                      <td className="p-2">{r.connectorType}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default AIForecast;
