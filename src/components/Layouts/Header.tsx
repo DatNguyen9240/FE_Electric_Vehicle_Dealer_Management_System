@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { User } from "@interfaces/Auth";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import { useNavigate, Link } from "react-router-dom";
 import { getCookie } from "@libs/utils";
 import { logoutUser } from "@redux/slice/Auth/authThunks";
-import { fetchWalletThunk } from "@redux/slice/Payment/PaymentThunk";
+import { fetchWalletThunk } from "@redux/slice/Payment/PaymentThunks";
 import logo from "@assets/logo.png";
 
 import  {Button}  from "@components/Ui/Button";
@@ -23,7 +23,9 @@ import {
   SelectValue
 } from "@components/Ui/Select";
 
-import { User as UserIcon, LogOut, Wallet, ChevronDown, Edit3 } from "lucide-react";
+import { User as UserIcon, LogOut, Wallet, ChevronDown, Edit3, Bell } from "lucide-react";
+import NotificationItem, { type Notification as NotificationType } from "@components/Ui/NotificationItem";
+import api from "@libs/axios";
 import VehicleEditModal from "@components/Vehicle/VehicleEditModal";
 import { fetchVehiclesThunk } from "@redux/slice/Vehical/VehicalThunk";
 import {
@@ -41,26 +43,97 @@ const navItems = [
 ];
 
 export default function Header() {
+  // Notification popup state và ref phải khai báo trước khi dùng trong useEffect
+  const [showNoti, setShowNoti] = useState(false);
+  const notiPopupRef = useRef<HTMLDivElement>(null);
+  // Đóng popup khi click ra ngoài
+  useEffect(() => {
+    if (!showNoti) return;
+    const handleClick = (e: MouseEvent) => {
+      if (notiPopupRef.current && !notiPopupRef.current.contains(e.target as Node)) {
+        setShowNoti(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showNoti]);
   const [openMobile, setOpenMobile] = useState(false);
   const [cookieUser, setCookieUser] = useState<User | null>(null);
   // vehicles are stored in redux
   const vehicles = useSelector(selectVehicles);
   const selectedVehicle = useSelector(selectSelectedVehicleId);
   const vehicalLoading = useSelector(selectVehicalLoading);
-
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const wallet = useSelector((state: RootState) => state.payment.wallet);
   const [editingVehicle, setEditingVehicle] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationType[]>([]);
+  const [loadingNoti, setLoadingNoti] = useState(false);
+  const [notiError, setNotiError] = useState<string|null>(null);
   const vehicleToEdit = vehicles.find((v) => v.id === editingVehicle) ?? null;
+
+  // Compute membership plan code for display (PRO, BASIC, FREE)
+  const planCode: string = (
+    (cookieUser as unknown as { membership?: { plan_code?: string } })?.membership?.plan_code ||
+    "FREE"
+  );
+
+  const renderPlanBadge = (code: string) => {
+    const c = (code || 'FREE').toUpperCase();
+    const base = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold mr-2';
+    if (c === 'PRO') return <span className={base + ' bg-green-50 text-green-700'}>{c}</span>;
+    if (c === 'BASIC') return <span className={base + ' bg-yellow-50 text-yellow-700'}>{c}</span>;
+    return <span className={base + ' bg-gray-100 text-gray-700'}>{c}</span>;
+  };
+
+  // Fetch notifications when popup opens
+  useEffect(() => {
+    if (!showNoti) return;
+    setLoadingNoti(true);
+    setNotiError(null);
+    api.get("/notifications")
+      .then(res => setNotifications(res.data?.data || []))
+      .catch(e => setNotiError(e?.response?.data?.msg || e.message || "Lỗi tải thông báo"))
+      .finally(() => setLoadingNoti(false));
+  }, [showNoti]);
+
+  // Mark all as read
+  const markAllRead = async () => {
+    try {
+      await api.post("/notifications/read-all");
+      setNotifications((n) => n.map((x) => ({ ...x, isRead: true, readAt: x.readAt || new Date().toISOString() })));
+    } catch (e) {
+      console.error("Failed to mark all notifications as read", e);
+    }
+  };
+  // Mark one as read
+  const markOneRead = async (id: string) => {
+    try {
+      await api.post(`/notifications/${id}/read`);
+      setNotifications((n) => n.map((x) => (x.id === id ? { ...x, isRead: true, readAt: x.readAt || new Date().toISOString() } : x)));
+    } catch (e) {
+      console.error(`Failed to mark notification ${id} as read`, e);
+    }
+  };
 
   useEffect(() => {
     const userStr = getCookie("user");
     if (userStr) {
       try {
         const parsedUser = JSON.parse(decodeURIComponent(userStr));
-        setCookieUser(parsedUser);
+        // Also attempt to read membership cookie if backend stored it separately
+        const membershipStr = getCookie("membership");
+        let userWithMembership: unknown = parsedUser;
+        if (membershipStr) {
+          try {
+            const parsedMembership = JSON.parse(decodeURIComponent(membershipStr));
+            userWithMembership = { ...(parsedUser as Record<string, unknown>), membership: parsedMembership };
+          } catch (e) {
+            console.warn("Failed to parse membership cookie", e);
+          }
+        }
+        setCookieUser(userWithMembership as User);
         dispatch(fetchWalletThunk());
       } catch {
         setCookieUser(null);
@@ -124,6 +197,42 @@ export default function Header() {
 
         {/* Right */}
         <div className="flex items-center space-x-3">
+          {/* Notification Bell */}
+          {cookieUser && (
+            <div className="relative">
+              <button
+                className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+                onClick={() => setShowNoti(v => !v)}
+                aria-label="Thông báo"
+              >
+                <Bell className="w-6 h-6 text-gray-700" />
+                {notifications.some(n => !n.isRead) && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+              </button>
+              {showNoti && (
+                <div ref={notiPopupRef} className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white border rounded-xl shadow-lg z-50">
+                  <div className="flex items-center justify-between px-4 py-2 border-b">
+                    <span className="font-semibold">Thông báo</span>
+                    <button className="text-xs text-blue-600 hover:underline" onClick={markAllRead}>Đánh dấu đã đọc tất cả</button>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto divide-y">
+                    {loadingNoti ? (
+                      <div className="p-4 text-center text-gray-500">Đang tải...</div>
+                    ) : notiError ? (
+                      <div className="p-4 text-center text-red-500">{notiError}</div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">Không có thông báo</div>
+                    ) : notifications.map(noti => (
+                      <div key={noti.id} className="hover:bg-gray-50 transition">
+                        <NotificationItem notification={noti} onClick={() => markOneRead(noti.id)} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {/* Wallet */}
           {cookieUser && (
             <Link
@@ -192,11 +301,13 @@ export default function Header() {
           {cookieUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <UserIcon className="w-5 h-5" />
-                  {cookieUser.name || cookieUser.email}
-                </Button>
-              </DropdownMenuTrigger>
+                    <Button variant="ghost" className="flex items-center gap-2">
+                      <UserIcon className="w-5 h-5" />
+                      {/* membership badge + name */}
+                      {renderPlanBadge(planCode)}
+                      {cookieUser.name || cookieUser.email}
+                    </Button>
+                  </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem asChild>
                   <Link to="/profile">Profile</Link>

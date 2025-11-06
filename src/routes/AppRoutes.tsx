@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react";
+const FakeStationPage = lazy(() => import("@pages/FakeStationPage"));
 import { Routes, Route } from "react-router-dom";
 import LazyLoading from "@components/Ui/LazyLoading";
 
@@ -32,7 +33,27 @@ const PurchaseMembership = lazy(
 const AdminDashboard = lazy(() => import("@pages/Admin/AdminDashboard"));
 const StaffManager = lazy(() => import("@pages/Admin/Staffs/StaffManager"));
 const UserManager = lazy(() => import("@pages/Admin/Users/UserManager"));
+const EditUser = lazy(() => import("@pages/Admin/Users/EditUser"));
+const UserDetail = lazy(() => import("@pages/Admin/Users/UserDetail"));
 const AdminTariffs = lazy(() => import("@pages/Admin/Tariffs/Tariffs"));
+const StationsManager = lazy(() => import("@pages/Admin/Infrastructure/StationsManager"));
+const ChargersManager = lazy(() => import("@pages/Admin/Infrastructure/ChargersManager"));
+const ConnectorsManager = lazy(() => import("@pages/Admin/Infrastructure/ConnectorsManager"));
+const StationsCreateEdit = lazy(() => import("@pages/Admin/Infrastructure/StationsCreateEdit"));
+const ChargersCreateEdit = lazy(() => import("@pages/Admin/Infrastructure/ChargersCreateEdit"));
+const ConnectorsCreateEdit = lazy(() => import("@pages/Admin/Infrastructure/ConnectorsCreateEdit"));
+const EditTariff = lazy(() => import("@pages/Admin/Tariffs/EditTariff"));
+const CreateTariff = lazy(() => import("@pages/Admin/Tariffs/CreateTariff"));
+const AIForecast = lazy(() => import("@pages/Admin/AIForecast"));
+
+const StaffLayout = lazy(() => import("@layouts/StaffLayout"));
+// Staff pages (staff-facing)
+const StaffStationDashboard = lazy(() => import("@pages/Staff/StationDashboard"));
+const StaffChargingSessions = lazy(() => import("@pages/Staff/ChargingSessions"));
+const StaffOnsitePayment = lazy(() => import("@pages/Staff/OnsitePayment"));
+const StaffIncidents = lazy(() => import("@pages/Staff/Incidents"));
+const StaffBookings = lazy(() => import("@pages/Staff/Bookings"));
+
 
 const PaymentManager = lazy(
   () => import("@pages/Admin/Payments/PaymentManager")
@@ -48,6 +69,12 @@ const SlotList = lazy(
 );
 const BookingDetails = lazy(
   () => import("@pages/Admin/Bookings/BookingDetails")
+);
+const BookingManagement = lazy(
+  () => import("@pages/Admin/Bookings/BookingManagement")
+);
+const BookingManagementDetail = lazy(
+  () => import("@pages/Admin/Bookings/BookingManagementDetail")
 );
 
 const createLazyRoute = (
@@ -133,8 +160,16 @@ export default function AppRoutes() {
             path="/vehicles/new"
             element={createLazyRoute(NewVehicle, "Loading vehicle registration...")}
           />
+          <Route
+            path="/fake-station"
+            element={createLazyRoute(FakeStationPage, "Loading fake station...")}
+          />
+          <Route
+            path="/fake-station/:stationId"
+            element={createLazyRoute(FakeStationPage, "Loading fake station...")}
+          />
+          {/* Đã bỏ route /fake-station/:stationId/charger/:chargerId */}
         </Route>
-
         <Route
           path="/login"
           element={createLazyRoute(Login, "Loading login page...")}
@@ -159,16 +194,43 @@ export default function AppRoutes() {
               "Loading staff management..."
             )}
           />
+        
           <Route
             path="/admin/users"
             element={createLazyRoute(UserManager, "Loading user management...")}
           />
           <Route
-            path="/admin/tariffs"
-            element={createLazyRoute(
-              AdminTariffs,
-              "Loading tariff management..."
-            )}
+            path="/admin/users/edit/:userId"
+            element={createLazyRoute(EditUser, "Loading edit user...")}
+          />
+          <Route
+            path="/admin/users/view/:userId"
+            element={createLazyRoute(UserDetail, "Loading user details...")}
+          />
+          {/* Legacy tariffs route - optional keep */}
+          <Route path="/admin/tariffs" element={createLazyRoute(AdminTariffs, "Loading tariff management...")} />
+          {/* Infrastructure group */}
+          <Route path="/admin/infrastructure/stations" element={createLazyRoute(StationsManager, "Loading stations management...")} />
+          <Route path="/admin/infrastructure/stations/create" element={createLazyRoute(StationsCreateEdit, "Loading create station...")} />
+          <Route path="/admin/infrastructure/stations/edit/:stationId" element={createLazyRoute(StationsCreateEdit, "Loading edit station...")} />
+          <Route path="/admin/infrastructure/chargers" element={createLazyRoute(ChargersManager, "Loading chargers management...")} />
+          <Route path="/admin/infrastructure/chargers/create" element={createLazyRoute(ChargersCreateEdit, "Loading create charger...")} />
+          <Route path="/admin/infrastructure/chargers/edit/:chargerId" element={createLazyRoute(ChargersCreateEdit, "Loading edit charger...")} />
+          <Route path="/admin/infrastructure/connectors" element={createLazyRoute(ConnectorsManager, "Loading connectors management...")} />
+          <Route path="/admin/infrastructure/connectors/create" element={createLazyRoute(ConnectorsCreateEdit, "Loading create connector...")} />
+          <Route path="/admin/infrastructure/connectors/edit/:connectorId" element={createLazyRoute(ConnectorsCreateEdit, "Loading edit connector...")} />
+          <Route path="/admin/infrastructure/tariffs" element={createLazyRoute(AdminTariffs, "Loading tariff management...")} />
+          <Route
+            path="/admin/tariffs/create"
+            element={createLazyRoute(CreateTariff, "Loading create tariff...")}
+          />
+          <Route
+            path="/admin/ai-forecast"
+            element={createLazyRoute(AIForecast, "Loading AI forecast...")}
+          />
+          <Route
+            path="/admin/tariffs/edit/:tariffId"
+            element={createLazyRoute(EditTariff, "Loading edit tariff...")}
           />
           <Route
             path="/admin/payments"
@@ -182,6 +244,20 @@ export default function AppRoutes() {
             element={createLazyRoute(
               StationList,
               "Loading stations..."
+            )}
+          />
+          <Route
+            path="/admin/bookings/view/:bookingId"
+            element={createLazyRoute(
+              BookingManagementDetail,
+              "Loading booking detail..."
+            )}
+          />
+          <Route
+            path="/admin/bookingmanagement"
+            element={createLazyRoute(
+              BookingManagement,
+              "Loading booking management..."
             )}
           />
           <Route
@@ -205,6 +281,15 @@ export default function AppRoutes() {
               "Loading booking details..."
             )}
           />
+        </Route>
+        <Route element={<StaffLayout />}>
+          <Route path="/staff" element={createLazyRoute(StaffStationDashboard, "Loading staff dashboard...")} />
+          <Route path="/staff/ai-forecast" element={createLazyRoute(AIForecast, "Loading AI forecast...")} />
+          <Route path="/staff/sessions" element={createLazyRoute(StaffChargingSessions, "Loading sessions...")} />
+          <Route path="/staff/payments" element={createLazyRoute(StaffOnsitePayment, "Loading onsite payment...")} />
+          <Route path="/staff/incidents" element={createLazyRoute(StaffIncidents, "Loading incidents...")} />
+          <Route path="/staff/bookings" element={createLazyRoute(StaffBookings, "Loading bookings...")} />
+          <Route path="/staff/manage" element={createLazyRoute(StaffManager, "Loading staff management...")} />
         </Route>
       </Routes>
     </Suspense>

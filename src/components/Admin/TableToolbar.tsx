@@ -2,6 +2,7 @@ import React from "react";
 
 interface TableToolbarProps {
   searchPlaceholder?: string;
+  searchValue?: string;
   onSearchChange?: (value: string) => void;
   onExport?: () => void;
   onCreate?: () => void;
@@ -10,6 +11,7 @@ interface TableToolbarProps {
 
 const TableToolbar: React.FC<TableToolbarProps> = ({
   searchPlaceholder = "Search",
+  searchValue = "",
   onSearchChange,
   onExport,
   onCreate,
@@ -19,6 +21,7 @@ const TableToolbar: React.FC<TableToolbarProps> = ({
     <input
       type="text"
       placeholder={searchPlaceholder}
+      value={searchValue}
       className="border border-[#333333] rounded-lg px-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
       onChange={(e) => onSearchChange?.(e.target.value)}
     />

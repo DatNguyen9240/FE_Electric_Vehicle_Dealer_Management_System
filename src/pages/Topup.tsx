@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { initiateTopupPayOSThunk } from "../redux/slice/Payment/PaymentThunk";
+import { initiateTopupPayOSThunk } from "../redux/slice/Payment/PaymentThunks";
 import type { AppDispatch, RootState } from "../redux/store/store";
 
 const presetAmounts = [50000, 100000, 200000, 500000, 1000000];

@@ -7,6 +7,7 @@ const stations = [
   {
     id: 1,
     name: "EV Station Vincom",
+    status: "ONLINE",
     rating: 4.5,
     distance: "2.5km",
     address: "72 Le Thanh Ton, District 1, HCMC",
@@ -25,6 +26,7 @@ const stations = [
   {
     id: 2,
     name: "EV Station Diamond Plaza",
+    status: "ONLINE",
     rating: 4.7,
     distance: "1.8km",
     address: "34 Le Duan, District 1, HCMC",
@@ -43,6 +45,7 @@ const stations = [
   {
     id: 3,
     name: "EV Station Saigon Centre",
+    status: "ONLINE",
     rating: 4.3,
     distance: "3.2km",
     address: "65 Le Loi, District 1, HCMC",
