@@ -1,7 +1,8 @@
 import React from "react";
 import api from "@libs/axios";
+import { toast } from "react-toastify";
 import { useTitle } from "@contexts";
-import { Plus, Trash2, Pencil, ToggleLeft, ToggleRight, Search } from "lucide-react";
+import { Plus, Trash2, Pencil, Power, PowerOff, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 type Station = { _id: string; name?: string; code?: string };
@@ -61,12 +62,62 @@ const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/
 
 	const remove = async (id: string) => {
 		if (!confirm("Xoá đầu sạc này?")) return;
-		try { await api.delete(`/connectors/${id}`); await load(); } catch (e: any) { alert(e?.response?.data?.message || e?.message || "Lỗi xoá đầu sạc"); }
+		try {
+			await api.delete(`/connectors/${id}`);
+			toast.success("Xóa đầu sạc thành công!");
+			await load();
+		} catch (e: any) {
+			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi xoá đầu sạc";
+			toast.error(errorMsg);
+		}
 	};
 
 	const toggleStatus = async (c: Connector) => {
+		// Chỉ toggle giữa IDLE và OFFLINE
+		// Nếu status là IDLE → chuyển sang OFFLINE
+		// Nếu status là OFFLINE → chuyển sang IDLE
+		// Các status khác (RESERVED, FINISHED, etc.) không toggle
+		if (c.status !== "IDLE" && c.status !== "OFFLINE") {
+			toast.warning(`Không thể toggle trạng thái ${c.status}. Chỉ có thể toggle giữa IDLE và OFFLINE.`);
+			return;
+		}
+		
 		const next = c.status === "IDLE" ? "OFFLINE" : "IDLE";
-		try { await api.patch(`/connectors/${c._id}/status`, { status: next }); await load(); } catch (e: any) { alert(e?.response?.data?.message || e?.message || "Lỗi đổi trạng thái"); }
+		const originalStatus = c.status; // Lưu status gốc để rollback
+		
+		// Optimistic update - cập nhật UI ngay lập tức
+		setRows(prevRows => 
+			prevRows.map(connector => 
+				connector._id === c._id ? { ...connector, status: next } : connector
+			)
+		);
+		
+		try {
+			const response = await api.put(`/connectors/${c._id}`, { ...c, status: next });
+			// Chỉ cập nhật nếu response trả về status là IDLE hoặc OFFLINE
+			// Nếu server trả về status khác (như RESERVED), giữ nguyên optimistic update
+			if (response.data && response.data.status && (response.data.status === "IDLE" || response.data.status === "OFFLINE")) {
+				setRows(prevRows => 
+					prevRows.map(connector => 
+						connector._id === c._id ? { ...connector, status: response.data.status } : connector
+					)
+				);
+			} else if (response.data && response.data.status && response.data.status !== next) {
+				// Nếu server trả về status khác với expected, có thể server đã reject hoặc có business logic khác
+				// Giữ nguyên optimistic update vì đã gửi thành công
+				console.warn(`Server trả về status ${response.data.status} khác với expected ${next}`);
+			}
+			toast.success(`Đã ${next === "IDLE" ? "bật" : "tắt"} đầu sạc`);
+		} catch (e: any) {
+			// Rollback nếu có lỗi
+			setRows(prevRows => 
+				prevRows.map(connector => 
+					connector._id === c._id ? { ...connector, status: originalStatus } : connector
+				)
+			);
+			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi đổi trạng thái";
+			toast.error(errorMsg);
+		}
 	};
 
 	const filtered = rows.filter((c) => {
@@ -128,11 +179,49 @@ const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/
 									<td className="px-4 py-3">{c.code}</td>
 									<td className="px-4 py-3">{c.type}</td>
 									<td className="px-4 py-3">{c.powerKw}</td>
-									<td className="px-4 py-3">{c.status}</td>
+									<td className="px-4 py-3">
+										<span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+											c.status === "IDLE" 
+												? "bg-green-50 text-green-600" 
+												: c.status === "OFFLINE"
+												? "bg-gray-50 text-gray-600"
+												: "bg-yellow-50 text-yellow-600"
+										}`}>
+											{c.status}
+										</span>
+									</td>
 									<td className="px-4 py-3 text-right">
-										<button onClick={() => toggleStatus(c)} className="text-gray-500 hover:text-blue-600 mr-3">{c.status === "IDLE" ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}</button>
-										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3"><Pencil size={16} /></button>
-										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600"><Trash2 size={16} /></button>
+										<button 
+											onClick={() => toggleStatus(c)} 
+											className={`mr-3 transition-colors ${
+												c.status === "IDLE" 
+													? "text-green-600 hover:text-green-700" 
+													: c.status === "OFFLINE"
+													? "text-gray-400 hover:text-gray-600"
+													: "text-gray-300 hover:text-gray-400 cursor-not-allowed"
+											}`}
+											title={c.status === "IDLE" ? "Tắt đầu sạc" : c.status === "OFFLINE" ? "Bật đầu sạc" : `Không thể toggle trạng thái ${c.status}`}
+											disabled={c.status !== "IDLE" && c.status !== "OFFLINE"}
+										>
+											{(c.status === "IDLE") ? (
+												<div className="flex items-center gap-1">
+													<Power size={18} className="text-green-600" />
+													<span className="text-xs text-green-600">ON</span>
+												</div>
+											) : (c.status === "OFFLINE") ? (
+												<div className="flex items-center gap-1">
+													<PowerOff size={18} className="text-gray-400" />
+													<span className="text-xs text-gray-400">OFF</span>
+												</div>
+											) : (
+												<div className="flex items-center gap-1">
+													<PowerOff size={18} className="text-gray-400" />
+													<span className="text-xs text-gray-400">-</span>
+												</div>
+											)}
+										</button>
+										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3" title="Chỉnh sửa"><Pencil size={16} /></button>
+										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Xóa"><Trash2 size={16} /></button>
 									</td>
 								</tr>
 							);

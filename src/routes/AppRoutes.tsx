@@ -47,18 +47,6 @@ const CreateTariff = lazy(() => import("@pages/Admin/Tariffs/CreateTariff"));
 const PaymentManager = lazy(
   () => import("@pages/Admin/Payments/PaymentManager")
 );
-const StationList = lazy(
-  () => import("@pages/Admin/Bookings/StationList")
-);
-const StationConnectors = lazy(
-  () => import("@pages/Admin/Bookings/ChargerList")
-);
-const SlotList = lazy(
-  () => import("@pages/Admin/Bookings/SlotList")
-);
-const BookingDetails = lazy(
-  () => import("@pages/Admin/Bookings/BookingDetails")
-);
 const BookingManagement = lazy(
   () => import("@pages/Admin/Bookings/BookingManagement")
 );
@@ -218,8 +206,8 @@ export default function AppRoutes() {
           <Route
             path="/admin/bookings"
             element={createLazyRoute(
-              StationList,
-              "Loading stations..."
+              BookingManagement,
+              "Loading booking management..."
             )}
           />
           <Route
@@ -227,34 +215,6 @@ export default function AppRoutes() {
             element={createLazyRoute(
               BookingManagementDetail,
               "Loading booking detail..."
-            )}
-          />
-          <Route
-            path="/admin/bookingmanagement"
-            element={createLazyRoute(
-              BookingManagement,
-              "Loading booking management..."
-            )}
-          />
-          <Route
-            path="/admin/bookings/station/:stationId"
-            element={createLazyRoute(
-              StationConnectors,
-              "Loading chargers..."
-            )}
-          />
-          <Route
-            path="/admin/bookings/station/:stationId/charger/:chargerId"
-            element={createLazyRoute(
-              SlotList,
-              "Loading time slots..."
-            )}
-          />
-          <Route
-            path="/admin/bookings/station/:stationId/charger/:chargerId/book/:timeSlot"
-            element={createLazyRoute(
-              BookingDetails,
-              "Loading booking details..."
             )}
           />
         </Route>

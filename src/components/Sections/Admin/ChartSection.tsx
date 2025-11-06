@@ -12,11 +12,20 @@ import {
 
 
 
-const ChartSection: React.FC = () => {
+type ChartSectionProps = {
+  data?: any;
+  loading?: boolean;
+};
+
+const ChartSection: React.FC<ChartSectionProps> = ({ data: propData, loading: propLoading }) => {
   const [loading, setLoading] = React.useState<boolean>(false);
   const [data, setData] = React.useState<any>(null);
 
   React.useEffect(() => {
+    if (propData) {
+      setData(propData);
+      return;
+    }
     let mounted = true;
     (async () => {
       try {
@@ -32,12 +41,12 @@ const ChartSection: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [propData]);
 
-  // old KPI variables removed for classic layout
+  const displayData = propData || data;
+  const displayLoading = propLoading !== undefined ? propLoading : loading;
 
-  const currency = data?.revenue?.currency || "VND";
-  const chartData = (data?.revenue?.monthly || []).map((m: any) => ({ name: m.month, value: m.total }));
+  const chartData = (displayData?.revenue?.monthly || []).map((m: any) => ({ name: m.month, value: m.total }));
   const [range, setRange] = React.useState<'3M' | '6M'>('6M');
   const displayedChartData = React.useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
@@ -45,107 +54,50 @@ const ChartSection: React.FC = () => {
     return chartData.slice(-6);
   }, [chartData, range]);
 
-  // currency for formatting revenue
-  const formatCurrency = (amount: number) => {
-    if (!Number.isFinite(amount)) return "0";
-    return new Intl.NumberFormat("vi-VN").format(amount) + (currency === "VND" ? " VNĐ" : "");
-  };
-
-  const totalUsers = data?.totals?.users?.total ?? 0;
-  const newUsers30 = data?.totals?.users?.newLast30Days ?? 0;
-  // sub-status values not displayed in compact card
-
-  const bookingsTotal = data?.totals?.bookings?.total ?? 0;
-  // status breakdown not displayed in compact card
-  const sessions30Days = data?.charging?.last30Days?.sessions ?? 0;
-  const totalFee30 = data?.revenue?.last30Days?.total ?? 0;
-
   return (
-    <div className="flex gap-6 p-4">
-      {/* Left column */}
-      <div className="flex flex-col gap-4 w-80">
-        <div className="flex gap-4">
-          {/* Card 1 - Users */}
-          <div className="w-1/2 bg-white rounded-xl border p-6 flex flex-col h-35 relative">
-            <span className="text-sm text-gray-500 mb-3 font-medium uppercase tracking-wide leading-tight">
-              USERS
-            </span>
-            <span className="text-5xl font-bold text-black ps-5">{loading ? "..." : totalUsers.toLocaleString("vi-VN")}</span>
-            <span className="text-sm text-green-500 font-medium absolute bottom-3 right-3">{loading ? "" : `+${newUsers30.toLocaleString("vi-VN")} ↑`}</span>
-          </div>
-          {/* Card 2 - Bookings */}
-          <div className="w-1/2 bg-white rounded-xl border p-6 flex flex-col h-35 relative">
-            <span className="text-sm text-gray-500 mb-3 font-medium uppercase tracking-wide leading-tight">BOOKINGS</span>
-            <span className="text-5xl font-bold text-black pt-1">
-              {loading ? "..." : bookingsTotal.toLocaleString("vi-VN")}
-            </span>
-            <span className="text-sm text-green-500 font-medium absolute bottom-3 right-3">{loading ? "" : `+${sessions30Days.toLocaleString("vi-VN")} ↑`}</span>
-          </div>
-        </div>
-        {/* Card 3 */}
-        <div className="bg-white rounded-xl border p-6 flex flex-col h-35 relative">
-          <span className="text-xs text-gray-500 mb-3 font-medium uppercase tracking-wide">TOTAL FEE</span>
-          <span className="text-4xl font-bold text-blue-600 ps-6">{loading ? "..." : formatCurrency(totalFee30)}</span>
-          <span className="text-sm font-medium absolute bottom-4 right-4">
-            {(() => {
-              const monthly = data?.revenue?.monthly || [];
-              const len = monthly.length;
-              const prev = len >= 2 ? monthly[len - 2].total : null;
-              if (prev == null || prev === 0 || !Number.isFinite(prev)) return <span className="text-gray-400">—</span>;
-              const diff = ((totalFee30 - prev) / prev) * 100;
-              const isUp = diff >= 0;
-              const cls = isUp ? "text-green-500" : "text-red-500";
-              const sign = isUp ? "+" : "";
-              return <span className={cls}>{`${sign}${diff.toFixed(1)}%`} ↑</span>;
-            })()}
-          </span>
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <span className="font-semibold text-lg">Charger Report</span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setRange('6M')}
+            className={`px-3 py-1 rounded border bg-gray-100 font-medium text-sm shadow-sm ${range === '6M' ? 'border-blue-500 text-blue-600 bg-blue-50' : ''}`}
+          >
+            6 Months
+          </button>
+          <button
+            onClick={() => setRange('3M')}
+            className={`px-3 py-1 rounded border bg-gray-100 font-medium text-sm shadow-sm ${range === '3M' ? 'border-blue-500 text-blue-600 bg-blue-50' : ''}`}
+          >
+            3 Months
+          </button>
         </div>
       </div>
-      {/* Right column - Chart */}
-      <div className="flex-1 bg-white rounded-xl border p-6 flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <span className="font-semibold text-lg">Charger Report</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setRange('6M')}
-              className={`px-3 py-1 rounded border bg-gray-100 font-medium text-sm shadow-sm ${range === '6M' ? 'border-blue-500 text-blue-600 bg-blue-50' : ''}`}
+      {/* Chart with recharts */}
+      <div className="flex-1 flex items-center justify-center">
+        {displayLoading ? (
+          <div className="text-gray-400">Loading...</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart
+              data={displayedChartData}
+              margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
             >
-              6 Months
-            </button>
-            <button
-              onClick={() => setRange('3M')}
-              className={`px-3 py-1 rounded border bg-gray-100 font-medium text-sm shadow-sm ${range === '3M' ? 'border-blue-500 text-blue-600 bg-blue-50' : ''}`}
-            >
-              3 Months
-            </button>
-          </div>
-        </div>
-        {/* Chart with recharts */}
-        <div className="flex-1 flex items-center justify-center">
-          {loading ? (
-            <div className="text-gray-400">Loading...</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart
-                data={displayedChartData}
-                margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#2563eb"
-                  strokeWidth={3}>
-                </Line>
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#2563eb"
+                strokeWidth={3}>
+              </Line>
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
-    </div>
+    </>
   );
 };
 

@@ -1,5 +1,7 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { ArrowLeft, Save, X } from "lucide-react";
 import api from "@libs/axios";
 import { useTitle } from "@contexts";
 
@@ -32,7 +34,9 @@ const ConnectorsCreateEdit: React.FC = () => {
         setChargers(cl);
         if (!form.stationId && sl[0]?._id) setForm((f) => ({ ...f, stationId: sl[0]._id }));
         if (!form.chargerId && cl[0]?._id) setForm((f) => ({ ...f, chargerId: cl[0]._id }));
-      } catch {}
+      } catch (e: any) {
+        toast.error("Không thể tải danh sách trạm/trụ sạc");
+      }
     })();
   }, []);
 
@@ -45,71 +49,221 @@ const ConnectorsCreateEdit: React.FC = () => {
         const c = r.data;
         setForm({ stationId: c.stationId, chargerId: c.chargerId, type: c.type, powerKw: c.powerKw, status: c.status, code: c.code });
       } catch (e: any) {
-        setError(e?.response?.data?.message || e?.message || "Không tải được đầu sạc");
+        const errorMsg = e?.response?.data?.message || e?.message || "Không tải được đầu sạc";
+        setError(errorMsg);
+        toast.error(errorMsg);
       } finally { setLoading(false); }
     })();
   }, [isEdit, connectorId]);
 
-  const submit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!form.stationId) {
+      toast.error("Vui lòng chọn trạm sạc");
+      return;
+    }
+
+    if (!form.chargerId) {
+      toast.error("Vui lòng chọn trụ sạc");
+      return;
+    }
+
     try {
-      setLoading(true); setError(null);
-      if (isEdit) await api.put(`/connectors/${connectorId}`, form);
-      else await api.post(`/connectors`, form);
+      setLoading(true);
+      setError(null);
+      if (isEdit) {
+        await api.put(`/connectors/${connectorId}`, form);
+        toast.success("Cập nhật đầu sạc thành công!");
+      } else {
+        await api.post(`/connectors`, form);
+        toast.success("Tạo đầu sạc thành công!");
+      }
       navigate("/admin/infrastructure/connectors");
-    } catch (e: any) { setError(e?.response?.data?.message || e?.message || "Lỗi lưu đầu sạc"); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      const errorMsg = e?.response?.data?.message || e?.message || "Lỗi lưu đầu sạc";
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally { setLoading(false); }
   };
+
+  const handleCancel = () => {
+    navigate("/admin/infrastructure/connectors");
+  };
+
+  if (loading && isEdit) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Đang tải dữ liệu...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
-      <div className="bg-white rounded-xl border max-w-2xl">
-        <div className="px-6 py-4 border-b font-semibold">{isEdit ? "Sửa đầu sạc" : "Thêm đầu sạc"}</div>
-        <div className="p-6 grid grid-cols-1 gap-4">
-          <label className="text-sm">
-            <span className="text-gray-600">Trạm</span>
-            <select value={form.stationId} onChange={(e) => setForm({ ...form, stationId: e.target.value })} className="mt-1 w-full border rounded px-3 py-2">
-              {stations.map((s) => (<option key={s._id} value={s._id}>{s.name || s.code || s._id}</option>))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <span className="text-gray-600">Trụ</span>
-            <select value={form.chargerId} onChange={(e) => setForm({ ...form, chargerId: e.target.value })} className="mt-1 w-full border rounded px-3 py-2">
-              {chargers.map((ch) => (<option key={ch._id} value={ch._id}>{ch.name || ch.code || ch._id}</option>))}
-            </select>
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <label className="text-sm">
-              <span className="text-gray-600">Loại</span>
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="mt-1 w-full border rounded px-3 py-2">
-                <option value="AC">AC</option>
-                <option value="DC">DC</option>
-              </select>
-            </label>
-            <label className="text-sm">
-              <span className="text-gray-600">Công suất (kW)</span>
-              <input type="number" value={form.powerKw} onChange={(e) => setForm({ ...form, powerKw: Number(e.target.value) })} className="mt-1 w-full border rounded px-3 py-2" />
-            </label>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleCancel}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Quay lại
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isEdit ? "Chỉnh sửa đầu sạc" : "Tạo đầu sạc mới"}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {isEdit ? "Cập nhật thông tin đầu sạc" : "Điền thông tin để tạo đầu sạc mới"}
+            </p>
           </div>
-          <label className="text-sm">
-            <span className="text-gray-600">Mã</span>
-            <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} className="mt-1 w-full border rounded px-3 py-2" />
-          </label>
-          <label className="text-sm">
-            <span className="text-gray-600">Trạng thái</span>
-            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="mt-1 w-full border rounded px-3 py-2">
-              <option value="IDLE">IDLE</option>
-              <option value="OFFLINE">OFFLINE</option>
-              <option value="RESERVED">RESERVED</option>
-              <option value="FINISHED">FINISHED</option>
-            </select>
-          </label>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
-          {loading && <div className="text-gray-500 text-sm">Đang xử lý...</div>}
         </div>
-        <div className="px-6 py-4 border-t flex justify-end gap-2">
-          <button onClick={() => navigate(-1)} className="px-3 py-2 border rounded">Huỷ</button>
-          <button onClick={submit} className="px-3 py-2 border rounded bg-blue-600 text-white hover:bg-blue-700">Lưu</button>
+      </div>
+
+      {/* Form */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-medium text-gray-900">Thông tin đầu sạc</h2>
         </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Station */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Trạm sạc <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={form.stationId}
+                  onChange={(e) => setForm({ ...form, stationId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Chọn trạm</option>
+                  {stations.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name || s.code || s._id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Charger */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Trụ sạc <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={form.chargerId}
+                  onChange={(e) => setForm({ ...form, chargerId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Chọn trụ</option>
+                  {chargers.map((ch) => (
+                    <option key={ch._id} value={ch._id}>
+                      {ch.name || ch.code || ch._id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Loại <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={form.type}
+                  onChange={(e) => setForm({ ...form, type: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="AC">AC</option>
+                  <option value="DC">DC</option>
+                </select>
+              </div>
+
+              {/* Power */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Công suất (kW) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  step="0.1"
+                  value={form.powerKw || ""}
+                  onChange={(e) => setForm({ ...form, powerKw: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nhập công suất"
+                />
+              </div>
+
+              {/* Code */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mã đầu sạc
+                </label>
+                <input
+                  type="text"
+                  value={form.code}
+                  onChange={(e) => setForm({ ...form, code: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nhập mã đầu sạc"
+                />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Trạng thái <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="IDLE">IDLE</option>
+                  <option value="OFFLINE">OFFLINE</option>
+                  <option value="RESERVED">RESERVED</option>
+                  <option value="FINISHED">FINISHED</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mt-4 text-red-600 text-sm">{error}</div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <X size={16} />
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Save size={16} />
+                {loading ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Tạo đầu sạc"}
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

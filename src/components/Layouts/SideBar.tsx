@@ -4,7 +4,6 @@ import {
   Users,
   CreditCard,
   BatteryCharging,
-  ListChecks,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown, // Thêm icon này
@@ -25,11 +24,6 @@ const menu = [
     label: "Bookings",
     icon: <BatteryCharging size={20} />,
     to: "/admin/bookings",
-  },
-  {
-    label: "Booking Management",
-    icon: <ListChecks size={20} />,
-    to: "/admin/bookingmanagement",
   },
 ];
 

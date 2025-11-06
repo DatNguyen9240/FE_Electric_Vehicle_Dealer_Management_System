@@ -138,17 +138,22 @@ const BookingManagement: React.FC = () => {
   }, [fetchData]);
 
   const toggleStatusTab = (statusKey: string) => {
-    if (statusKey === "ALL") {
-      setStatuses([]);
-      setPage(1);
-      return;
-    }
     setPage(1);
-    setStatuses((prev) =>
-      prev.includes(statusKey)
-        ? prev.filter((s) => s !== statusKey)
-        : [...prev, statusKey]
-    );
+    if (statusKey === "ALL") {
+      // Chọn "ALL" thì bỏ tất cả filter
+      setStatuses([]);
+    } else {
+      // Chọn status khác - nếu đã chọn rồi thì bỏ chọn (về ALL), nếu chưa thì chỉ chọn status đó
+      setStatuses((prev) => {
+        if (prev.includes(statusKey)) {
+          // Đang chọn rồi, bỏ chọn về ALL
+          return [];
+        } else {
+          // Chọn status mới, chỉ giữ status này
+          return [statusKey];
+        }
+      });
+    }
   };
 
   const onSortToggle = (field: string) => {
