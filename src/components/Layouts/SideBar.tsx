@@ -1,32 +1,43 @@
 import React from "react";
-import { ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsUpDown,
+  ServerCog,
+  Building2,
+  Plug,
+  Zap,
+  BadgeDollarSign,
+  ChevronDown,
+} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 export type SidebarMenuItem = {
   key?: string;
   label: string;
-  icon?: React.ReactNode;
+  icon: React.ReactNode;
   to?: string;
-  onClick?: (e?: React.MouseEvent) => void;
+  onClick?: () => void;
 };
 
-export type SidebarDropdownItem = {
+type DropdownItem = {
   key?: string;
   label: string;
   to?: string;
-  onClick?: (e?: React.MouseEvent) => void;
+  onClick?: (e: React.MouseEvent) => void;
   danger?: boolean;
 };
 
-export type SideBarProps = {
+type SideBarProps = {
   menu?: SidebarMenuItem[];
   avatarSrc?: string;
   avatarName?: string;
-  dropdownItems?: SidebarDropdownItem[];
-  collapsed?: boolean; // controlled
-  defaultCollapsed?: boolean; // uncontrolled initial
-  onToggle?: (next: boolean) => void;
-  currentPath?: string; // override location.pathname if provided
+  dropdownItems?: DropdownItem[];
+  collapsed?: boolean;
+  defaultCollapsed?: boolean;
+  onToggle?: (collapsed: boolean) => void;
+  currentPath?: string;
+  showInfrastructure?: boolean; // Thêm prop để hiển thị infrastructure section
 };
 
 const SideBar: React.FC<SideBarProps> = ({
@@ -38,12 +49,14 @@ const SideBar: React.FC<SideBarProps> = ({
   defaultCollapsed = false,
   onToggle,
   currentPath,
+  showInfrastructure = false,
 }) => {
   const location = useLocation();
   const [internalCollapsed, setInternalCollapsed] = React.useState(defaultCollapsed);
   const collapsed = typeof collapsedProp === "boolean" ? collapsedProp : internalCollapsed;
 
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [infraOpen, setInfraOpen] = React.useState(false);
 
   // Đóng dropdown khi click ngoài
   React.useEffect(() => {
@@ -200,6 +213,82 @@ const SideBar: React.FC<SideBarProps> = ({
             </li>
           );
         })}
+
+        {/* Infrastructure group */}
+        {showInfrastructure && (
+          <li className="mt-2">
+            <button
+              onClick={() => setInfraOpen((v) => !v)}
+              className={`w-full flex items-center justify-between px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                activePath.startsWith("/admin/infrastructure")
+                  ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white shadow-lg border-l-4 border-blue-300"
+                  : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <ServerCog size={20} />
+                <span className={`${collapsed ? "hidden" : "block"}`}>Quản lí hạ tầng</span>
+              </span>
+              {!collapsed && <ChevronDown className={`${infraOpen ? "rotate-180" : ""} transition-transform`} size={16} />}
+            </button>
+            {infraOpen && !collapsed && (
+              <ul className="mt-1 ml-8 flex flex-col gap-1">
+                <li>
+                  <Link
+                    to="/admin/infrastructure/stations"
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                      activePath === "/admin/infrastructure/stations"
+                        ? "bg-blue-100 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50"
+                    }`}
+                  >
+                    <Building2 size={18} />
+                    Trạm
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/admin/infrastructure/chargers"
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                      activePath === "/admin/infrastructure/chargers"
+                        ? "bg-blue-100 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50"
+                    }`}
+                  >
+                    <Zap size={18} />
+                    Trụ
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/admin/infrastructure/connectors"
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                      activePath === "/admin/infrastructure/connectors"
+                        ? "bg-blue-100 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50"
+                    }`}
+                  >
+                    <Plug size={18} />
+                    Đầu sạc
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/admin/infrastructure/tariffs"
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                      activePath === "/admin/infrastructure/tariffs"
+                        ? "bg-blue-100 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50"
+                    }`}
+                  >
+                    <BadgeDollarSign size={18} />
+                    Biểu phí
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </li>
+        )}
       </ul>
       {/* Footer */}
       <div

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import {
   fetchTariffs,
   deleteTariff,
@@ -247,14 +247,14 @@ const TariffManager: React.FC = () => {
                             <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => handleEdit(tariff)}
-                                className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                className="text-gray-500 hover:text-blue-600 transition-colors"
                                 title="Chỉnh sửa"
                               >
-                                <Edit size={16} />
+                                <Pencil size={16} />
                               </button>
                               <button
                                 onClick={() => handleDelete(tariff._id)}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                className="text-gray-500 hover:text-red-600 transition-colors"
                                 title="Xóa"
                               >
                                 <Trash2 size={16} />

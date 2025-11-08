@@ -20,6 +20,7 @@ import type {Vehicle} from "@redux/slice/Vehical/VehicalSlice";
 import { deleteVehicleThunk } from "@redux/slice/Vehical/VehicalThunk";
 import api from "../libs/axios";
 
+
 // chart.js (react-chartjs-2). If these packages are not installed run:
 // npm install chart.js react-chartjs-2
 import {

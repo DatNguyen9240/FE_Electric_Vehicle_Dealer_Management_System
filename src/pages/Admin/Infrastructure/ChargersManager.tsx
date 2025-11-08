@@ -1,7 +1,8 @@
 import React from "react";
 import api from "@libs/axios";
+import { toast } from "react-toastify";
 import { useTitle } from "@contexts";
-import { Plus, Trash2, Pencil, Search } from "lucide-react";
+import { Plus, Trash2, Pencil, Power, PowerOff, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 type Station = { _id: string; name?: string; code?: string };
@@ -75,11 +76,42 @@ const ChargersManager: React.FC = () => {
 		if (!confirm("Xoá trụ này?")) return;
 		try {
 			await api.delete(`/chargers/${id}`);
+			toast.success("Xóa trụ thành công!");
 			await load();
-		} catch (err: unknown) {
-			const msg = getErrorMessage(err);
-			console.error("Failed to delete charger", err);
-			setError(msg);
+		} catch (e: any) {
+			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi xoá trụ";
+			toast.error(errorMsg);
+		}
+	};
+
+	const toggleStatus = async (c: Charger) => {
+		const next = c.status === "ONLINE" ? "OFFLINE" : "ONLINE";
+		// Optimistic update - cập nhật UI ngay lập tức
+		setRows(prevRows => 
+			prevRows.map(charger => 
+				charger._id === c._id ? { ...charger, status: next } : charger
+			)
+		);
+		try {
+			const response = await api.put(`/chargers/${c._id}`, { ...c, status: next });
+			// Cập nhật từ response của server nếu có
+			if (response.data && response.data.status) {
+				setRows(prevRows => 
+					prevRows.map(charger => 
+						charger._id === c._id ? { ...charger, status: response.data.status } : charger
+					)
+				);
+			}
+			toast.success(`Đã ${next === "ONLINE" ? "bật" : "tắt"} trụ sạc`);
+		} catch (e: any) {
+			// Rollback nếu có lỗi
+			setRows(prevRows => 
+				prevRows.map(charger => 
+					charger._id === c._id ? { ...charger, status: c.status } : charger
+				)
+			);
+			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi đổi trạng thái";
+			toast.error(errorMsg);
 		}
 	};
 
@@ -140,10 +172,39 @@ const ChargersManager: React.FC = () => {
 									<td className="px-4 py-3">{c.code}</td>
 									<td className="px-4 py-3">{c.connectorType}</td>
 									<td className="px-4 py-3">{c.powerKw}</td>
-									<td className="px-4 py-3">{c.status}</td>
+									<td className="px-4 py-3">
+										<span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+											c.status === "ONLINE" 
+												? "bg-green-50 text-green-600" 
+												: "bg-gray-50 text-gray-600"
+										}`}>
+											{c.status === "ONLINE" ? "ONLINE" : "OFFLINE"}
+										</span>
+									</td>
 									<td className="px-4 py-3 text-right">
-										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3"><Pencil size={16} /></button>
-										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600"><Trash2 size={16} /></button>
+										<button 
+											onClick={() => toggleStatus(c)} 
+											className={`mr-3 transition-colors ${
+												c.status === "ONLINE" 
+													? "text-green-600 hover:text-green-700" 
+													: "text-gray-400 hover:text-gray-600"
+											}`}
+											title={c.status === "ONLINE" ? "Tắt trụ" : "Bật trụ"}
+										>
+											{c.status === "ONLINE" ? (
+												<div className="flex items-center gap-1">
+													<Power size={18} className="text-green-600" />
+													<span className="text-xs text-green-600">ON</span>
+												</div>
+											) : (
+												<div className="flex items-center gap-1">
+													<PowerOff size={18} className="text-gray-400" />
+													<span className="text-xs text-gray-400">OFF</span>
+												</div>
+											)}
+										</button>
+										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3" title="Chỉnh sửa"><Pencil size={16} /></button>
+										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Xóa"><Trash2 size={16} /></button>
 									</td>
 								</tr>
 							);
