@@ -1,68 +1,25 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StationCard from "@components/Ui/StationCard";
 import Pagination from "@components/Ui/Pagination";
-
-const stations = [
-  {
-    id: 1,
-    name: "EV Station Vincom",
-    rating: 4.5,
-    distance: "2.5km",
-    address: "72 Le Thanh Ton, District 1, HCMC",
-    pricePerKwh: "5,000đ/kWh",
-    pricePerMin: "1,000đ/min",
-    image: "/station/01.png",
-    connectors: [
-      { type: "CCS2", power: "60kW", status: "available" as const },
-      { type: "CHAdeMO", power: "50kW", status: "in-use" as const },
-      { type: "AC", power: "22kW", status: "booked" as const },
-    ],
-    operatingHours: "Unlimited",
-    availableSlots: 8,
-    totalSlots: 12,
-  },
-  {
-    id: 2,
-    name: "EV Station Diamond Plaza",
-    rating: 4.7,
-    distance: "1.8km",
-    address: "34 Le Duan, District 1, HCMC",
-    pricePerKwh: "4,500đ/kWh",
-    pricePerMin: "900đ/min",
-    image: "/station/01.png",
-    connectors: [
-      { type: "CCS2", power: "120kW", status: "available" as const },
-      { type: "CHAdeMO", power: "50kW", status: "available" as const },
-      { type: "AC", power: "22kW", status: "in-use" as const },
-    ],
-    operatingHours: "06:00 - 22:00",
-    availableSlots: 10,
-    totalSlots: 15,
-  },
-  {
-    id: 3,
-    name: "EV Station Saigon Centre",
-    rating: 4.3,
-    distance: "3.2km",
-    address: "65 Le Loi, District 1, HCMC",
-    pricePerKwh: "5,500đ/kWh",
-    pricePerMin: "1,200đ/min",
-    image: "/station/01.png",
-    connectors: [
-      { type: "CCS2", power: "150kW", status: "available" as const },
-      { type: "CHAdeMO", power: "50kW", status: "booked" as const },
-      { type: "Type 2", power: "43kW", status: "available" as const },
-    ],
-    operatingHours: "24/7",
-    availableSlots: 6,
-    totalSlots: 10,
-  },
-];
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "@redux/store/store";
+import { fetchStationsThunk } from "@redux/slice/Station/StationThunk";
 
 const StationListSection: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Lấy danh sách trạm từ Redux
+  const { stations, loading, error } = useSelector(
+    (state: RootState) => state.station
+  );
+
+  useEffect(() => {
+    dispatch(fetchStationsThunk());
+  }, [dispatch]);
+
   const itemsPerPage = 6;
   const totalPages = Math.ceil(stations.length / itemsPerPage);
 
@@ -71,11 +28,11 @@ const StationListSection: React.FC = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentStations = stations.slice(startIndex, endIndex);
 
-  const handleBookNow = (stationId: number) => {
+  const handleBookNow = (stationId: string) => {
     navigate(`/booking/station/${stationId}`);
   };
 
-  const handleViewDetails = (stationId: number) => {
+  const handleViewDetails = (stationId: string) => {
     navigate(`/station/${stationId}`);
   };
 
@@ -85,21 +42,31 @@ const StationListSection: React.FC = () => {
         <h2 className="text-2xl md:text-4xl font-bold mb-8 text-center">
           Charging Station List
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {currentStations.map((station) => (
-            <StationCard
-              key={station.id}
-              {...station}
-              onBookNow={() => handleBookNow(station.id)}
-              onViewDetails={() => handleViewDetails(station.id)}
+        {loading ? (
+          <div className="text-center text-gray-500 py-10">Loading stations...</div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-10">{error}</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {currentStations.map((station) => (
+                <StationCard
+                  key={station._id}
+                  name={station.name}
+                  status={station.status}
+                  address={`${station.location.coordinates[1]}, ${station.location.coordinates[0]}`}
+                  onBookNow={() => handleBookNow(station._id)}
+                  onViewDetails={() => handleViewDetails(station._id)}
+                />
+              ))}
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
             />
-          ))}
-        </div>
-        <Pagination 
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
+          </>
+        )}
       </div>
     </section>
   );

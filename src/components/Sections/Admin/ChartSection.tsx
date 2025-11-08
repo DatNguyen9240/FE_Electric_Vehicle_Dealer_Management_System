@@ -19,7 +19,7 @@ type ChartSectionProps = {
 
 const ChartSection: React.FC<ChartSectionProps> = ({ data: propData, loading: propLoading }) => {
   const [loading, setLoading] = React.useState<boolean>(false);
-  const [data, setData] = React.useState<any>(null);
+  const [data, setData] = React.useState<unknown | null>(null);
 
   React.useEffect(() => {
     if (propData) {
@@ -30,10 +30,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data: propData, loading: pr
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get<any>("/analytics/admin/overview");
-        if (mounted) setData(res.data);
-      } catch (e) {
-        // silent fail for UI; could add toast
+        const res = await api.get("/analytics/admin/overview");
+        if (mounted) setData(res.data as unknown);
+      } catch (err) {
+        // keep a console trace for debugging without failing the UI
+        console.error("Failed to load admin overview:", err);
       } finally {
         if (mounted) setLoading(false);
       }

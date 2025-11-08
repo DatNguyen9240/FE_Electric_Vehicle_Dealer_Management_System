@@ -7,13 +7,15 @@ import { useTitle } from "@contexts";
 
 type ChargerPayload = { stationId: string; name: string; code: string; connectorType: string; powerKw: number; status: string };
 
+type Station = { _id: string; name?: string; code?: string };
+
 const ChargersCreateEdit: React.FC = () => {
   const { setTitle } = useTitle();
   const { chargerId } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(chargerId);
 
-  const [stations, setStations] = React.useState<any[]>([]);
+  const [stations, setStations] = React.useState<Station[]>([]);
   const [form, setForm] = React.useState<ChargerPayload>({ stationId: "", name: "", code: "", connectorType: "AC", powerKw: 7.2, status: "ONLINE" });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -24,7 +26,12 @@ const ChargersCreateEdit: React.FC = () => {
     (async () => {
       try {
         const s = await api.get("/stations", { params: { limit: 1000 } });
-        const list = Array.isArray(s.data) ? s.data : (s.data?.items || []);
+        const d: unknown = s.data;
+        const list = (Array.isArray(d)
+          ? (d as Station[])
+          : (d && typeof d === "object"
+            ? ((d as Record<string, unknown>).items ?? (d as Record<string, unknown>).data ?? (d as Record<string, unknown>).stations ?? [])
+            : [])) as Station[];
         setStations(list);
         if (!form.stationId && list[0]?._id) setForm((f) => ({ ...f, stationId: list[0]._id }));
       } catch (e: any) {

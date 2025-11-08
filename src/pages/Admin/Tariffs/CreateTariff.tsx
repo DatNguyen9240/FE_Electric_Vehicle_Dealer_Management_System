@@ -34,6 +34,19 @@ const CreateTariff: React.FC = () => {
     effectiveFrom: new Date().toISOString().slice(0, 16),
   });
 
+  const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
+  const getErrorMessage = (eVal: unknown, fallback = "Có lỗi xảy ra") => {
+    if (!eVal) return fallback;
+    if (typeof eVal === "string") return eVal;
+    if (eVal instanceof Error) return eVal.message;
+    const r = asRecord(eVal);
+    if (typeof r.message === "string") return r.message;
+    const response = asRecord(r.response);
+    const data = asRecord(response.data);
+    if (typeof data.message === "string") return data.message;
+    return fallback;
+  };
+
   useEffect(() => {
     setTitle("Tạo biểu giá sạc mới");
     fetchStations();
@@ -75,8 +88,8 @@ const CreateTariff: React.FC = () => {
 
       toast.success("Tạo biểu giá thành công!");
       navigate("/admin/tariffs");
-    } catch (err: any) {
-      toast.error(err || "Có lỗi xảy ra khi tạo biểu giá!");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Có lỗi xảy ra khi tạo biểu giá!"));
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@libs/axios";
 import type { AxiosError } from "axios";
+import type { Payment } from "./PaymentSlice";
 
 interface FetchPaymentsParams {
   page?: number;
@@ -16,7 +17,7 @@ interface PaymentResponse {
   limit: number;
   total: number;
   pages: number;
-  items: any[];
+  items: Payment[];
 }
 
 export const fetchPayments = createAsyncThunk(

@@ -13,13 +13,21 @@ const ConnectorsCreateEdit: React.FC = () => {
   const navigate = useNavigate();
   const isEdit = Boolean(connectorId);
 
-  const [stations, setStations] = React.useState<any[]>([]);
-  const [chargers, setChargers] = React.useState<any[]>([]);
+  type Station = { _id: string; name?: string; code?: string };
+  type Charger = { _id: string; stationId?: string; name?: string; code?: string };
+
+  const [stations, setStations] = React.useState<Station[]>([]);
+  const [chargers, setChargers] = React.useState<Charger[]>([]);
   const [form, setForm] = React.useState<ConnectorPayload>({ stationId: "", chargerId: "", type: "AC", powerKw: 7.2, status: "IDLE", code: "" });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => { setTitle(isEdit ? "Sửa đầu sạc" : "Thêm đầu sạc"); }, [isEdit, setTitle]);
+
+  const asRecord = (v: unknown): Record<string, unknown> | null =>
+    v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+
+ ;
 
   React.useEffect(() => {
     (async () => {
@@ -28,8 +36,10 @@ const ConnectorsCreateEdit: React.FC = () => {
           api.get("/stations", { params: { limit: 1000 } }),
           api.get("/chargers", { params: { limit: 1000 } }),
         ]);
-        const sl = Array.isArray(s.data) ? s.data : (s.data?.items || []);
-        const cl = Array.isArray(ch.data) ? ch.data : (ch.data?.items || []);
+        const sd: unknown = s.data;
+        const cd: unknown = ch.data;
+        const sl = (Array.isArray(sd) ? sd : (asRecord(sd)?.items ?? asRecord(sd)?.data ?? [])) as Station[];
+        const cl = (Array.isArray(cd) ? cd : (asRecord(cd)?.items ?? asRecord(cd)?.data ?? [])) as Charger[];
         setStations(sl);
         setChargers(cl);
         if (!form.stationId && sl[0]?._id) setForm((f) => ({ ...f, stationId: sl[0]._id }));

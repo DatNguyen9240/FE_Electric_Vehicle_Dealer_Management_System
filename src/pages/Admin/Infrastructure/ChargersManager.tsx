@@ -31,20 +31,35 @@ const ChargersManager: React.FC = () => {
 
 	React.useEffect(() => { setTitle("Quản lí trụ"); }, [setTitle]);
 
+	const asRecord = (v: unknown): Record<string, unknown> | null =>
+		v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+
+	const getErrorMessage = (e: unknown) => {
+		try {
+			const ae = e as { response?: { data?: { message?: string } }; message?: string };
+			return ae?.response?.data?.message || ae?.message || "Không tải được danh sách trụ";
+		} catch {
+			return "Không tải được danh sách trụ";
+		}
+	};
+
 	const load = React.useCallback(async () => {
 		setLoading(true);
 		setError(null);
 		try {
-			const [cRes, sRes] = await Promise.all([
-				api.get<any>("/chargers", { params: { limit: 1000 } }),
-				api.get<any>("/stations", { params: { limit: 1000 } }),
-			]);
-			const list: Charger[] = Array.isArray(cRes.data) ? cRes.data : (cRes.data?.items || []);
-			const sts: Station[] = Array.isArray(sRes.data) ? sRes.data : (sRes.data?.items || []);
+			const [cRes, sRes] = await Promise.all([api.get("/chargers", { params: { limit: 1000 } }), api.get("/stations", { params: { limit: 1000 } })]);
+			const cData: unknown = cRes.data;
+			const sData: unknown = sRes.data;
+			const list = (Array.isArray(cData)
+				? (cData as Charger[])
+				: (asRecord(cData)?.items ?? asRecord(cData)?.data ?? [])) as Charger[];
+			const sts = (Array.isArray(sData)
+				? (sData as Station[])
+				: (asRecord(sData)?.items ?? asRecord(sData)?.data ?? [])) as Station[];
 			setRows(list);
 			setStations(sts);
-		} catch (e: any) {
-			setError(e?.response?.data?.message || e?.message || "Không tải được danh sách trụ");
+		} catch (err: unknown) {
+			setError(getErrorMessage(err));
 		} finally {
 			setLoading(false);
 		}

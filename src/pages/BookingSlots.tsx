@@ -9,7 +9,7 @@ const BookingSlots: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1400px] mx-auto px-4 md:px-12 py-8">
+      <div className="max-w-[1500px] mx-auto px-4 md:px-12 py-8">
         {/* Header with back button */}
         <div className="mb-6">
           <button

@@ -43,8 +43,12 @@ const TableSection: React.FC = () => {
                 const r = await api.get(`/chargers`, {
                   params: { stationId: s.stationId, limit: 1000 },
                 });
-                const chargers = Array.isArray(r.data) ? r.data : [];
-                const sum = chargers.reduce((acc: number, ch: any) => acc + (Array.isArray(ch.connectors) ? ch.connectors.length : 0), 0);
+                const chargers = Array.isArray(r.data) ? (r.data as unknown[]) : [];
+                const sum = chargers.reduce((acc: number, ch: unknown) => {
+                  const obj = ch && typeof ch === "object" && !Array.isArray(ch) ? (ch as Record<string, unknown>) : {};
+                  const con = obj["connectors"];
+                  return acc + (Array.isArray(con) ? (con as unknown[]).length : 0);
+                }, 0);
                 counts[String(s.stationId)] = sum;
               } catch {
                 counts[String(s.stationId)] = 0;

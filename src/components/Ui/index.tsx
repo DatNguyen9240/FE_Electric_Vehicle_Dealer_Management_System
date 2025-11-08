@@ -4,3 +4,4 @@ export { default as AdminChargerCard } from "./AdminChargerCard";
 export { default as ChargingStationCardPopup } from "./ChargingStationCardPopup";
 export { default as CalendarPicker } from "./CalendarPicker";
 export { default as StationCard } from "./StationCard";
+export { default as NotificationItem } from "./NotificationItem";

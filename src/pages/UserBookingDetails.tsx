@@ -1,14 +1,14 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import BookingForm, {
-  type BookingFormRef,
-  type FormValues, // Thêm dòng này
-} from "@components/Sections/Booking/Modal/BookingForm";
+// Booking form removed from right column per request
+import api from "@libs/axios";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 // Type definition for connector
 interface Connector {
-  id: number;
+  id: string;
   name: string;
   type: string;
   power: string;
@@ -16,69 +16,16 @@ interface Connector {
   remainingTime: string;
 }
 
-// Mock data cho 2 connectors của charger
-const getChargerConnectors = (chargerId: string): Connector[] => {
-  // Mock data - trong thực tế sẽ fetch từ API dựa vào chargerId
-  const connectorsData: Record<string, Connector[]> = {
-    C001: [
-      {
-        id: 1,
-        name: "Connector 1",
-        type: "CCS2",
-        power: "150kW",
-        status: "Available",
-        remainingTime: "",
-      },
-      {
-        id: 2,
-        name: "Connector 2",
-        type: "CHAdeMO",
-        power: "100kW",
-        status: "Charging",
-        remainingTime: "00:45:23",
-      },
-    ],
-    C007: [
-      {
-        id: 1,
-        name: "Connector 1",
-        type: "Type 2",
-        power: "22kW",
-        status: "Available",
-        remainingTime: "",
-      },
-      {
-        id: 2,
-        name: "Connector 2",
-        type: "CCS2",
-        power: "150kW",
-        status: "Available",
-        remainingTime: "",
-      },
-    ],
-    // Default for other chargers
-    default: [
-      {
-        id: 1,
-        name: "Connector 1",
-        type: "CCS2",
-        power: "150kW",
-        status: "Available",
-        remainingTime: "",
-      },
-      {
-        id: 2,
-        name: "Connector 2",
-        type: "Type 2",
-        power: "43kW",
-        status: "Charging",
-        remainingTime: "01:15:30",
-      },
-    ],
-  };
-
-  return connectorsData[chargerId] || connectorsData["default"];
-};
+// Raw shape returned by backend for a connector
+interface RawConnector {
+  _id: string;
+  code?: string;
+  type?: string;
+  connectorType?: string;
+  powerKw?: number;
+  power?: string;
+  status?: string;
+}
 
 const UserBookingDetails: React.FC = () => {
   const navigate = useNavigate();
@@ -89,34 +36,81 @@ const UserBookingDetails: React.FC = () => {
   }>();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const selectedTimeSlot = timeSlot || "07:00"; // Get from URL params
-  const [selectedConnector, setSelectedConnector] = useState<number | null>(
+  const [selectedConnector, setSelectedConnector] = useState<string | null>(
     null
   );
-  const bookingFormRef = useRef<BookingFormRef>(null);
+  
 
-  const connectors = getChargerConnectors(chargerId || "");
+  const [connectors, setConnectors] = useState<Connector[]>([]);
+  const [loadingConnectors, setLoadingConnectors] = useState(false);
+  const [connectorsError, setConnectorsError] = useState<string | null>(null);
+  useEffect(() => {
+    async function loadCharger() {
+      if (!chargerId) return;
+      setLoadingConnectors(true);
+      setConnectorsError(null);
+      try {
+        const res = await api.get(`/chargers/${chargerId}`);
+        const data = res.data;
+        // data.connectors expected
+        const mapped: Connector[] = (data.connectors ?? []).map((c: RawConnector) => ({
+          id: c._id,
+          name: c.code ?? c.type ?? `Connector ${c._id}`,
+          type: c.type ?? c.connectorType ?? "-",
+          power: c.powerKw ? `${c.powerKw}kW` : c.power ?? "-",
+          status: c.status === "IDLE" ? "Available" : c.status === "CHARGING" ? "Charging" : (c.status || "Unknown"),
+          remainingTime: "",
+        }));
+        setConnectors(mapped);
+      } catch (err: unknown) {
+        const message = axios.isAxiosError(err)
+          ? (err.response?.data?.msg as string) || err.message
+          : (err as Error)?.message || "Lỗi tải connector";
+        setConnectorsError(message);
+        toast.error(message);
+      } finally {
+        setLoadingConnectors(false);
+      }
+    }
+    loadCharger();
+  }, [chargerId]);
 
-  const handleReset = () => {
+  // helper to reset selection
+  const clearSelection = () => {
     setSelectedDate(new Date());
     setSelectedConnector(null);
   };
 
-  const handleFormSubmit = (data: FormValues) => {
-    const selectedConnectorData = connectors.find(
-      (c: Connector) => c.id === selectedConnector
-    );
-    console.log({
-      ...data,
-      date: selectedDate,
-      timeSlot: selectedTimeSlot,
-      stationId,
-      chargerId,
-      connectorId: selectedConnector,
-      connectorType: selectedConnectorData?.type,
-      connectorPower: selectedConnectorData?.power,
-    });
-    alert("Booking submitted successfully! Check console for details.");
-    navigate(`/booking/station/${stationId}/charger/${chargerId}`);
+  const [booking, setBooking] = useState(false);
+
+  const bookConnector = async () => {
+    if (!selectedConnector) {
+      toast.error("Please select a connector first.");
+      return;
+    }
+
+    // build slotStart from selectedDate + selectedTimeSlot (HH:mm)
+    try {
+      const [hourStr, minuteStr] = (selectedTimeSlot || "07:00").split(":");
+      const slotDate = new Date(selectedDate);
+      slotDate.setHours(Number(hourStr || 0), Number(minuteStr || 0), 0, 0);
+      const slotStart = slotDate.toISOString();
+
+      setBooking(true);
+      const payload = { connectorId: selectedConnector, slotStart };
+  await api.post("/bookings", payload);
+  toast.success("Booking successful!");
+      // optionally redirect back to charger page
+      navigate(`/booking/station/${stationId}/charger/${chargerId}`);
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data?.msg as string) || err.message
+        : (err as Error)?.message || "Booking failed";
+      console.error(err);
+      toast.error(message);
+    } finally {
+      setBooking(false);
+    }
   };
 
   return (
@@ -144,9 +138,9 @@ const UserBookingDetails: React.FC = () => {
 
         {/* Main Content */}
         <div className="bg-white rounded-2xl shadow-sm border">
-          <div className="flex flex-col lg:flex-row min-h-[600px]">
-            {/* Left: Connector Selection */}
-            <div className="lg:w-2/3 w-full border-r">
+          <div className="flex flex-col min-h-[600px]">
+            {/* Connector Selection (full width) */}
+            <div className="w-full">
               <div className="p-6 border-b">
                 <h3 className="text-lg font-semibold text-gray-800">
                   Select Connector
@@ -157,34 +151,31 @@ const UserBookingDetails: React.FC = () => {
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {connectors.map((connector: Connector) => {
-                    const isAvailable = connector.status === "Available";
-                    const isSelected = selectedConnector === connector.id;
+                  {loadingConnectors ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={`skeleton-${i}`} className="animate-pulse border-2 rounded-xl p-6 bg-gray-50 h-40" />
+                    ))
+                  ) : connectorsError ? (
+                    <div className="col-span-1 md:col-span-2 text-center text-red-600 py-6">{connectorsError}</div>
+                  ) : connectors.length === 0 ? (
+                    <div className="col-span-1 md:col-span-2 text-center text-gray-500 py-6">No connectors found for this charger.</div>
+                  ) : (
+                    connectors.map((connector: Connector) => {
+                      const isAvailable = connector.status === "Available";
+                      const isSelected = selectedConnector === connector.id;
 
                       return (
                         <div
                           key={connector.id}
                           onClick={() => {
                             if (isAvailable) {
-                              setSelectedConnector(
-                                isSelected ? null : connector.id
-                              );
+                              setSelectedConnector(isSelected ? null : connector.id);
                             }
                           }}
-                        className={`
-                          relative border-2 rounded-xl p-6 transition-all
-                          ${
-                            !isAvailable
-                              ? "opacity-50 cursor-not-allowed bg-gray-50"
-                              : "cursor-pointer hover:shadow-md"
-                          }
-                          ${
-                            isSelected
-                              ? "border-blue-600 bg-blue-50 shadow-lg"
-                              : "border-gray-200 hover:border-blue-300"
-                          }
-                        `}
-                      >
+                          className={`relative border-2 rounded-xl p-6 transition-all ${
+                            !isAvailable ? "opacity-50 cursor-not-allowed bg-gray-50" : "cursor-pointer hover:shadow-md"
+                          } ${isSelected ? "border-blue-600 bg-blue-50 shadow-lg" : "border-gray-200 hover:border-blue-300"}`}
+                        >
                         {/* Selected Badge or Disabled Badge */}
                         {isSelected && isAvailable && (
                           <div className="absolute top-4 right-4">
@@ -328,7 +319,29 @@ const UserBookingDetails: React.FC = () => {
                         </div>
                       </div>
                     );
-                  })}
+                  }))}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <div>
+                    <button
+                      type="button"
+                      onClick={clearSelection}
+                      className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    >
+                      Clear selection
+                    </button>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50"
+                      onClick={bookConnector}
+                      disabled={!selectedConnector || booking}
+                    >
+                      {booking ? "Booking..." : "Book selected connector"}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Warning message if no available connectors */}
@@ -364,57 +377,8 @@ const UserBookingDetails: React.FC = () => {
                 )}
               </div>
             </div>
-
-            {/* Right: Booking Form */}
-            <div className="lg:w-1/3 w-full flex flex-col">
-              <div className="p-6 border-b flex-shrink-0">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Booking Details
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Fill in your information to complete the booking
-                </p>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <BookingForm
-                  ref={bookingFormRef}
-                  onSubmit={handleFormSubmit}
-                  onReset={handleReset}
-                />
-              </div>
-              <div className="p-6 border-t flex gap-3">
-                <button
-                  type="button"
-                  className="flex-1 py-2 px-4 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
-                  onClick={() => {
-                    navigate(
-                      `/booking/station/${stationId}/charger/${chargerId}`
-                    );
-                    bookingFormRef.current?.resetForm();
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="flex-1 py-2 px-4 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  onClick={() => {
-                    if (selectedConnector) {
-                      bookingFormRef.current?.submitForm();
-                    } else {
-                      alert("Please select a connector first.");
-                    }
-                  }}
-                  disabled={!selectedConnector}
-                >
-                  Submit
-                </button>
-              </div>
-            </div>
           </div>
         </div>
-
-        
       </div>
     </div>
   );

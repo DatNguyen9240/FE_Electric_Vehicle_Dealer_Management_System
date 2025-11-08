@@ -13,6 +13,19 @@ import type { Tariff } from "../../../redux/slice/Tariff/TariffSlice";
 import { useTitle } from "../../../contexts";
 import api from "../../../libs/axios";
 
+const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
+const getErrorMessage = (eVal: unknown, fallback = "Có lỗi xảy ra") => {
+  if (!eVal) return fallback;
+  if (typeof eVal === "string") return eVal;
+  if (eVal instanceof Error) return eVal.message;
+  const r = asRecord(eVal);
+  if (typeof r.message === "string") return r.message;
+  const response = asRecord(r.response);
+  const data = asRecord(response.data);
+  if (typeof data.message === "string") return data.message;
+  return fallback;
+};
+
 interface Station {
   _id: string;
   name: string;
@@ -68,8 +81,8 @@ const TariffManager: React.FC = () => {
       await dispatch(deleteTariff(id)).unwrap();
       toast.success("Xóa biểu giá thành công!");
       dispatch(fetchTariffs());
-    } catch (error: any) {
-      toast.error(error || "Có lỗi xảy ra khi xóa!");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Có lỗi xảy ra khi xóa!"));
     }
   };
 

@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react";
+const FakeStationPage = lazy(() => import("@pages/FakeStationPage"));
 import { Routes, Route } from "react-router-dom";
 import LazyLoading from "@components/Ui/LazyLoading";
 
@@ -30,7 +31,6 @@ const PurchaseMembership = lazy(
   () => import("@pages/PurchaseMembership")
 );
 const AdminDashboard = lazy(() => import("@pages/Admin/AdminDashboard"));
-const StaffManager = lazy(() => import("@pages/Admin/Staffs/StaffManager"));
 const UserManager = lazy(() => import("@pages/Admin/Users/UserManager"));
 const EditUser = lazy(() => import("@pages/Admin/Users/EditUser"));
 const UserDetail = lazy(() => import("@pages/Admin/Users/UserDetail"));
@@ -43,6 +43,9 @@ const ChargersCreateEdit = lazy(() => import("@pages/Admin/Infrastructure/Charge
 const ConnectorsCreateEdit = lazy(() => import("@pages/Admin/Infrastructure/ConnectorsCreateEdit"));
 const EditTariff = lazy(() => import("@pages/Admin/Tariffs/EditTariff"));
 const CreateTariff = lazy(() => import("@pages/Admin/Tariffs/CreateTariff"));
+const AIForecast = lazy(() => import("@pages/Admin/AIForecast"));
+
+
 
 const PaymentManager = lazy(
   () => import("@pages/Admin/Payments/PaymentManager")
@@ -137,8 +140,16 @@ export default function AppRoutes() {
             path="/vehicles/new"
             element={createLazyRoute(NewVehicle, "Loading vehicle registration...")}
           />
+          <Route
+            path="/fake-station"
+            element={createLazyRoute(FakeStationPage, "Loading fake station...")}
+          />
+          <Route
+            path="/fake-station/:stationId"
+            element={createLazyRoute(FakeStationPage, "Loading fake station...")}
+          />
+          {/* Đã bỏ route /fake-station/:stationId/charger/:chargerId */}
         </Route>
-
         <Route
           path="/login"
           element={createLazyRoute(Login, "Loading login page...")}
@@ -156,13 +167,7 @@ export default function AppRoutes() {
               "Loading admin dashboard..."
             )}
           />
-          <Route
-            path="/admin/staffs"
-            element={createLazyRoute(
-              StaffManager,
-              "Loading staff management..."
-            )}
-          />
+        
           <Route
             path="/admin/users"
             element={createLazyRoute(UserManager, "Loading user management...")}
@@ -191,6 +196,10 @@ export default function AppRoutes() {
           <Route
             path="/admin/tariffs/create"
             element={createLazyRoute(CreateTariff, "Loading create tariff...")}
+          />
+          <Route
+            path="/admin/ai-forecast"
+            element={createLazyRoute(AIForecast, "Loading AI forecast...")}
           />
           <Route
             path="/admin/tariffs/edit/:tariffId"

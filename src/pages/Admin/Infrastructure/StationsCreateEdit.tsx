@@ -31,8 +31,9 @@ const StationsCreateEdit: React.FC = () => {
         if (!mounted) return;
         const s = res.data;
         setForm({ name: s.name, lat: s.lat, lng: s.lng, status: s.status });
-      } catch (e: any) {
+      } catch (err: unknown) {
         if (!mounted) return;
+        const e = err as any;
         setError(e?.response?.data?.message || e?.message || "Không tải được trạm");
         toast.error(e?.response?.data?.message || e?.message || "Không tải được trạm");
       } finally {
@@ -62,9 +63,7 @@ const StationsCreateEdit: React.FC = () => {
       }
       navigate("/admin/infrastructure/stations");
     } catch (e: any) {
-      const errorMsg = e?.response?.data?.message || e?.message || "Lỗi lưu trạm";
-      setError(errorMsg);
-      toast.error(errorMsg);
+      setError(e?.response?.data?.message || e?.message || "Lỗi lưu trạm");
     } finally {
       setLoading(false);
     }
