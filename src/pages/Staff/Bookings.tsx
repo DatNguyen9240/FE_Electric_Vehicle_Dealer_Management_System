@@ -40,10 +40,66 @@ const Bookings: React.FC = () => {
       setTitle("Staff Bookings");
     }, [setTitle]);
 
+    // Filters
+    const [statusFilter, setStatusFilter] = React.useState<string>("");
+    const [fromFilter, setFromFilter] = React.useState<string>("");
+    const [toFilter, setToFilter] = React.useState<string>("");
+    const [search, setSearch] = React.useState<string>("");
+    const [debouncedSearch, setDebouncedSearch] = React.useState<string>("");
+    const [stationFilter, setStationFilter] = React.useState<string>("");
+    const [stations, setStations] = React.useState<Array<any>>([]);
+
+    // debounce search
+    React.useEffect(() => {
+      const t = setTimeout(() => setDebouncedSearch(search.trim()), 350);
+      return () => clearTimeout(t);
+    }, [search]);
+
+    // fetch stations for station filter
+    React.useEffect(() => {
+      api
+        .get('/stations', { params: { status: 'ONLINE', limit: 200 } })
+        .then((res) => {
+          const d: any = res.data;
+          const list = d?.items || d?.data || d?.stations || d || [];
+          if (Array.isArray(list)) setStations(list);
+        })
+        .catch((err) => {
+          console.error('Failed to fetch stations', err);
+        });
+    }, []);
+
+  const toIsoStartOfDay = (d: string) => {
+    try {
+      const dt = new Date(d);
+      dt.setHours(0, 0, 0, 0);
+      return dt.toISOString();
+    } catch (e) {
+      return undefined;
+    }
+  };
+
+  const toIsoEndOfDay = (d: string) => {
+    try {
+      const dt = new Date(d);
+      dt.setHours(23, 59, 59, 999);
+      return dt.toISOString();
+    } catch (e) {
+      return undefined;
+    }
+  };
+
   const fetch = React.useCallback((p: number) => {
     setLoading(true);
+    const params: Record<string, unknown> = { page: p, limit };
+    if (statusFilter) params.status = statusFilter;
+    if (fromFilter) params.from = toIsoStartOfDay(fromFilter);
+    if (toFilter) params.to = toIsoEndOfDay(toFilter);
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (stationFilter) params.stationId = stationFilter;
+
     api
-      .get("/staff/bookings", { params: { page: p, limit } })
+      .get("/staff/bookings", { params })
       .then((res) => {
         const d = res.data as unknown;
         if (typeof d === "object" && d && !Array.isArray(d)) {
@@ -73,10 +129,19 @@ const Bookings: React.FC = () => {
         showToast("Failed to load bookings", "error");
       })
       .finally(() => setLoading(false));
-  }, [limit, showToast]);
+  }, [limit, showToast, statusFilter, fromFilter, toFilter, debouncedSearch, stationFilter]);
 
+  // initial load + refetch when fetch function changes (filters included)
   React.useEffect(() => { fetch(1); }, [fetch]);
+  // page change
   React.useEffect(() => { fetch(page); }, [page, fetch]);
+
+  // reset to page 1 when filter values change (debouncedSearch already debounced)
+  React.useEffect(() => {
+    setPage(1);
+    fetch(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, fromFilter, toFilter, debouncedSearch, stationFilter]);
 
   // Proxy booking modal state
   const [proxyOpen, setProxyOpen] = React.useState(false);
@@ -165,14 +230,84 @@ const Bookings: React.FC = () => {
 
   return (
   <div className="w-full px-6 py-6">
-      {/* Top actions */}
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={openProxy}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm"
-        >
-          New proxy booking
-        </button>
+      {/* Top actions & filters */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={openProxy}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm"
+          >
+            New proxy booking
+          </button>
+          <button
+            onClick={() => fetch(page)}
+            className="border border-gray-300 text-gray-700 dark:text-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-sm"
+          >
+            Refresh
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            placeholder="Search reference, vehicle, phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border rounded-md p-2 text-sm w-48"
+          />
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border rounded-md p-2 text-sm"
+          >
+            <option value="">All status</option>
+            <option value="RESERVED">RESERVED</option>
+            <option value="PENDING">PENDING</option>
+            <option value="COMPLETED">COMPLETED</option>
+            <option value="CANCELLED">CANCELLED</option>
+          </select>
+
+          <select
+            value={stationFilter}
+            onChange={(e) => setStationFilter(e.target.value)}
+            className="border rounded-md p-2 text-sm"
+          >
+            <option value="">All stations</option>
+            {stations.map((s) => (
+              <option key={s._id || s.id} value={s._id || s.id}>{s.name || s.title || s.code}</option>
+            ))}
+          </select>
+
+          <input
+            type="date"
+            value={fromFilter}
+            onChange={(e) => setFromFilter(e.target.value)}
+            className="border rounded-md p-2 text-sm"
+            title="From"
+          />
+
+          <input
+            type="date"
+            value={toFilter}
+            onChange={(e) => setToFilter(e.target.value)}
+            className="border rounded-md p-2 text-sm"
+            title="To"
+          />
+
+          <button
+            onClick={() => {
+              setStatusFilter("");
+              setFromFilter("");
+              setToFilter("");
+              setSearch("");
+              setStationFilter("");
+            }}
+            className="px-3 py-1.5 rounded-lg border text-sm"
+          >
+            Reset
+          </button>
+        </div>
       </div>
       {/* Pagination */}
       {pagination.pages > 1 && (
