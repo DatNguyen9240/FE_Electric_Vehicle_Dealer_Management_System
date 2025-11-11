@@ -78,6 +78,75 @@ const Bookings: React.FC = () => {
   React.useEffect(() => { fetch(1); }, [fetch]);
   React.useEffect(() => { fetch(page); }, [page, fetch]);
 
+  // Proxy booking modal state
+  const [proxyOpen, setProxyOpen] = React.useState(false);
+  const [connectors, setConnectors] = React.useState<Array<any>>([]);
+  const [proxyForm, setProxyForm] = React.useState({
+    connectorId: '',
+    slotStart: '',
+    durationMinutes: 30,
+    customerName: '',
+    paymentMethod: 'ONSITE',
+    userId: '',
+  });
+  const [proxyLoading, setProxyLoading] = React.useState(false);
+
+  const openProxy = () => {
+    setProxyOpen(true);
+    // fetch connectors online
+    api
+      .get('/connectors', { params: { status: 'ONLINE', limit: 100} })
+      .then((res) => {
+        const d = res.data as any;
+        // try to find items or data
+        const list = d?.items || d?.data || d?.connectors || d || [];
+        if (Array.isArray(list)) setConnectors(list);
+      })
+      .catch((err) => {
+        console.error(err);
+        showToast('Failed to load connectors', 'error');
+      });
+  };
+
+  const closeProxy = () => {
+    setProxyOpen(false);
+    setProxyForm({ connectorId: '', slotStart: '', durationMinutes: 30, customerName: '', paymentMethod: 'ONSITE', userId: '' });
+    setConnectors([]);
+    setProxyLoading(false);
+  };
+
+  const submitProxy = async () => {
+    const { connectorId, slotStart, durationMinutes, customerName, paymentMethod, userId } = proxyForm;
+    if (!connectorId) return showToast('Please choose a connector', 'error');
+    if (!slotStart) return showToast('Please choose slot start', 'error');
+    const dur = Number(durationMinutes) || 0;
+    if (dur <= 0) return showToast('Duration must be positive', 'error');
+    if (!userId && !customerName) return showToast('Customer name is required for walk-in', 'error');
+    if (!userId && paymentMethod !== 'ONSITE') return showToast('Walk-in must use ONSITE payment', 'error');
+
+    const payload: Record<string, unknown> = {
+      connectorId,
+      slotStart: new Date(slotStart).toISOString(),
+      durationMinutes: dur,
+      paymentMethod,
+    };
+    if (customerName) payload.customerName = customerName;
+    if (userId) payload.userId = userId;
+
+    setProxyLoading(true);
+    try {
+      await api.post('/staff/bookings/proxy', payload);
+      showToast('Proxy booking created', 'success');
+      closeProxy();
+      fetch(page);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to create proxy booking', 'error');
+    } finally {
+      setProxyLoading(false);
+    }
+  };
+
   const startFromBooking = async (bookingId?: string) => {
     if (!bookingId) {
       showToast("Missing booking id", "error");
@@ -96,8 +165,15 @@ const Bookings: React.FC = () => {
 
   return (
   <div className="w-full px-6 py-6">
-      <h2 className="text-2xl font-semibold mb-5 text-gray-800">Bookings</h2>
-
+      {/* Top actions */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={openProxy}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm"
+        >
+          New proxy booking
+        </button>
+      </div>
       {/* Pagination */}
       {pagination.pages > 1 && (
         <div className="flex justify-between items-center mb-4">
@@ -238,6 +314,100 @@ const Bookings: React.FC = () => {
               <p><strong>Session Status:</strong> {selected.session?.status ?? "-"}</p>
               <p><strong>Created At:</strong> {selected.createdAt ? new Date(selected.createdAt).toLocaleString() : "-"}</p>
               <p><strong>Updated At:</strong> {selected.updatedAt ? new Date(selected.updatedAt).toLocaleString() : "-"}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Proxy Booking Modal */}
+      {proxyOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-lg p-6 relative animate-fadeIn">
+            <button
+              onClick={closeProxy}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
+            >
+              ✕
+            </button>
+            <h3 className="text-xl font-semibold mb-4">Create proxy booking</h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-700">Connector</label>
+                <select
+                  value={proxyForm.connectorId}
+                  onChange={(e) => setProxyForm({ ...proxyForm, connectorId: e.target.value })}
+                  className="w-full border rounded-md p-2 text-sm"
+                >
+                  <option value="">-- choose connector --</option>
+                  {connectors.map((c: any) => (
+                    <option key={c._id || c.id} value={c._id || c.id}>
+                      {c.code || c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700">Slot start</label>
+                <input
+                  type="datetime-local"
+                  value={proxyForm.slotStart}
+                  onChange={(e) => setProxyForm({ ...proxyForm, slotStart: e.target.value })}
+                  className="w-full border rounded-md p-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700">Duration (minutes)</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={proxyForm.durationMinutes}
+                  onChange={(e) => setProxyForm({ ...proxyForm, durationMinutes: Number(e.target.value) })}
+                  className="w-full border rounded-md p-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700">Customer name (if walk-in)</label>
+                <input
+                  type="text"
+                  value={proxyForm.customerName}
+                  onChange={(e) => setProxyForm({ ...proxyForm, customerName: e.target.value })}
+                  className="w-full border rounded-md p-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700">User ID (optional)</label>
+                <input
+                  type="text"
+                  value={proxyForm.userId}
+                  onChange={(e) => setProxyForm({ ...proxyForm, userId: e.target.value })}
+                  className="w-full border rounded-md p-2 text-sm"
+                  placeholder="Existing user id (optional)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700">Payment method</label>
+                <select
+                  value={proxyForm.paymentMethod}
+                  onChange={(e) => setProxyForm({ ...proxyForm, paymentMethod: e.target.value })}
+                  className="w-full border rounded-md p-2 text-sm"
+                >
+                  <option value="ONSITE">ONSITE</option>
+                  <option value="WALLET">WALLET</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={closeProxy} className="px-4 py-2 rounded-lg border">Cancel</button>
+                <button onClick={submitProxy} className="px-4 py-2 rounded-lg bg-indigo-600 text-white">
+                  {proxyLoading ? 'Creating...' : 'Create booking'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

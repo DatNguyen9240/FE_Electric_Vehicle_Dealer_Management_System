@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
 import api from "@libs/axios";
-import { Loader2, Zap, Plug, Gauge, Power, Building2 } from "lucide-react";
+import { Loader2, Plug, Gauge, Power, Building2 } from "lucide-react";
 import { useTitle } from "../../contexts";
+import { useUi } from "../../contexts/uiContextCore";
 
 const StationDashboard: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
@@ -45,18 +46,55 @@ const StationDashboard: React.FC = () => {
   React.useEffect(() => {
     let mounted = true;
     setLoading(true);
-    api
-      .get("/staff/stations/status")
-      .then((res) => {
+    const load = async () => {
+      try {
+        const res = await api.get("/staff/stations/status");
         if (!mounted) return;
         setData(res.data);
-      })
-      .catch(console.error)
-      .finally(() => mounted && setLoading(false));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
     return () => {
       mounted = false;
     };
   }, []);
+
+  // expose a reload function for actions
+  const loadStations = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/staff/stations/status");
+      setData(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const { showToast } = useUi();
+  const [toggling, setToggling] = React.useState<Record<string, boolean>>({});
+
+  const toggleChargerPower = async (chargerId: string | undefined, currentStatus?: string) => {
+    if (!chargerId) return;
+    const desired = (String(currentStatus || '').toUpperCase() === 'ONLINE') ? 'OFFLINE' : 'ONLINE';
+    setToggling((s) => ({ ...s, [chargerId]: true }));
+    try {
+      await api.patch(`/staff/chargers/${chargerId}/power`, { status: desired });
+      showToast(`Charger ${desired === 'ONLINE' ? 'turned on' : 'turned off'}`, 'success');
+      await loadStations();
+    } catch (err) {
+      console.error(err);
+      const msg = (err as any)?.response?.data?.message || 'Failed to change charger power';
+      showToast(msg, 'error');
+    } finally {
+      setToggling((s) => ({ ...s, [chargerId]: false }));
+    }
+  };
 
   if (loading)
     return (
@@ -123,9 +161,7 @@ const StationDashboard: React.FC = () => {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold flex items-center gap-2 text-gray-800">
-          <Zap className="text-yellow-500" /> Station Dashboard
-        </h2>
+      
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-600">Filter:</label>
           <select
@@ -270,13 +306,28 @@ const StationDashboard: React.FC = () => {
                     {(s.chargers ?? []).map((ch: Charger) => (
                       <li
                         key={ch.id}
-                        className="bg-gray-50 p-2 rounded-lg border border-gray-100 hover:bg-gray-100 transition"
+                        className="bg-gray-50 p-2 rounded-lg border border-gray-100 hover:bg-gray-100 transition flex items-center justify-between"
                       >
-                        <div className="font-medium text-gray-800">
-                          {ch.name} ({ch.code})
+                        <div>
+                          <div className="font-medium text-gray-800">
+                            {ch.name} ({ch.code})
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Status: {ch.status} • {ch.powerKw} kW
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Status: {ch.status} • {ch.powerKw} kW
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleChargerPower(ch.id, ch.status)}
+                            disabled={Boolean(toggling[ch.id ?? ''])}
+                            className={`text-xs px-2 py-1 rounded-md font-medium transition ${
+                              String(ch.status || '').toUpperCase() === 'ONLINE'
+                                ? 'bg-red-500 text-white hover:bg-red-600'
+                                : 'bg-green-500 text-white hover:bg-green-600'
+                            }`}
+                          >
+                            {String(ch.status || '').toUpperCase() === 'ONLINE' ? 'Turn off' : 'Turn on'}
+                          </button>
                         </div>
                       </li>
                     ))}

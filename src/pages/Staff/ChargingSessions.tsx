@@ -1,6 +1,6 @@
 import React from "react";
 import api from "@libs/axios";
-import { Loader2, Play, Square, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Play, Square, ChevronLeft, ChevronRight, Eye, RefreshCw } from "lucide-react";
 import { useUi } from "../../contexts/uiContextCore";
 import { useTitle } from "../../contexts";
 
@@ -25,8 +25,15 @@ const ChargingSessions: React.FC = () => {
   const [page, setPage] = React.useState<number>(1);
   const [limit] = React.useState<number>(20);
   const [pagination, setPagination] = React.useState({ page: 1, limit: 20, total: 0, pages: 0 });
+  const [connectors, setConnectors] = React.useState<Array<{ id?: string; code?: string }>>([]);
+  const [stations, setStations] = React.useState<Array<{ id?: string; name?: string }>>([]);
+  const [filters, setFilters] = React.useState({ connectorId: '', stationId: '', status: '', search: '', sort: '-startedAt' });
 
   const { showToast, confirm } = useUi();
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [preview, setPreview] = React.useState<any | null>(null);
+  const [previewLoading, setPreviewLoading] = React.useState(false);
+  const [note, setNote] = React.useState<string>('');
 
     const { setTitle } = useTitle();
     React.useEffect(() => {
@@ -35,8 +42,14 @@ const ChargingSessions: React.FC = () => {
 
   const fetch = React.useCallback((p: number) => {
     setLoading(true);
+    const params: Record<string, unknown> = { page: p, limit };
+    if (filters.connectorId) params.connectorId = filters.connectorId;
+    if (filters.stationId) params.stationId = filters.stationId;
+    if (filters.status) params.status = filters.status;
+    if (filters.search) params.search = filters.search;
+    if (filters.sort) params.sort = filters.sort;
     api
-      .get("/staff/sessions", { params: { page: p, limit } })
+      .get("/staff/sessions", { params })
       .then((res) => {
         const d = res.data as unknown;
         if (typeof d === "object" && d && !Array.isArray(d)) {
@@ -67,9 +80,44 @@ const ChargingSessions: React.FC = () => {
       .finally(() => setLoading(false));
   }, [limit]);
 
+  // load connectors and stations for filters
+  React.useEffect(() => {
+    api
+      .get('/connectors', { params: { status: 'ONLINE', limit: 200 } })
+      .then((res) => {
+        const d = res.data as any;
+        const list = Array.isArray(d) ? d : d?.items ?? d?.connectors ?? d?.data ?? [];
+        if (Array.isArray(list)) setConnectors(list.map((c: any) => ({ id: c._id ?? c.id, code: c.code })));
+      })
+      .catch(() => {});
+
+    api
+      .get('/stations', { params: { status: 'ONLINE', limit: 200 } })
+      .then((res) => {
+        const d = res.data as any;
+        const list = Array.isArray(d) ? d : d?.stations ?? d?.items ?? d?.data ?? [];
+        if (Array.isArray(list)) setStations(list.map((s: any) => ({ id: s._id ?? s.id, name: s.name })));
+      })
+      .catch(() => {});
+  }, []);
+
   React.useEffect(() => {
     fetch(page);
   }, [fetch, page]);
+
+  // debounce search input into filters.search
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      setFilters((f) => ({ ...f, search: searchTerm }));
+      fetch(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  const applyFilters = () => {
+    setPage(1);
+    fetch(1);
+  };
 
   const stopSession = async (id?: string) => {
     if (!id) return showToast("Missing session id", "error");
@@ -84,6 +132,8 @@ const ChargingSessions: React.FC = () => {
       .catch(() => showToast("Failed to stop session", "error"));
   };
 
+  
+
   const startSession = async (bookingId?: string) => {
     const payload = { bookingId, paymentMethod: "ONSITE" };
     api
@@ -93,6 +143,35 @@ const ChargingSessions: React.FC = () => {
         fetch(page);
       })
       .catch(() => showToast("Failed to start session", "error"));
+  };
+
+  const openInvoicePreview = async (sessionId?: string) => {
+    if (!sessionId) return showToast('Missing session id', 'error');
+    setPreviewLoading(true);
+    try {
+      const res = await api.get(`/staff/sessions/${sessionId}/invoice`);
+      const d = res.data as any;
+      setPreview({ session: d.session, invoice: d.invoice, sessionId });
+      setNote('');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to load invoice preview', 'error');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const recordFromPreview = async () => {
+    if (!preview?.sessionId) return showToast('Missing session id', 'error');
+    try {
+      await api.post('/staff/payments/onsite', { sessionId: preview.sessionId, method: 'CASH', note: note || undefined });
+      showToast('Onsite payment recorded', 'success');
+      setPreview(null);
+      fetch(page);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to record payment', 'error');
+    }
   };
 
   const getStatusBadge = (status?: string | null) => {
@@ -110,6 +189,15 @@ const ChargingSessions: React.FC = () => {
     }
   };
 
+  const formatCurrency = (amt?: number | null, cur?: string | null) => {
+    if (amt == null) return '-';
+    try {
+      return `${Number(amt).toLocaleString()} ${cur || ''}`.trim();
+    } catch {
+      return `${amt} ${cur || ''}`.trim();
+    }
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center h-48 text-gray-500">
@@ -119,9 +207,87 @@ const ChargingSessions: React.FC = () => {
     );
 
   return (
-    <div className="p-5">
+      <div className="p-5">
+        <div className="mb-4 flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Connector</label>
+            <select
+              value={filters.connectorId}
+              onChange={(e) => setFilters(f => ({ ...f, connectorId: e.target.value }))}
+              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            >
+              <option value="">All</option>
+              {connectors.map(c => (
+                <option key={c.id} value={c.id}>{c.code}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Station</label>
+            <select
+              value={filters.stationId}
+              onChange={(e) => setFilters(f => ({ ...f, stationId: e.target.value }))}
+              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            >
+              <option value="">All</option>
+              {stations.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Status</label>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
+              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            >
+              <option value="">Any</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="COMPLETED">COMPLETED</option>
+              <option value="FAILED">FAILED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Sort</label>
+            <select
+              value={filters.sort}
+              onChange={(e) => setFilters(f => ({ ...f, sort: e.target.value }))}
+              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            >
+              <option value="-startedAt">Newest</option>
+              <option value="startedAt">Oldest</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="search"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { fetch(page); showToast('Refreshed', 'success'); }}
+              className="px-3 py-1 border rounded text-sm inline-flex items-center gap-2"
+            >
+              <RefreshCw size={14} /> Refresh
+            </button>
+          </div>
+
+          <div>
+            <button onClick={applyFilters} className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm">Apply</button>
+          </div>
+        </div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">⚡ Charging Sessions</h2>
         <span className="text-sm text-gray-500">
           Total: {pagination.total.toLocaleString()} sessions
         </span>
@@ -172,6 +338,14 @@ const ChargingSessions: React.FC = () => {
                         <Square size={14} />
                         Stop
                       </button>
+                    ) : s.status === "COMPLETED" ? (
+                      <button
+                        onClick={() => openInvoicePreview(s.id ?? s._id)}
+                        className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs transition"
+                      >
+                        <Eye size={14} />
+                        Record payment
+                      </button>
                     ) : (s.booking?.id || s.bookingId) ? (
                       <button
                         onClick={() => startSession(s.booking?.id ?? s.bookingId ?? undefined)}
@@ -210,6 +384,53 @@ const ChargingSessions: React.FC = () => {
           >
             Next <ChevronRight size={16} />
           </button>
+        </div>
+      )}
+      {/* Invoice preview / record modal */}
+      {preview && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-[92%] max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Invoice Preview</h3>
+              <button onClick={() => setPreview(null)} className="text-gray-500">Close</button>
+            </div>
+
+            {previewLoading ? (
+              <div className="flex items-center gap-2"><Loader2 className="animate-spin" /> Loading...</div>
+            ) : (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500">Session</div>
+                    <div>{preview.session?.id ?? preview.session?._id ?? '-'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Invoice</div>
+                    <div>{preview.invoice?.id ?? preview.invoice?._id ?? '-'}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-gray-500">Billing</div>
+                  <div className="flex gap-4">
+                    <div>Charging: {formatCurrency(preview.invoice?.meta?.billing?.chargingAmount, preview.invoice?.currency)}</div>
+                    <div>Idle: {formatCurrency(preview.invoice?.meta?.billing?.idleAmount, preview.invoice?.currency)}</div>
+                    <div className="font-medium">Total: {formatCurrency(preview.invoice?.meta?.billing?.totalAmount ?? preview.invoice?.total, preview.invoice?.currency)}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-500">Note (optional)</label>
+                  <input value={note} onChange={(e) => setNote(e.target.value)} className="w-full border border-gray-200 rounded px-2 py-1 mt-1 text-sm" />
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
+                  <button onClick={() => setPreview(null)} className="px-3 py-1 border rounded">Close</button>
+                  <button onClick={recordFromPreview} className="px-3 py-1 bg-indigo-600 text-white rounded">Record payment</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
