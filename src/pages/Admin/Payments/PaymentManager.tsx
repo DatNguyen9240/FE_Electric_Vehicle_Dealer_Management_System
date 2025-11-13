@@ -7,8 +7,15 @@ import { clearError } from "@redux/slice/Payment/PaymentSlice";
 import type { Payment } from "@redux/slice/Payment/PaymentSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import { useTitle } from "../../../contexts";
+import api from "../../../libs/axios";
 
 const tabs = ["Succeeded", "Refunded", "All"];
+
+type User = {
+  id: string;
+  name: string;
+  email?: string;
+};
 
 const PaymentManager: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -18,6 +25,32 @@ const PaymentManager: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState("Succeeded");
   const [searchTerm, setSearchTerm] = useState("");
+  const [usersMap, setUsersMap] = useState<Record<string, User>>({});
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Fetch users để lấy tên
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        const res = await api.get("/users");
+        const usersList = Array.isArray(res.data) ? res.data : (res.data?.users || []);
+        const map: Record<string, User> = {};
+        usersList.forEach((user: User) => {
+          if (user.id) {
+            map[user.id] = user;
+          }
+        });
+        setUsersMap(map);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        // Không hiển thị toast vì đây là optional data
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     setTitle("Quản lí thanh toán");
@@ -83,14 +116,24 @@ const PaymentManager: React.FC = () => {
 
   
 
+  // Helper để lấy tên user
+  const getUserName = (userId: string): string => {
+    const user = usersMap[userId];
+    if (user) {
+      return user.name || user.email || userId;
+    }
+    return userId; // Fallback về ID nếu chưa load được user
+  };
+
   // Filter payments based on search term
   const filteredPayments = payments.filter((payment: Payment) => {
     const needle = searchTerm.trim().toLowerCase();
     if (!needle) return true;
     const idemp = (payment.idempotency_key || "").toString().toLowerCase();
-    const user = (payment.user_id || "").toString().toLowerCase();
+    const userId = (payment.user_id || "").toString().toLowerCase();
+    const userName = getUserName(payment.user_id).toLowerCase();
     const method = (payment.method || "").toString().toLowerCase();
-    return idemp.includes(needle) || user.includes(needle) || method.includes(needle);
+    return idemp.includes(needle) || userId.includes(needle) || userName.includes(needle) || method.includes(needle);
   });
 
   if (loading) {
@@ -165,7 +208,13 @@ const PaymentManager: React.FC = () => {
                 >
                  
                   <td className="px-4 py-3">
-                    {payment.user_id}
+                    {loadingUsers ? (
+                      <span className="text-gray-400">Đang tải...</span>
+                    ) : (
+                      <div className="flex flex-col">
+                        <span className="font-medium">{getUserName(payment.user_id)}</span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium`}>

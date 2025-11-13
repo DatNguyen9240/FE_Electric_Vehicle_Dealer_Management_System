@@ -34,6 +34,9 @@ const AdminDashboard = lazy(() => import("@pages/Admin/AdminDashboard"));
 const UserManager = lazy(() => import("@pages/Admin/Users/UserManager"));
 const EditUser = lazy(() => import("@pages/Admin/Users/EditUser"));
 const UserDetail = lazy(() => import("@pages/Admin/Users/UserDetail"));
+const VehicleManager = lazy(() => import("@pages/Admin/Vehicles/VehicleManager"));
+const VehicleDetail = lazy(() => import("@pages/Admin/Vehicles/VehicleDetail"));
+const VehicleEdit = lazy(() => import("@pages/Admin/Vehicles/VehicleEdit"));
 const AdminTariffs = lazy(() => import("@pages/Admin/Tariffs/Tariffs"));
 const StationsManager = lazy(() => import("@pages/Admin/Infrastructure/StationsManager"));
 const ChargersManager = lazy(() => import("@pages/Admin/Infrastructure/ChargersManager"));
@@ -55,6 +58,31 @@ const BookingManagement = lazy(
 );
 const BookingManagementDetail = lazy(
   () => import("@pages/Admin/Bookings/BookingManagementDetail")
+);
+
+const SessionManagement = lazy(
+  () => import("@pages/Admin/Sessions/SessionManagement")
+);
+const SessionManagementDetail = lazy(
+  () => import("@pages/Admin/Sessions/SessionManagementDetail")
+);
+const InvoiceManagement = lazy(
+  () => import("@pages/Admin/Invoices/InvoiceManagement")
+);
+const InvoiceManagementDetail = lazy(
+  () => import("@pages/Admin/Invoices/InvoiceManagementDetail")
+);
+const MembershipPlansManagement = lazy(
+  () => import("@pages/Admin/MembershipPlans/MembershipPlansManagement")
+);
+const MembershipPlanDetail = lazy(
+  () => import("@pages/Admin/MembershipPlans/MembershipPlanDetail")
+);
+const MembershipPlanForm = lazy(
+  () => import("@pages/Admin/MembershipPlans/MembershipPlanForm")
+);
+const InvoiceUpdate = lazy(
+  () => import("@pages/Admin/Invoices/InvoiceUpdate")
 );
 
 const createLazyRoute = (
@@ -180,6 +208,18 @@ export default function AppRoutes() {
             path="/admin/users/view/:userId"
             element={createLazyRoute(UserDetail, "Loading user details...")}
           />
+          <Route
+            path="/admin/vehicles"
+            element={createLazyRoute(VehicleManager, "Loading vehicle management...")}
+          />
+          <Route
+            path="/admin/vehicles/view/:vehicleId"
+            element={createLazyRoute(VehicleDetail, "Loading vehicle details...")}
+          />
+          <Route
+            path="/admin/vehicles/edit/:vehicleId"
+            element={createLazyRoute(VehicleEdit, "Loading vehicle editor...")}
+          />
           {/* Legacy tariffs route - optional keep */}
           <Route path="/admin/tariffs" element={createLazyRoute(AdminTariffs, "Loading tariff management...")} />
           {/* Infrastructure group */}
@@ -224,6 +264,76 @@ export default function AppRoutes() {
             element={createLazyRoute(
               BookingManagementDetail,
               "Loading booking detail..."
+            )}
+          />
+          <Route
+            path="/admin/sessions"
+            element={createLazyRoute(
+              SessionManagement,
+              "Loading session management..."
+            )}
+          />
+          <Route
+            path="/admin/sessions/view/:sessionId"
+            element={createLazyRoute(
+              SessionManagementDetail,
+              "Loading session detail..."
+            )}
+          />
+          <Route
+            path="/admin/invoices"
+            element={createLazyRoute(
+              InvoiceManagement,
+              "Loading invoice management..."
+            )}
+          />
+          <Route
+            path="/admin/invoices/view/:invoiceId"
+            element={createLazyRoute(
+              InvoiceManagementDetail,
+              "Loading invoice detail..."
+            )}
+          />
+          <Route
+            path="/admin/invoices/update"
+            element={createLazyRoute(
+              InvoiceUpdate,
+              "Loading invoice update..."
+            )}
+          />
+          <Route
+            path="/admin/invoices/update/:invoiceId"
+            element={createLazyRoute(
+              InvoiceUpdate,
+              "Loading invoice update..."
+            )}
+          />
+          <Route
+            path="/admin/membership-plans"
+            element={createLazyRoute(
+              MembershipPlansManagement,
+              "Loading membership plans management..."
+            )}
+          />
+          <Route
+            path="/admin/membership-plans/view/:planId"
+            element={createLazyRoute(
+              MembershipPlanDetail,
+              "Loading membership plan detail..."
+            )}
+          />
+          <Route
+            path="/admin/membership-plans/create"
+            element={createLazyRoute(
+              MembershipPlanForm,
+              "Loading create membership plan..."
+            )}
+          />
+          <Route
+            path="/admin/membership-plans/edit/:planId"
+            element={createLazyRoute(
+              MembershipPlanForm,
+              "Loading edit membership plan..."
             )}
           />
         </Route>
