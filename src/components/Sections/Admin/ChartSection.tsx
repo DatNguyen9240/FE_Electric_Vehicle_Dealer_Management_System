@@ -61,16 +61,16 @@ const ChartSection: React.FC<ChartSectionProps> = ({
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <span className="font-semibold text-lg">Doanh thu theo {unit === "day" ? "ngày" : "tháng"}</span>
+        <span className="font-semibold text-lg">Revenue by {unit === "day" ? "day" : "month"}</span>
         {rangeLabel && (
-          <span className="text-sm text-gray-500">Khoảng: {rangeLabel}</span>
+          <span className="text-sm text-gray-500">Range: {rangeLabel}</span>
         )}
       </div>
       <div className="flex-1 flex items-center justify-center">
         {loading ? (
-          <div className="text-gray-400">Đang tải...</div>
+          <div className="text-gray-400">Loading...</div>
         ) : chartData.length === 0 ? (
-          <div className="text-gray-400">Không có dữ liệu</div>
+          <div className="text-gray-400">No data available</div>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <LineChart

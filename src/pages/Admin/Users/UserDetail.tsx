@@ -9,7 +9,7 @@ import type { RootState, AppDispatch } from "@redux/store/store";
 import api from "@libs/axios";
 
 const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
-const getErrorMessage = (eVal: unknown, fallback = "Có lỗi xảy ra") => {
+const getErrorMessage = (eVal: unknown, fallback = "An error occurred") => {
   if (!eVal) return fallback;
   if (typeof eVal === "string") return eVal;
   if (eVal instanceof Error) return eVal.message;
@@ -50,7 +50,7 @@ const UserDetail: React.FC = () => {
           updatedAt: data?.wallet?.updatedAt,
         });
       } catch (err: unknown) {
-        toast.error(getErrorMessage(err, "Không lấy được thông tin ví"));
+        toast.error(getErrorMessage(err, "Unable to fetch wallet information"));
       } finally {
         setWalletLoading(false);
       }
@@ -74,13 +74,13 @@ const UserDetail: React.FC = () => {
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
     
-    if (!window.confirm(`Bạn có chắc muốn xóa người dùng "${selectedUser.name}"?`)) {
+    if (!window.confirm(`Are you sure you want to delete user "${selectedUser.name}"?`)) {
       return;
     }
 
     try {
       await dispatch(deleteUser(selectedUser.id)).unwrap();
-      toast.success("Xóa người dùng thành công!");
+      toast.success("User deleted successfully!");
       navigate("/admin/users");
     } catch (err) {
       toast.error(err as string);
@@ -119,7 +119,7 @@ const UserDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading data...</div>
       </div>
     );
   }
@@ -127,7 +127,7 @@ const UserDetail: React.FC = () => {
   if (!selectedUser) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg text-red-500">Không tìm thấy người dùng</div>
+        <div className="text-lg text-red-500">User not found</div>
       </div>
     );
   }
@@ -142,7 +142,7 @@ const UserDetail: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={16} />
-            Quay lại
+            Back
           </button>
         </div>
         
@@ -152,7 +152,7 @@ const UserDetail: React.FC = () => {
       {/* User Info Form */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Thông tin người dùng</h2>
+          <h2 className="text-lg font-medium text-gray-900">User Information</h2>
         </div>
         
         <div className="p-6">
@@ -160,7 +160,7 @@ const UserDetail: React.FC = () => {
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tên
+                Name
               </label>
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
                 {selectedUser.name}
@@ -180,17 +180,17 @@ const UserDetail: React.FC = () => {
             {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Số điện thoại
+                Phone
               </label>
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {selectedUser.phone || "Chưa cập nhật"}
+                {selectedUser.phone || "Not updated"}
               </div>
             </div>
 
             {/* Role */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vai trò
+                Role
               </label>
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
                 <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleTextColor(selectedUser.role)}`}>
@@ -202,7 +202,7 @@ const UserDetail: React.FC = () => {
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Trạng thái
+                Status
               </label>
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
                 <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(selectedUser.status)}`}>
@@ -215,7 +215,7 @@ const UserDetail: React.FC = () => {
             {/* Created At */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ngày tạo
+                Created Date
               </label>
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
                 {new Date(selectedUser.created_at).toLocaleDateString('vi-VN')}
@@ -231,25 +231,25 @@ const UserDetail: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Edit size={16} />
-            Chỉnh sửa
+            Edit
           </button>
           <button
             onClick={handleDeleteUser}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
           >
             <Trash2 size={16} />
-            Xóa
+            Delete
           </button>
         </div>
 
       {/* Wallet Info */}
         <div className="px-6  mt-6">
-          <h2 className="text-lg font-medium text-gray-900">Thông tin ví</h2>
+          <h2 className="text-lg font-medium text-gray-900">Wallet Information</h2>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="border rounded-lg p-4 bg-white">
-              <div className="text-sm text-gray-500">Số dư ví</div>
+              <div className="text-sm text-gray-500">Wallet Balance</div>
               <div className="text-2xl font-semibold text-gray-900">
                 {walletLoading ? "…" : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(walletInfo?.balance ?? 0)}
               </div>
@@ -259,7 +259,7 @@ const UserDetail: React.FC = () => {
               <div className="text-sm font-medium text-gray-900 break-all">{walletInfo?.wallet_id || "-"}</div>
             </div>
             <div className="border rounded-lg p-4 bg-white">
-              <div className="text-sm text-gray-500">Cập nhật</div>
+              <div className="text-sm text-gray-500">Last Updated</div>
               <div className="text-sm font-medium text-gray-900">{walletInfo?.updatedAt ? new Date(walletInfo.updatedAt).toLocaleDateString('vi-VN') : "-"}</div>
             </div>
           </div>

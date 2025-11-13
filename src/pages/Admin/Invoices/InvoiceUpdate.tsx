@@ -22,7 +22,7 @@ const InvoiceUpdate: React.FC = () => {
   const [message, setMessage] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    setTitle("Cập nhật hóa đơn");
+    setTitle("Update Invoice");
   }, [setTitle]);
 
   const hydrateFromInvoice = (invoice: Record<string, unknown>) => {
@@ -44,7 +44,7 @@ const InvoiceUpdate: React.FC = () => {
     async (targetId?: string) => {
       const lookupId = targetId || id;
       if (!lookupId.trim()) {
-        setMessage("Vui lòng nhập mã hóa đơn để tải dữ liệu.");
+        setMessage("Please enter invoice ID to load data.");
         return;
       }
       setLoading(true);
@@ -59,14 +59,14 @@ const InvoiceUpdate: React.FC = () => {
             ? (payload as { invoice: Record<string, unknown> }).invoice
             : (payload as Record<string, unknown>);
         hydrateFromInvoice(invoice);
-        setMessage("Đã tải dữ liệu hóa đơn.");
+        setMessage("Invoice data loaded.");
       } catch (err: unknown) {
         const getErrorMessage = (e: unknown) => {
           try {
             const ae = e as { response?: { data?: { message?: string } }; message?: string };
-            return ae?.response?.data?.message || ae?.message || "Không tải được hóa đơn";
+            return ae?.response?.data?.message || ae?.message || "Unable to load invoice";
           } catch {
-            return "Không tải được hóa đơn";
+            return "Unable to load invoice";
           }
         };
         setMessage(getErrorMessage(err));
@@ -88,7 +88,7 @@ const InvoiceUpdate: React.FC = () => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id.trim()) {
-      setMessage("Vui lòng nhập mã hóa đơn (id/_id/session_id)");
+      setMessage("Please enter invoice ID (id/_id/session_id)");
       return;
     }
     const payload: Record<string, unknown> = {};
@@ -102,12 +102,12 @@ const InvoiceUpdate: React.FC = () => {
       try {
         payload.meta = JSON.parse(meta);
       } catch {
-        setMessage("Meta không hợp lệ, vui lòng nhập JSON đúng.");
+        setMessage("Invalid meta, please enter valid JSON.");
         return;
       }
     }
     if (Object.keys(payload).length === 0) {
-      setMessage("Không có trường nào để cập nhật.");
+      setMessage("No fields to update.");
       return;
     }
 
@@ -115,15 +115,15 @@ const InvoiceUpdate: React.FC = () => {
     setMessage(null);
     try {
       await api.patch(`/admin/invoices/${encodeURIComponent(id)}`, payload);
-      setMessage("Cập nhật thành công");
+      setMessage("Update successful");
       await loadInvoice(id);
     } catch (err: unknown) {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Cập nhật thất bại";
+          return ae?.response?.data?.message || ae?.message || "Update failed";
         } catch {
-          return "Cập nhật thất bại";
+          return "Update failed";
         }
       };
       setMessage(getErrorMessage(err));
@@ -139,19 +139,19 @@ const InvoiceUpdate: React.FC = () => {
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 mb-4"
       >
-        <ArrowLeft size={18} /> Quay lại
+        <ArrowLeft size={18} /> Back
       </button>
 
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Cập nhật hóa đơn</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Update Invoice</h2>
           </div>
         </div>
 
         <form className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={onSubmit}>
           <div className="flex flex-col md:col-span-2">
-            <label className="text-xs text-gray-500 mb-1">Mã hóa đơn hoặc session_id</label>
+            <label className="text-xs text-gray-500 mb-1">Invoice ID or session_id</label>
             <input
               value={id}
               onChange={(e) => setId(e.target.value)}
@@ -166,11 +166,11 @@ const InvoiceUpdate: React.FC = () => {
               disabled={loading || !id.trim()}
               className="px-4 py-2 rounded-lg border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
-              {loading ? "Đang tải..." : "Tải dữ liệu hóa đơn"}
+              {loading ? "Loading..." : "Load Invoice Data"}
             </button>
           </div>
           <div className="flex flex-col">
-            <label className="text-xs text-gray-500 mb-1">Trạng thái</label>
+            <label className="text-xs text-gray-500 mb-1">Status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -182,7 +182,7 @@ const InvoiceUpdate: React.FC = () => {
             </select>
           </div>
           <div className="flex flex-col">
-            <label className="text-xs text-gray-500 mb-1">Trạng thái thanh toán</label>
+            <label className="text-xs text-gray-500 mb-1">Payment Status</label>
             <select
               value={paymentStatus}
               onChange={(e) => setPaymentStatus(e.target.value)}
@@ -195,7 +195,7 @@ const InvoiceUpdate: React.FC = () => {
             </select>
           </div>
           <div className="flex flex-col">
-            <label className="text-xs text-gray-500 mb-1">Hạn thanh toán</label>
+            <label className="text-xs text-gray-500 mb-1">Due Date</label>
             <input
               type="datetime-local"
               value={dueAt}
@@ -204,7 +204,7 @@ const InvoiceUpdate: React.FC = () => {
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-xs text-gray-500 mb-1">Thanh toán lúc</label>
+            <label className="text-xs text-gray-500 mb-1">Paid At</label>
             <input
               type="datetime-local"
               value={paidAt}
@@ -213,7 +213,7 @@ const InvoiceUpdate: React.FC = () => {
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-xs text-gray-500 mb-1">Số tiền đã trả</label>
+            <label className="text-xs text-gray-500 mb-1">Paid Amount</label>
             <input
               type="number"
               min={0}
@@ -224,7 +224,7 @@ const InvoiceUpdate: React.FC = () => {
             />
           </div>
           <div className="flex flex-col">
-            <label className="text-xs text-gray-500 mb-1">Tiền tệ</label>
+            <label className="text-xs text-gray-500 mb-1">Currency</label>
             <input
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
@@ -238,7 +238,7 @@ const InvoiceUpdate: React.FC = () => {
               disabled={submitting}
               className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700"
             >
-              {submitting ? "Đang cập nhật..." : "Cập nhật"}
+              {submitting ? "Updating..." : "Update"}
             </button>
             {message && <span className="text-sm text-gray-600">{message}</span>}
           </div>

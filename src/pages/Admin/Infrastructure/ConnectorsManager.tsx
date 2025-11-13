@@ -2,8 +2,8 @@ import React from "react";
 import api from "@libs/axios";
 import { toast } from "react-toastify";
 import { useTitle } from "@contexts";
-import { Plus, Trash2, Pencil, Power, PowerOff, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Plus, Trash2, Pencil,  Search } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 type Station = { _id: string; name?: string; code?: string };
  type Charger = { _id: string; name?: string; code?: string; stationId: string };
@@ -23,12 +23,14 @@ type Connector = {
 const ConnectorsManager: React.FC = () => {
 	const { setTitle } = useTitle();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const [rows, setRows] = React.useState<Connector[]>([]);
 	const [stations, setStations] = React.useState<Station[]>([]);
 	const [chargers, setChargers] = React.useState<Charger[]>([]);
 	const [loading, setLoading] = React.useState(false);
 	const [error, setError] = React.useState<string | null>(null);
 	const [search, setSearch] = React.useState("");
+	const isFirstMount = React.useRef(true);
 
 
 	React.useEffect(() => { setTitle("Quản lí đầu sạc"); }, [setTitle]);
@@ -72,6 +74,14 @@ const ConnectorsManager: React.FC = () => {
 
 	React.useEffect(() => { load(); }, [load]);
 
+	// Reload data when returning from edit/create page
+	React.useEffect(() => {
+		if (location.pathname === "/admin/infrastructure/connectors" && !isFirstMount.current) {
+			load();
+		}
+		isFirstMount.current = false;
+	}, [location.pathname, load]);
+
 const openCreate = () => { navigate("/admin/infrastructure/connectors/create"); };
 const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/edit/${c._id}`); };
 
@@ -89,53 +99,7 @@ const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/
 		}
 	};
 
-	const toggleStatus = async (c: Connector) => {
-		// Chỉ toggle giữa IDLE và OFFLINE
-		// Nếu status là IDLE → chuyển sang OFFLINE
-		// Nếu status là OFFLINE → chuyển sang IDLE
-		// Các status khác (RESERVED, FINISHED, etc.) không toggle
-		if (c.status !== "IDLE" && c.status !== "OFFLINE") {
-			toast.warning(`Không thể toggle trạng thái ${c.status}. Chỉ có thể toggle giữa IDLE và OFFLINE.`);
-			return;
-		}
-		
-		const next = c.status === "IDLE" ? "OFFLINE" : "IDLE";
-		const originalStatus = c.status; // Lưu status gốc để rollback
-		
-		// Optimistic update - cập nhật UI ngay lập tức
-		setRows(prevRows => 
-			prevRows.map(connector => 
-				connector._id === c._id ? { ...connector, status: next } : connector
-			)
-		);
-		
-		try {
-			const response = await api.put(`/connectors/${c._id}`, { ...c, status: next });
-			// Chỉ cập nhật nếu response trả về status là IDLE hoặc OFFLINE
-			// Nếu server trả về status khác (như RESERVED), giữ nguyên optimistic update
-			if (response.data && response.data.status && (response.data.status === "IDLE" || response.data.status === "OFFLINE")) {
-				setRows(prevRows => 
-					prevRows.map(connector => 
-						connector._id === c._id ? { ...connector, status: response.data.status } : connector
-					)
-				);
-			} else if (response.data && response.data.status && response.data.status !== next) {
-				// Nếu server trả về status khác với expected, có thể server đã reject hoặc có business logic khác
-				// Giữ nguyên optimistic update vì đã gửi thành công
-				console.warn(`Server trả về status ${response.data.status} khác với expected ${next}`);
-			}
-			toast.success(`Đã ${next === "IDLE" ? "bật" : "tắt"} đầu sạc`);
-		} catch (e: any) {
-			// Rollback nếu có lỗi
-			setRows(prevRows => 
-				prevRows.map(connector => 
-					connector._id === c._id ? { ...connector, status: originalStatus } : connector
-				)
-			);
-			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi đổi trạng thái";
-			toast.error(errorMsg);
-		}
-	};
+	
 
 	const filtered = rows.filter((c) => {
 		const q = search.trim().toLowerCase();
@@ -178,7 +142,6 @@ const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/
 							<th className="px-4 py-3 text-left font-semibold">Loại</th>
 							<th className="px-4 py-3 text-left font-semibold">Công suất (kW)</th>
 							<th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-							<th className="px-4 py-3 text-right font-semibold">Thao tác</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -208,35 +171,7 @@ const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/
 										</span>
 									</td>
 									<td className="px-4 py-3 text-right">
-										<button 
-											onClick={() => toggleStatus(c)} 
-											className={`mr-3 transition-colors ${
-												c.status === "IDLE" 
-													? "text-green-600 hover:text-green-700" 
-													: c.status === "OFFLINE"
-													? "text-gray-400 hover:text-gray-600"
-													: "text-gray-300 hover:text-gray-400 cursor-not-allowed"
-											}`}
-											title={c.status === "IDLE" ? "Tắt đầu sạc" : c.status === "OFFLINE" ? "Bật đầu sạc" : `Không thể toggle trạng thái ${c.status}`}
-											disabled={c.status !== "IDLE" && c.status !== "OFFLINE"}
-										>
-											{(c.status === "IDLE") ? (
-												<div className="flex items-center gap-1">
-													<Power size={18} className="text-green-600" />
-													<span className="text-xs text-green-600">ON</span>
-												</div>
-											) : (c.status === "OFFLINE") ? (
-												<div className="flex items-center gap-1">
-													<PowerOff size={18} className="text-gray-400" />
-													<span className="text-xs text-gray-400">OFF</span>
-												</div>
-											) : (
-												<div className="flex items-center gap-1">
-													<PowerOff size={18} className="text-gray-400" />
-													<span className="text-xs text-gray-400">-</span>
-												</div>
-											)}
-										</button>
+										
 										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3" title="Chỉnh sửa"><Pencil size={16} /></button>
 										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Xóa"><Trash2 size={16} /></button>
 									</td>

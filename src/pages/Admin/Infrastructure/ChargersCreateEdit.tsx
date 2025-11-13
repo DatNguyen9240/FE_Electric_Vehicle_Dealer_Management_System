@@ -16,7 +16,7 @@ const ChargersCreateEdit: React.FC = () => {
   const isEdit = Boolean(chargerId);
 
   const [stations, setStations] = React.useState<Station[]>([]);
-  const [form, setForm] = React.useState<ChargerPayload>({ stationId: "", name: "", code: "", connectorType: "AC", powerKw: 7.2, status: "ONLINE" });
+  const [form, setForm] = React.useState<ChargerPayload>({ stationId: "", name: "", code: "", connectorType: "DC_CCS2", powerKw: 7.2, status: "ONLINE" });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -195,8 +195,8 @@ const ChargersCreateEdit: React.FC = () => {
                   onChange={(e) => setForm({ ...form, connectorType: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="AC">AC</option>
-                  <option value="DC">DC</option>
+                  <option value="DC_CCS2">DC CCS2</option>
+                  <option value="CHAdeMO">CHAdeMO</option>
                 </select>
               </div>
 

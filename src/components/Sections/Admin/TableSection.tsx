@@ -23,7 +23,7 @@ const TableSection: React.FC<TableSectionProps> = ({
   stations,
   currency = "VND",
   loading = false,
-  title = "Top trạm trong khoảng chọn",
+  title = "Top stations in selected range",
 }) => {
   const [connectorCounts, setConnectorCounts] = React.useState<Record<string, number>>({});
 
@@ -83,25 +83,25 @@ const TableSection: React.FC<TableSectionProps> = ({
         <table className="min-w-full text-sm">
           <thead>
             <tr className="text-left text-gray-500">
-              <th className="py-3 px-4">Trạm</th>
-              <th className="py-3 px-4">Địa điểm</th>
-              <th className="py-3 px-4">Số Connectors</th>
-              <th className="py-3 px-4">Phiên sạc</th>
+              <th className="py-3 px-4">Station</th>
+              <th className="py-3 px-4">Location</th>
+              <th className="py-3 px-4">Connectors</th>
+              <th className="py-3 px-4">Sessions</th>
               <th className="py-3 px-4">kWh</th>
-              <th className="py-3 px-4">Doanh thu</th>
+              <th className="py-3 px-4">Revenue</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td className="py-6 px-4 text-gray-400" colSpan={6}>
-                  Đang tải...
+                  Loading...
                 </td>
               </tr>
             ) : !stations || stations.length === 0 ? (
               <tr>
                 <td className="py-6 px-4 text-gray-400" colSpan={6}>
-                  Không có dữ liệu
+                  No data available
                 </td>
               </tr>
             ) : (

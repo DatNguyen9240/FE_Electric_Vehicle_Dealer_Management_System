@@ -91,7 +91,7 @@ const SessionManagement: React.FC = () => {
   const [pages, setPages] = React.useState(0);
 
   React.useEffect(() => {
-    setTitle("Quản lí phiên sạc");
+    setTitle("Session Management");
   }, [setTitle]);
 
   // Load stations for filter
@@ -141,9 +141,9 @@ const SessionManagement: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Lỗi khi tải dữ liệu";
+          return ae?.response?.data?.message || ae?.message || "Error loading data";
         } catch {
-          return "Lỗi khi tải dữ liệu";
+          return "Error loading data";
         }
       };
       setError(getErrorMessage(err));
@@ -212,7 +212,7 @@ const SessionManagement: React.FC = () => {
               onChange={(e) => { setPage(1); setFrom(e.target.value); }}
               className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
             />
-            <span className="text-sm text-gray-500">đến</span>
+            <span className="text-sm text-gray-500">to</span>
             <input
               type="datetime-local"
               value={to}
@@ -252,26 +252,26 @@ const SessionManagement: React.FC = () => {
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Danh sách phiên sạc</h2>
-            <span className="text-sm text-gray-500">{total} kết quả</span>
+            <h2 className="text-lg font-medium text-gray-900">Session List</h2>
+            <span className="text-sm text-gray-500">{total} results</span>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạm</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Connector</th>
                 
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Đang tải dữ liệu...</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
               ) : error ? (
                 <tr>
@@ -279,7 +279,7 @@ const SessionManagement: React.FC = () => {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Không có phiên sạc nào</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No sessions</td>
                 </tr>
               ) : (
                 rows.map((s) => (
@@ -288,7 +288,7 @@ const SessionManagement: React.FC = () => {
                       <a
                         href={`/admin/sessions/view/${s.id || s._id}`}
                         className="text-blue-600 hover:underline"
-                        title="Xem chi tiết"
+                        title="View details"
                       >
                         {s.id || s._id}
                       </a>
@@ -310,7 +310,7 @@ const SessionManagement: React.FC = () => {
                       <a
                         href={`/admin/sessions/view/${s.id || s._id}`}
                         className="text-gray-400 hover:text-blue-600"
-                        title="Xem chi tiết"
+                        title="View details"
                       >
                         <Eye size={16} />
                       </a>
@@ -324,7 +324,7 @@ const SessionManagement: React.FC = () => {
         {pages > 1 && (
           <div className="px-6 py-4 border-t flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Trang {page} / {Math.max(1, pages)}
+              Page {page} / {Math.max(1, pages)}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -332,14 +332,14 @@ const SessionManagement: React.FC = () => {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 className="px-3 py-1.5 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center gap-1"
               >
-                <ChevronLeft size={16} /> Trước
+                <ChevronLeft size={16} /> Previous
               </button>
               <button
                 disabled={page >= pages || loading}
                 onClick={() => setPage((p) => p + 1)}
                 className="px-3 py-1.5 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center gap-1"
               >
-                Sau <ChevronRight size={16} />
+                Next <ChevronRight size={16} />
               </button>
             </div>
           </div>

@@ -78,7 +78,7 @@ const SessionManagementDetail: React.FC = () => {
   const [invoiceLoading, setInvoiceLoading] = React.useState(false);
 
   React.useEffect(() => {
-    setTitle("Chi tiết phiên sạc");
+    setTitle("Session Details");
   }, [setTitle]);
 
   React.useEffect(() => {
@@ -104,9 +104,9 @@ const SessionManagementDetail: React.FC = () => {
         const getErrorMessage = (e: unknown) => {
           try {
             const ae = e as { response?: { data?: { message?: string } }; message?: string };
-            return ae?.response?.data?.message || ae?.message || "Không tải được chi tiết phiên sạc";
+            return ae?.response?.data?.message || ae?.message || "Unable to load session details";
           } catch {
-            return "Không tải được chi tiết phiên sạc";
+            return "Unable to load session details";
           }
         };
         setError(getErrorMessage(err));
@@ -146,13 +146,13 @@ const SessionManagementDetail: React.FC = () => {
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 mb-4"
       >
-        <ArrowLeft size={18} /> Quay lại
+        <ArrowLeft size={18} /> Back
       </button>
 
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Thông tin phiên sạc</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Session Information</h2>
             {data?.status && (
               <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${badgeClass(data.status)}`}>
                 <span className="w-2 h-2 rounded-full bg-current"></span>
@@ -163,7 +163,7 @@ const SessionManagementDetail: React.FC = () => {
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div className="text-sm text-gray-500">Mã phiên</div>
+            <div className="text-sm text-gray-500">Session ID</div>
             <div className="font-medium">{data?.id || data?._id || "—"}</div>
           </div>
           <div>
@@ -171,7 +171,7 @@ const SessionManagementDetail: React.FC = () => {
             <div className="font-medium">{data?.user?.name || data?.user?.email || data?.user?.id || "—"}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Trạm</div>
+            <div className="text-sm text-gray-500">Station</div>
             <div className="font-medium">{data?.station?.name || data?.station?.code || "—"}</div>
           </div>
           <div>
@@ -179,18 +179,18 @@ const SessionManagementDetail: React.FC = () => {
             <div className="font-medium">{data?.connector?.code || data?.connector?.type || "—"}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Bắt đầu</div>
+            <div className="text-sm text-gray-500">Started At</div>
             <div className="font-medium">{fmt(data?.startedAt || data?.createdAt)}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Kết thúc</div>
+            <div className="text-sm text-gray-500">Stopped At</div>
             <div className="font-medium">{fmt(data?.stoppedAt)}</div>
           </div>
          
           <div className="md:col-span-2">
             {typeof data?.billing?.totalAmount === "number" ? (
               <div className="text-sm text-gray-500">
-                Tổng tiền: <span className="font-bold text-2xl text-green-600">{data.billing.totalAmount.toLocaleString("vi-VN")} {data.billing.currency || "VND"}</span>
+                Total Amount: <span className="font-bold text-2xl text-green-600">{data.billing.totalAmount.toLocaleString("vi-VN")} {data.billing.currency || "VND"}</span>
               </div>
             ) : (
               <div className="font-medium">—</div>
@@ -202,10 +202,10 @@ const SessionManagementDetail: React.FC = () => {
                 href={`/admin/invoices/view/${invoiceId}`}
                 className="inline-block px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
               >
-                Xem hóa đơn
+                View Invoice
               </a>
             ) : invoiceLoading ? (
-              <span className="text-sm text-gray-500">Đang kiểm tra hóa đơn...</span>
+              <span className="text-sm text-gray-500">Checking invoice...</span>
             ) : null}
           </div>
           
@@ -214,7 +214,7 @@ const SessionManagementDetail: React.FC = () => {
           <div className="px-6 pb-6 text-red-600 text-sm">{error}</div>
         )}
         {loading && (
-          <div className="px-6 pb-6 text-gray-500 text-sm">Đang tải dữ liệu...</div>
+          <div className="px-6 pb-6 text-gray-500 text-sm">Loading data...</div>
         )}
       </div>
     </div>

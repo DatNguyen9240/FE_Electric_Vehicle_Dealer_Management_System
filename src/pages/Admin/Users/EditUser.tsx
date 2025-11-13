@@ -25,7 +25,7 @@ const EditUser: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    setTitle("Chỉnh sửa người dùng");
+    setTitle("Edit User");
   }, [setTitle]);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ const EditUser: React.FC = () => {
         userData: editForm
       })).unwrap();
       
-      toast.success("Cập nhật người dùng thành công!");
+      toast.success("User updated successfully!");
       navigate(`/admin/users/view/${userId}`);
     } catch (err) {
       toast.error(err as string);
@@ -91,7 +91,7 @@ const EditUser: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading data...</div>
       </div>
     );
   }
@@ -99,7 +99,7 @@ const EditUser: React.FC = () => {
   if (!selectedUser) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg text-red-500">Không tìm thấy người dùng</div>
+        <div className="text-lg text-red-500">User not found</div>
       </div>
     );
   }
@@ -114,7 +114,7 @@ const EditUser: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={16} />
-            Quay lại
+            Back
           </button>
           <h1 className="text-2xl font-bold text-gray-900">
             {selectedUser.name}
@@ -125,7 +125,7 @@ const EditUser: React.FC = () => {
       {/* Edit Form */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Thông tin người dùng</h2>
+          <h2 className="text-lg font-medium text-gray-900">User Information</h2>
         </div>
         
         <div className="p-6">
@@ -133,14 +133,14 @@ const EditUser: React.FC = () => {
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tên <span className="text-red-500">*</span>
+                Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={editForm.name}
                 onChange={(e) => setEditForm({...editForm, name: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập tên người dùng"
+                placeholder="Enter user name"
               />
             </div>
 
@@ -154,29 +154,29 @@ const EditUser: React.FC = () => {
                 value={selectedUser.email}
                 disabled
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                placeholder="Email người dùng"
+                placeholder="User email"
               />
-              <p className="text-xs text-gray-500 mt-1">Email không thể thay đổi</p>
+              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
 
             {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Số điện thoại
+                Phone
               </label>
               <input
                 type="tel"
                 value={editForm.phone}
                 onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập số điện thoại"
+                placeholder="Enter phone number"
               />
             </div>
 
             {/* Role */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vai trò <span className="text-red-500">*</span>
+                Role <span className="text-red-500">*</span>
               </label>
               <select
                 value={editForm.role}
@@ -192,7 +192,7 @@ const EditUser: React.FC = () => {
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Trạng thái <span className="text-red-500">*</span>
+                Status <span className="text-red-500">*</span>
               </label>
               <select
                 value={editForm.status}
@@ -207,7 +207,7 @@ const EditUser: React.FC = () => {
             {/* Created At (Read-only) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ngày tạo
+                Created Date
               </label>
               <input
                 type="text"
@@ -226,7 +226,7 @@ const EditUser: React.FC = () => {
               className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <X size={16} />
-              Hủy
+              Cancel
             </button>
             <button
               onClick={handleUpdateUser}
@@ -234,7 +234,7 @@ const EditUser: React.FC = () => {
               className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={16} />
-              {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
+              {isLoading ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </div>
@@ -242,20 +242,20 @@ const EditUser: React.FC = () => {
 
       {/* User Info Summary */}
       <div className="mt-6 bg-gray-50 rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Thông tin hiện tại</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Current Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white p-4 rounded-lg">
-            <div className="text-sm text-gray-500">Tên</div>
+            <div className="text-sm text-gray-500">Name</div>
             <div className="text-lg font-medium text-gray-900">{selectedUser.name}</div>
           </div>
           <div className="bg-white p-4 rounded-lg">
-            <div className="text-sm text-gray-500">Vai trò</div>
+            <div className="text-sm text-gray-500">Role</div>
             <div className={`text-lg font-medium ${getRoleTextColor(selectedUser.role)}`}>
               {selectedUser.role === "admin" ? "Admin" : selectedUser.role === "staff" ? "Staff" : "Driver"}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg">
-            <div className="text-sm text-gray-500">Trạng thái</div>
+            <div className="text-sm text-gray-500">Status</div>
             <div className={`text-lg font-medium ${selectedUser.status === "ACTIVE" ? "text-green-600" : "text-red-600"}`}>
               {selectedUser.status === "ACTIVE" ? "Active" : "Suspended"}
             </div>

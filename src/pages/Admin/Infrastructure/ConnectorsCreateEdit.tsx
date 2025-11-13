@@ -18,7 +18,7 @@ const ConnectorsCreateEdit: React.FC = () => {
 
   const [stations, setStations] = React.useState<Station[]>([]);
   const [chargers, setChargers] = React.useState<Charger[]>([]);
-  const [form, setForm] = React.useState<ConnectorPayload>({ stationId: "", chargerId: "", type: "AC", powerKw: 7.2, status: "IDLE", code: "" });
+  const [form, setForm] = React.useState<ConnectorPayload>({ stationId: "", chargerId: "", type: "DC_CCS2", powerKw: 7.2, status: "IDLE", code: "" });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -192,8 +192,8 @@ const ConnectorsCreateEdit: React.FC = () => {
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="AC">AC</option>
-                  <option value="DC">DC</option>
+                  <option value="DC_CCS2">DC CCS2</option>
+                  <option value="CHAdeMO">CHAdeMO</option>
                 </select>
               </div>
 
@@ -236,12 +236,13 @@ const ConnectorsCreateEdit: React.FC = () => {
                 <select
                   required
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  onChange={(e) => setForm({ ...form, status: e.target.value.toUpperCase() })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="IDLE">IDLE</option>
                   <option value="OFFLINE">OFFLINE</option>
                   <option value="RESERVED">RESERVED</option>
+                  <option value="CHARGING">CHARGING</option>
                   <option value="FINISHED">FINISHED</option>
                 </select>
               </div>

@@ -7,12 +7,12 @@ import { toast } from "react-toastify";
 type RangeKey = "1d" | "7d" | "1m" | "3m" | "6m" | "12m";
 
 const RANGE_OPTIONS: { key: RangeKey; label: string }[] = [
-  { key: "1d", label: "1 ngày" },
-  { key: "7d", label: "7 ngày" },
-  { key: "1m", label: "1 tháng" },
-  { key: "3m", label: "3 tháng" },
-  { key: "6m", label: "6 tháng" },
-  { key: "12m", label: "12 tháng" },
+  { key: "1d", label: "1 day" },
+  { key: "7d", label: "7 days" },
+  { key: "1m", label: "1 month" },
+  { key: "3m", label: "3 months" },
+  { key: "6m", label: "6 months" },
+  { key: "12m", label: "12 months" },
 ];
 
 type Station = {
@@ -46,7 +46,7 @@ const AdminDashboard: React.FC = () => {
         setStations(stationsData);
       } catch (err: unknown) {
         console.error("Error fetching stations:", err);
-        toast.error("Không thể tải danh sách trạm");
+        toast.error("Unable to load stations list");
       } finally {
         setLoadingStations(false);
       }
@@ -66,7 +66,7 @@ const AdminDashboard: React.FC = () => {
         setOverview(res.data);
       } catch (err: unknown) {
         console.error(err);
-        toast.error("Không thể tải dữ liệu dashboard");
+        toast.error("Unable to load dashboard data");
       } finally {
         setLoading(false);
       }
@@ -181,10 +181,10 @@ const AdminDashboard: React.FC = () => {
     <div className="p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Tổng quan hệ thống</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">System Overview</h1>
           {rangeLabel && (
             <p className="text-sm text-gray-500">
-              Dữ liệu trong khoảng: {rangeLabel}
+              Data in range: {rangeLabel}
             </p>
           )}
         </div>
@@ -192,7 +192,7 @@ const AdminDashboard: React.FC = () => {
           {/* Station Filter */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              Trạm:
+              Station:
             </label>
             <select
               value={selectedStationId}
@@ -200,7 +200,7 @@ const AdminDashboard: React.FC = () => {
               disabled={loadingStations}
               className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed min-w-[200px]"
             >
-              <option value="all">Tất cả trạm</option>
+              <option value="all">All stations</option>
               {stations.map((station) => (
                 <option key={station._id} value={station._id}>
                   {station.name || `Station ${station._id}`}
@@ -236,7 +236,7 @@ const AdminDashboard: React.FC = () => {
         <MetricCard
           title="BOOKINGS"
           value={totals?.bookings?.total ?? 0}
-          subtitle={`Sắp tới: ${formatNumber(
+          subtitle={`Upcoming: ${formatNumber(
             totals?.bookings?.upcoming ?? 0
           )}`}
         />
@@ -269,12 +269,12 @@ const AdminDashboard: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-6 mb-6">
         <div className="bg-white rounded-xl border p-6 flex flex-col w-full lg:w-80 h-40">
           <span className="text-xs text-gray-500 mb-3 font-medium uppercase tracking-wide">
-            Tổng doanh thu
+            Total Revenue
           </span>
           <span className="text-4xl font-bold text-blue-600 ps-2">
             {loading ? "..." : formatCurrency(overview?.revenue?.lifetime?.total)}
           </span>
-          <span className="text-xs text-green-600 mt-4 text-right">So với kỳ trước</span>
+          <span className="text-xs text-green-600 mt-4 text-right">Compared to previous period</span>
           <span className="text-sm font-medium mt-1 text-right">
             {loading ? (
               ""
@@ -304,7 +304,7 @@ const AdminDashboard: React.FC = () => {
           stations={stationsToDisplay}
           currency={currencyCode}
           loading={loading}
-          title="Tất cả trạm theo doanh thu"
+          title="All stations by revenue"
         />
       )}
     </div>

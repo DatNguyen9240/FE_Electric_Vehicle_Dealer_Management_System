@@ -64,7 +64,7 @@ const InvoiceManagementDetail: React.FC = () => {
   // No edit form on detail page; edits are done in InvoiceUpdate
 
   React.useEffect(() => {
-    setTitle("Chi tiết hóa đơn");
+    setTitle("Invoice Details");
   }, [setTitle]);
 
   const loadInvoice = React.useCallback(async () => {
@@ -84,9 +84,9 @@ const InvoiceManagementDetail: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Không tải được hóa đơn";
-        } catch {
-          return "Không tải được hóa đơn";
+            return ae?.response?.data?.message || ae?.message || "Unable to load invoice";
+          } catch {
+            return "Unable to load invoice";
         }
       };
       setError(getErrorMessage(err));
@@ -107,13 +107,13 @@ const InvoiceManagementDetail: React.FC = () => {
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 mb-4"
       >
-        <ArrowLeft size={18} /> Quay lại
+        <ArrowLeft size={18} /> Back
       </button>
 
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Thông tin hóa đơn</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Invoice Information</h2>
             {data?.payment_status && (
               <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                 {data.payment_status}
@@ -123,16 +123,16 @@ const InvoiceManagementDetail: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-center text-gray-500">Đang tải dữ liệu...</div>
+          <div className="px-6 py-10 text-center text-gray-500">Loading data...</div>
         ) : error ? (
           <div className="px-6 py-10 text-center text-red-600">{error}</div>
         ) : !data ? (
-          <div className="px-6 py-10 text-center text-gray-500">Không có dữ liệu</div>
+          <div className="px-6 py-10 text-center text-gray-500">No data</div>
         ) : (
           <>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <div className="text-sm text-gray-500">Mã hóa đơn</div>
+                <div className="text-sm text-gray-500">Invoice ID</div>
                 <div className="font-medium">{data.id || data._id || "—"}</div>
               </div>
               <div>
@@ -144,25 +144,25 @@ const InvoiceManagementDetail: React.FC = () => {
                 <div className="font-medium">{data.user_id || "—"}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Tạo lúc</div>
+                <div className="text-sm text-gray-500">Created At</div>
                 <div className="font-medium">{fmtDateTime(data.createdAt || data.issued_at)}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Tổng tiền</div>
+                <div className="text-sm text-gray-500">Total Amount</div>
                 <div className="font-bold text-xl text-green-600">{fmtCurrency(data.total, data.currency)}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Đã thanh toán</div>
+                <div className="text-sm text-gray-500">Paid Amount</div>
                 <div className="font-medium">
                   {typeof data.paid_total === "number" ? fmtCurrency(data.paid_total, data.currency) : "—"}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Hạn thanh toán</div>
+                <div className="text-sm text-gray-500">Due Date</div>
                 <div className="font-medium">{fmtDateTime(data.due_at)}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Thanh toán lúc</div>
+                <div className="text-sm text-gray-500">Paid At</div>
                 <div className="font-medium">{fmtDateTime(data.paid_at)}</div>
               </div>
             </div>
@@ -172,14 +172,14 @@ const InvoiceManagementDetail: React.FC = () => {
                 href={`/admin/invoices/update/${data.id || data._id}`}
                 className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
               >
-                Cập nhật hóa đơn
+                Update Invoice
               </a>
               {data.session_id && (
                 <a
                   href={`/admin/sessions/view/${data.session_id}`}
                   className="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50"
                 >
-                  Xem session
+                  View Session
                 </a>
               )}
             </div>
