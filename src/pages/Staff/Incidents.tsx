@@ -23,12 +23,14 @@ const Incidents: React.FC = () => {
   const [pagination, setPagination] = React.useState({ page: 1, limit: 20, total: 0, pages: 0 });
   const [form, setForm] = React.useState({ stationId: "", description: "", level: "LOW" });
   const [submitting, setSubmitting] = React.useState(false);
+  const [stations, setStations] = React.useState<Array<any>>([]);
+  const [stationsLoading, setStationsLoading] = React.useState(false);
 
-    const { setTitle } = useTitle();
-  
-    useEffect(() => {
-      setTitle("Incident Management");
-    }, [setTitle]);
+  const { setTitle } = useTitle();
+
+  useEffect(() => {
+    setTitle("Incident Management");
+  }, [setTitle]);
 
   const fetch = React.useCallback(
     (p: number = page) => {
@@ -79,6 +81,23 @@ const Incidents: React.FC = () => {
 
   const { showToast } = useUi();
 
+  // load stations for select
+  React.useEffect(() => {
+    setStationsLoading(true);
+    api
+      .get('/stations')
+      .then((res) => {
+        const d = res.data as any;
+        const list = Array.isArray(d) ? d : d?.stations ?? d?.items ?? d?.data ?? [];
+        if (Array.isArray(list)) setStations(list);
+      })
+      .catch((err) => {
+        console.error(err);
+        showToast('Failed to load stations', 'error');
+      })
+      .finally(() => setStationsLoading(false));
+  }, [showToast]);
+
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
@@ -107,9 +126,6 @@ const Incidents: React.FC = () => {
 
   return (
     <div className="space-y-6 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-inner">
-      <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
-        ⚠️ Incident Management
-      </h2>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* --- Report Form --- */}
@@ -117,13 +133,22 @@ const Incidents: React.FC = () => {
           <h3 className="font-semibold text-lg mb-4 text-gray-700">📋 Report New Incident</h3>
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-600">Station ID</label>
-              <input
-                placeholder="Enter station ID"
-                value={form.stationId}
-                onChange={(e) => setForm((f) => ({ ...f, stationId: e.target.value }))}
-                className="w-full mt-1 border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              />
+              <label className="text-sm font-medium text-gray-600">Station</label>
+              <div>
+                <select
+                  value={form.stationId}
+                  onChange={(e) => setForm((f) => ({ ...f, stationId: e.target.value }))}
+                  className="w-full mt-1 border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                >
+                  <option value="">-- choose station --</option>
+                  {stations.map((s) => (
+                    <option key={s._id ?? s.id} value={s._id ?? s.id}>
+                      {s.name ?? s.id}
+                    </option>
+                  ))}
+                </select>
+                {stationsLoading && <div className="text-xs text-gray-500 mt-1">Loading stations...</div>}
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Description</label>
@@ -173,49 +198,46 @@ const Incidents: React.FC = () => {
             <div className="text-sm text-gray-500">No incidents found.</div>
           ) : (
             <ul className="space-y-3 max-h-[480px] overflow-y-auto pr-2">
-              {list.map((it) => (
-                <li
-                  key={it.id ?? it._id}
-                  className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-400 transition-all shadow-sm hover:shadow-md"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium text-gray-800">
-                        {it.station?.name || it.stationId || "Unknown"}{" "}
-                        <span
-                          className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
-                            it.level === "HIGH"
-                              ? "bg-red-100 text-red-600"
-                              : it.level === "MEDIUM"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-green-100 text-green-600"
-                          }`}
-                        >
-                          {it.level}
-                        </span>
+              {list.map((it) => {
+                const status = String(it.status || 'NEW').toUpperCase();
+                const dotClass =
+                  status === 'RESOLVED'
+                    ? 'bg-green-400'
+                    : status === 'IN_PROGRESS'
+                    ? 'bg-yellow-400'
+                    : 'bg-red-400';
+                return (
+                  <li
+                    key={it.id ?? it._id}
+                    className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-400 transition-all shadow-sm hover:shadow-md"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium text-gray-800 flex items-center">
+                          <span
+                            className={`${dotClass} inline-block w-3 h-3 rounded-full mr-3`}
+                            title={status}
+                            aria-hidden="true"
+                          />
+                          <span>{it.station?.name || it.stationId || 'Unknown'}</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">Description: {it.description}</div>
+                        <div className="text-xs text-gray-400 mt-1">Status: {status}</div>
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">{it.description}</div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        Status: {it.status || "NEW"}
+                      <div className="flex flex-col gap-2">
+                        {status !== 'RESOLVED' && (
+                          <button
+                            onClick={() => updateStatus(it.id ?? it._id ?? '', 'RESOLVED')}
+                            className="text-sm px-3 py-1.5 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 transition-all"
+                          >
+                            Resolve
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => updateStatus(it.id ?? it._id ?? "", "IN_PROGRESS")}
-                        className="text-sm px-3 py-1.5 bg-yellow-400 text-gray-800 rounded-md font-medium hover:bg-yellow-500 transition-all"
-                      >
-                        In Progress
-                      </button>
-                      <button
-                        onClick={() => updateStatus(it.id ?? it._id ?? "", "RESOLVED")}
-                        className="text-sm px-3 py-1.5 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 transition-all"
-                      >
-                        Resolve
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
 

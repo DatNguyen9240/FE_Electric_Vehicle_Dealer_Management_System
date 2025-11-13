@@ -12,9 +12,9 @@ const StaffLayout: React.FC = () => {
   const staffMenu: SidebarMenuItem[] = [
     { key: "dashboard", label: "Dashboard", icon: <Home size={20} />, to: "/staff" },
     { key: "sessions", label: "Sessions", icon: <Zap size={20} />, to: "/staff/sessions" },
-    { key: "payments", label: "Onsite Payment", icon: <CreditCard size={20} />, to: "/staff/payments" },
     { key: "incidents", label: "Incidents", icon: <AlertCircle size={20} />, to: "/staff/incidents" },
     { key: "bookings", label: "Bookings", icon: <CalendarCheck size={20} />, to: "/staff/bookings" },
+    { key: "invoices", label: "Invoices", icon: <CreditCard size={20} />, to: "/staff/invoices" },
   ];
 
   return (

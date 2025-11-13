@@ -38,6 +38,12 @@ const VehicleManager = lazy(() => import("@pages/Admin/Vehicles/VehicleManager")
 const VehicleDetail = lazy(() => import("@pages/Admin/Vehicles/VehicleDetail"));
 const VehicleEdit = lazy(() => import("@pages/Admin/Vehicles/VehicleEdit"));
 const AdminTariffs = lazy(() => import("@pages/Admin/Tariffs/Tariffs"));
+const StaffLayout = lazy(() => import("@layouts/StaffLayout"));
+const StaffStationDashboard = lazy(() => import("@pages/Staff/StationDashboard"));
+const StaffBookings = lazy(() => import("@pages/Staff/Bookings"));
+const StaffChargingSessions = lazy(() => import("@pages/Staff/ChargingSessions"));
+const StaffIncidents = lazy(() => import("@pages/Staff/Incidents"));
+const StaffInvoices = lazy(() => import("@pages/Staff/Invoices"));
 const StationsManager = lazy(() => import("@pages/Admin/Infrastructure/StationsManager"));
 const ChargersManager = lazy(() => import("@pages/Admin/Infrastructure/ChargersManager"));
 const ConnectorsManager = lazy(() => import("@pages/Admin/Infrastructure/ConnectorsManager"));
@@ -186,6 +192,29 @@ export default function AppRoutes() {
           path="/signup"
           element={createLazyRoute(Signup, "Loading signup page...")}
         />
+
+        <Route element={<StaffLayout />}>
+          <Route
+            path="/staff"
+            element={createLazyRoute(StaffStationDashboard, "Loading station dashboard...")}
+          />
+          <Route
+            path="/staff/bookings"
+            element={createLazyRoute(StaffBookings, "Loading bookings...")}
+          />
+          <Route
+            path="/staff/sessions"
+            element={createLazyRoute(StaffChargingSessions, "Loading charging sessions...")}
+          />
+          <Route
+            path="/staff/incidents"
+            element={createLazyRoute(StaffIncidents, "Loading incidents...")}
+          />
+          <Route
+            path="/staff/invoices"
+            element={createLazyRoute(StaffInvoices, "Loading invoices...")}
+          />
+        </Route>
 
         <Route element={<AdminLayout />}>
           <Route
