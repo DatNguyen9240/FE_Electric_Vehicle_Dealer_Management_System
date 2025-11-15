@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import api from "@libs/axios";
-import { Loader2, Plug, Gauge, Power, Building2 } from "lucide-react";
+import { Loader2, Plug, Gauge, Power } from "lucide-react";
 import { useTitle } from "../../contexts";
 import { useUi } from "../../contexts/uiContextCore";
 
@@ -35,7 +35,7 @@ const StationDashboard: React.FC = () => {
   };
 
   const [data, setData] = React.useState<{ stations?: StationOverview[] } | null>(null);
-  const [filterStationId, setFilterStationId] = React.useState<string>("ALL");
+  // filter removed per design: show all stations by default
 
   const { setTitle } = useTitle();
   
@@ -133,15 +133,15 @@ const StationDashboard: React.FC = () => {
     }
   );
 
-  const filteredStations =
-    filterStationId === "ALL"
-      ? stationsArr
-      : stationsArr.filter((s) => s.station?.id === filterStationId);
+  const filteredStations = stationsArr;
 
   const percentUsed =
     aggregated.power.total > 0
       ? Math.round((aggregated.power.charging / aggregated.power.total) * 100)
       : 0;
+
+  const connectorEntries = Object.entries(aggregated.connectors || {});
+  const firstTwoConnectors = connectorEntries.slice(0, 2);
 
   const getStatusBadge = (status?: string | null) => {
     const base = "px-2 py-1 rounded-full text-xs font-medium";
@@ -161,45 +161,61 @@ const StationDashboard: React.FC = () => {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-      
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">Filter:</label>
-          <select
-            value={filterStationId}
-            onChange={(e) => setFilterStationId(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ALL">All Stations</option>
-            {stationsArr.map((s: StationOverview, idx: number) => (
-              <option key={s.station?.id ?? idx} value={s.station?.id ?? ""}>
-                {s.station?.name ?? `Station ${idx + 1}`}
-              </option>
-            ))}
-          </select>
+        <div>
+          {filteredStations.length === 1 ? (
+            <div>
+              <div className="flex items-center gap-4">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{filteredStations[0].station?.name ?? 'Station'}</h1>
+                {getStatusBadge(filteredStations[0].station?.status)}
+              </div>
+              {/* Last updated removed per request */}
+            </div>
+          ) : (
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Station Dashboard</h1>
+              <div className="text-sm text-gray-500">{filteredStations.length} stations</div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-gradient-to-r from-green-100 to-green-50 p-5 rounded-2xl shadow-sm border border-green-200">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="text-sm text-gray-600">Stations Online</div>
-              <div className="text-3xl font-bold text-green-700">{aggregated.online}</div>
-            </div>
-            <Building2 className="text-green-600 w-8 h-8" />
-          </div>
-        </div>
+        {[0, 1].map((i) => {
+          const entry = firstTwoConnectors[i];
+          if (entry) {
+            const [k, v] = entry;
+            return (
+              <div
+                key={k}
+                className="bg-gradient-to-r from-gray-50 to-gray-25 p-5 rounded-2xl shadow-sm border border-gray-200"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-sm text-gray-600">{k}</div>
+                    <div className="text-3xl font-bold text-gray-800">{String(v)}</div>
+                  </div>
+                  <Plug className="text-blue-600 w-8 h-8" />
+                </div>
+              </div>
+            );
+          }
 
-        <div className="bg-gradient-to-r from-red-100 to-red-50 p-5 rounded-2xl shadow-sm border border-red-200">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="text-sm text-gray-600">Stations Offline</div>
-              <div className="text-3xl font-bold text-red-700">{aggregated.offline}</div>
+          return (
+            <div
+              key={`placeholder-${i}`}
+              className="bg-gradient-to-r from-gray-50 to-gray-25 p-5 rounded-2xl shadow-sm border border-gray-200"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="text-sm text-gray-600">Connector</div>
+                  <div className="text-3xl font-bold text-gray-800">-</div>
+                </div>
+                <Plug className="text-gray-400 w-8 h-8" />
+              </div>
             </div>
-            <Plug className="text-red-600 w-8 h-8" />
-          </div>
-        </div>
+          );
+        })}
 
         <div className="bg-gradient-to-r from-blue-100 to-blue-50 p-5 rounded-2xl shadow-sm border border-blue-200">
           <div className="flex justify-between items-center">
@@ -221,27 +237,7 @@ const StationDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Connector Summary */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-800">
-          <Plug className="text-blue-500" /> Connector Status
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {Object.keys(aggregated.connectors).length === 0 ? (
-            <div className="col-span-4 text-gray-500 text-sm">No connector data</div>
-          ) : (
-            Object.entries(aggregated.connectors).map(([k, v]) => (
-              <div
-                key={k}
-                className="p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition"
-              >
-                <div className="text-sm text-gray-500">{k}</div>
-                <div className="text-xl font-bold text-gray-800">{String(v)}</div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      {/* Connector Summary removed — connector stats promoted to top cards */}
 
       {/* Per Station Details */}
       <div className="space-y-5">
@@ -250,23 +246,6 @@ const StationDashboard: React.FC = () => {
             key={s.station?.id ?? idx}
             className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition"
           >
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <div className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  {s.station?.name ?? "Unknown"} {getStatusBadge(s.station?.status)}
-                </div>
-                <div className="text-sm text-gray-500">
-                  Last updated: {s.metrics?.lastUpdatedAt ? new Date(s.metrics.lastUpdatedAt).toLocaleString() : "Not available"}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Total Connectors</div>
-                <div className="text-xl font-bold text-gray-700">
-                  {s.metrics?.totalConnectors ?? 0}
-                </div>
-              </div>
-            </div>
-
             <div className="grid md:grid-cols-2 gap-5">
               <div>
                 <div className="font-medium mb-2 flex items-center gap-1 text-gray-700">
