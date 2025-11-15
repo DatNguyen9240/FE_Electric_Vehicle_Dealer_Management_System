@@ -20,7 +20,7 @@ const ChargersCreateEdit: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => { setTitle(isEdit ? "Sửa trụ" : "Tạo trụ"); }, [isEdit, setTitle]);
+  React.useEffect(() => { setTitle(isEdit ? "Edit Charger" : "Create Charger"); }, [isEdit, setTitle]);
 
   React.useEffect(() => {
     (async () => {
@@ -35,7 +35,7 @@ const ChargersCreateEdit: React.FC = () => {
         setStations(list);
         if (!form.stationId && list[0]?._id) setForm((f) => ({ ...f, stationId: list[0]._id }));
       } catch (e: any) {
-        toast.error("Không thể tải danh sách trạm sạc");
+        toast.error("Failed to load station list");
       }
     })();
   }, []);
@@ -49,7 +49,7 @@ const ChargersCreateEdit: React.FC = () => {
         const c = r.data;
         setForm({ stationId: c.stationId, name: c.name, code: c.code, connectorType: c.connectorType, powerKw: c.powerKw, status: c.status });
       } catch (e: any) {
-        const errorMsg = e?.response?.data?.message || e?.message || "Không tải được trụ";
+        const errorMsg = e?.response?.data?.message || e?.message || "Failed to load charger";
         setError(errorMsg);
         toast.error(errorMsg);
       } finally {
@@ -62,12 +62,12 @@ const ChargersCreateEdit: React.FC = () => {
     e.preventDefault();
 
     if (!form.stationId) {
-      toast.error("Vui lòng chọn trạm sạc");
+      toast.error("Please select a station");
       return;
     }
 
     if (!form.name.trim()) {
-      toast.error("Vui lòng nhập tên trụ");
+      toast.error("Please enter charger name");
       return;
     }
 
@@ -76,14 +76,14 @@ const ChargersCreateEdit: React.FC = () => {
       setError(null);
       if (isEdit) {
         await api.put(`/chargers/${chargerId}`, form);
-        toast.success("Cập nhật trụ thành công!");
+        toast.success("Charger updated successfully!");
       } else {
         await api.post(`/chargers`, form);
-        toast.success("Tạo trụ thành công!");
+        toast.success("Charger created successfully!");
       }
       navigate("/admin/infrastructure/chargers");
     } catch (e: any) {
-      const errorMsg = e?.response?.data?.message || e?.message || "Lỗi lưu trụ";
+      const errorMsg = e?.response?.data?.message || e?.message || "Error saving charger";
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -98,7 +98,7 @@ const ChargersCreateEdit: React.FC = () => {
   if (loading && isEdit) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading data...</div>
       </div>
     );
   }
@@ -113,14 +113,14 @@ const ChargersCreateEdit: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={16} />
-            Quay lại
+            Back
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {isEdit ? "Chỉnh sửa trụ sạc" : "Tạo trụ sạc mới"}
+              {isEdit ? "Edit Charger" : "Create New Charger"}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {isEdit ? "Cập nhật thông tin trụ sạc" : "Điền thông tin để tạo trụ sạc mới"}
+              {isEdit ? "Update charger information" : "Fill in information to create a new charger"}
             </p>
           </div>
         </div>
@@ -129,7 +129,7 @@ const ChargersCreateEdit: React.FC = () => {
       {/* Form */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Thông tin trụ sạc</h2>
+          <h2 className="text-lg font-medium text-gray-900">Charger Information</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -138,7 +138,7 @@ const ChargersCreateEdit: React.FC = () => {
               {/* Station */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạm sạc <span className="text-red-500">*</span>
+                  Station <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -146,7 +146,7 @@ const ChargersCreateEdit: React.FC = () => {
                   onChange={(e) => setForm({ ...form, stationId: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Chọn trạm</option>
+                  <option value="">Select station</option>
                   {stations.map((s) => (
                     <option key={s._id} value={s._id}>
                       {s.name || s.code || s._id}
@@ -158,7 +158,7 @@ const ChargersCreateEdit: React.FC = () => {
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tên trụ <span className="text-red-500">*</span>
+                  Charger Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -166,28 +166,28 @@ const ChargersCreateEdit: React.FC = () => {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập tên trụ"
+                  placeholder="Enter charger name"
                 />
               </div>
 
               {/* Code */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mã trụ
+                  Code
                 </label>
                 <input
                   type="text"
                   value={form.code}
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập mã trụ"
+                  placeholder="Enter charger code"
                 />
               </div>
 
               {/* Connector Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Loại kết nối <span className="text-red-500">*</span>
+                  Connector Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -203,7 +203,7 @@ const ChargersCreateEdit: React.FC = () => {
               {/* Power */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Công suất (kW) <span className="text-red-500">*</span>
+                  Power (kW) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -213,14 +213,14 @@ const ChargersCreateEdit: React.FC = () => {
                   value={form.powerKw || ""}
                   onChange={(e) => setForm({ ...form, powerKw: Number(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập công suất"
+                  placeholder="Enter power"
                 />
               </div>
 
               {/* Status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạng thái <span className="text-red-500">*</span>
+                  Status <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -248,7 +248,7 @@ const ChargersCreateEdit: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X size={16} />
-                Hủy
+                Cancel
               </button>
               <button
                 type="submit"
@@ -256,7 +256,7 @@ const ChargersCreateEdit: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save size={16} />
-                {loading ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Tạo trụ"}
+                {loading ? "Saving..." : isEdit ? "Save Changes" : "Create Charger"}
               </button>
             </div>
           </div>

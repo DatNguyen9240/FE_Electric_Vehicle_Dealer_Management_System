@@ -4,7 +4,7 @@ import { useTitle } from "../../contexts";
 import api from "../../libs/axios";
 import { toast } from "react-toastify";
 
-type RangeKey = "1d" | "7d" | "1m" | "3m" | "6m" | "12m";
+type RangeKey = "1d" | "7d" | "1m" | "3m" | "6m" | "12m" | "custom";
 
 const RANGE_OPTIONS: { key: RangeKey; label: string }[] = [
   { key: "1d", label: "1 day" },
@@ -29,6 +29,8 @@ const AdminDashboard: React.FC = () => {
   const [stations, setStations] = React.useState<Station[]>([]);
   const [selectedStationId, setSelectedStationId] = React.useState<string>("all");
   const [loadingStations, setLoadingStations] = React.useState(false);
+  const [customFrom, setCustomFrom] = React.useState<string>("");
+  const [customTo, setCustomTo] = React.useState<string>("");
 
   React.useEffect(() => {
     setTitle("Admin Dashboard");
@@ -55,13 +57,22 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const fetchOverview = React.useCallback(
-    async (selectedRange: RangeKey, stationId: string) => {
+    async (selectedRange: RangeKey, stationId: string, fromDate?: string, toDate?: string) => {
       try {
         setLoading(true);
-        const params: Record<string, string> = { range: selectedRange };
+        const params: Record<string, string> = {};
+        
+        if (selectedRange === "custom" && fromDate && toDate) {
+          params.from = fromDate;
+          params.to = toDate;
+        } else {
+          params.range = selectedRange;
+        }
+        
         if (stationId && stationId !== "all") {
           params.stationId = stationId;
         }
+        
         const res = await api.get("/analytics/admin/overview", { params });
         setOverview(res.data);
       } catch (err: unknown) {
@@ -75,8 +86,27 @@ const AdminDashboard: React.FC = () => {
   );
 
   React.useEffect(() => {
-    fetchOverview(range, selectedStationId);
-  }, [fetchOverview, range, selectedStationId]);
+    // If custom dates are set, use custom range; otherwise use preset range
+    if (customFrom && customTo) {
+      const fromDate = new Date(customFrom);
+      const toDate = new Date(customTo);
+      if (fromDate > toDate) {
+        toast.error("Start date must be earlier than end date");
+        return;
+      }
+      fetchOverview("custom", selectedStationId, customFrom, customTo);
+    } else {
+      fetchOverview(range, selectedStationId);
+    }
+  }, [fetchOverview, range, selectedStationId, customFrom, customTo]);
+
+  const handleRangeChange = (newRange: RangeKey) => {
+    if (newRange !== "custom") {
+      setRange(newRange);
+      setCustomFrom("");
+      setCustomTo("");
+    }
+  };
 
   const currencyCode =
     overview?.revenue?.currency ||
@@ -179,7 +209,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="p-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">System Overview</h1>
           {rangeLabel && (
@@ -188,34 +218,62 @@ const AdminDashboard: React.FC = () => {
             </p>
           )}
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          {/* Station Filter */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              Station:
-            </label>
-            <select
-              value={selectedStationId}
-              onChange={(e) => setSelectedStationId(e.target.value)}
-              disabled={loadingStations}
-              className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed min-w-[200px]"
-            >
-              <option value="all">All stations</option>
-              {stations.map((station) => (
-                <option key={station._id} value={station._id}>
-                  {station.name || `Station ${station._id}`}
-                </option>
-              ))}
-            </select>
+        <div className="flex flex-col gap-3 items-end">
+          {/* Station Filter + Custom Date Range - Row 1 */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                Station:
+              </label>
+              <select
+                value={selectedStationId}
+                onChange={(e) => setSelectedStationId(e.target.value)}
+                disabled={loadingStations}
+                className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed min-w-[200px]"
+              >
+                <option value="all">All stations</option>
+                {stations.map((station) => (
+                  <option key={station._id} value={station._id}>
+                    {station.name || `Station ${station._id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Custom Date Range - Direct Inputs */}
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customFrom}
+                onChange={(e) => {
+                  setCustomFrom(e.target.value);
+                  if (e.target.value && customTo) {
+                    setRange("custom");
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <span className="text-sm text-gray-500">to</span>
+              <input
+                type="date"
+                value={customTo}
+                onChange={(e) => {
+                  setCustomTo(e.target.value);
+                  if (customFrom && e.target.value) {
+                    setRange("custom");
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
-          {/* Range Filter */}
+          {/* Preset Range Buttons - Row 2 */}
           <div className="flex flex-wrap gap-2">
             {RANGE_OPTIONS.map((opt) => (
               <button
                 key={opt.key}
-                onClick={() => setRange(opt.key)}
+                onClick={() => handleRangeChange(opt.key)}
                 className={`px-3 py-1.5 rounded-lg text-sm border transition ${
-                  range === opt.key
+                  range === opt.key && !customFrom && !customTo
                     ? "border-blue-500 text-blue-600 bg-blue-50 font-medium"
                     : "border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600"
                 }`}

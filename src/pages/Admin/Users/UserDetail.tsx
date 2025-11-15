@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Car } from "lucide-react";
 import { deleteUser, getUser } from "@redux/slice/User/UserThunks";
 import { clearError } from "@redux/slice/User/UserSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
+import type { UserVehicle } from "@redux/slice/User/UserSlice";
 import api from "@libs/axios";
 
 const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
@@ -243,7 +244,8 @@ const UserDetail: React.FC = () => {
         </div>
 
       {/* Wallet Info */}
-        <div className="px-6  mt-6">
+      <div className="bg-white rounded-lg shadow mt-6">
+        <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-medium text-gray-900">Wallet Information</h2>
         </div>
         <div className="p-6">
@@ -264,7 +266,83 @@ const UserDetail: React.FC = () => {
             </div>
           </div>
         </div>
-      
+      </div>
+
+      {/* Vehicles List */}
+      <div className="bg-white rounded-lg shadow mt-6">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            <Car size={20} className="text-gray-700" />
+            <h2 className="text-lg font-medium text-gray-900">Vehicle List</h2>
+            <span className="ml-2 text-sm text-gray-500">
+              ({selectedUser.vehicles?.length || 0} {selectedUser.vehicles?.length === 1 ? 'vehicle' : 'vehicles'})
+            </span>
+          </div>
+        </div>
+        <div className="p-6">
+          {selectedUser.vehicles && selectedUser.vehicles.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      License Plate
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Make
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Model
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Plug Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Battery Capacity (kWh)
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {selectedUser.vehicles.map((vehicle: UserVehicle) => (
+                    <tr key={vehicle.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {vehicle.license_plate || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {vehicle.make || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {vehicle.model || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {vehicle.plug_type || "-"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {vehicle.battery_kwh ? `${vehicle.battery_kwh} kWh` : "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {vehicle.created_at 
+                          ? new Date(vehicle.created_at).toLocaleDateString('en-US')
+                          : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Car size={48} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500 text-lg">This user has no vehicles</p>
+            </div>
+          )}
+        </div>
+      </div>
     
     </div>
   );

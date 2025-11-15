@@ -138,23 +138,7 @@ const InvoiceManagement: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  const toggleStatusTab = (statusKey: string) => {
-    setPage(1);
-    if (statusKey === "ALL") {
-      setStatuses([]);
-    } else {
-      setStatuses((prev) => (prev.includes(statusKey) ? [] : [statusKey]));
-    }
-  };
-
-  const togglePaymentStatusTab = (statusKey: string) => {
-    setPage(1);
-    if (statusKey === "ALL") {
-      setPaymentStatuses([]);
-    } else {
-      setPaymentStatuses((prev) => (prev.includes(statusKey) ? [] : [statusKey]));
-    }
-  };
+  
 
   const onSortToggle = (field: string) => {
     setPage(1);
@@ -306,14 +290,14 @@ const InvoiceManagement: React.FC = () => {
                         <span className="w-2 h-2 rounded-full bg-current"></span>
                         {invoice.payment_status || "—"}
                       </span>
-                      <a
+                      {/* <a
                         href={`/admin/invoices/view/${invoice.id || invoice._id}`}
                         className="text-gray-400 hover:text-blue-600"
                         title="View details"
                       >
                         <Eye size={16} />
-                      </a>
-                      <a
+                      </a> */}
+                      {/* <a
                         href={`/admin/invoices/update/${invoice.id || invoice._id}`}
                         className="text-gray-400 hover:text-blue-600"
                         title="Update invoice"
@@ -328,7 +312,7 @@ const InvoiceManagement: React.FC = () => {
                         >
                           Session
                         </a>
-                      )}
+                      )} */}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {formatDateTime(invoice.createdAt || invoice.issued_at)}

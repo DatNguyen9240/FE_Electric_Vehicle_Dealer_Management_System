@@ -227,7 +227,7 @@ const SideBar: React.FC<SideBarProps> = ({
             >
               <span className="flex items-center gap-3">
                 <ServerCog size={20} />
-                <span className={`${collapsed ? "hidden" : "block"}`}>Quản lí hạ tầng</span>
+                <span className={`${collapsed ? "hidden" : "block"}`}>Infrastructure</span>
               </span>
               {!collapsed && <ChevronDown className={`${infraOpen ? "rotate-180" : ""} transition-transform`} size={16} />}
             </button>
@@ -243,7 +243,7 @@ const SideBar: React.FC<SideBarProps> = ({
                     }`}
                   >
                     <Building2 size={18} />
-                    Trạm
+                    Stations
                   </Link>
                 </li>
                 <li>
@@ -256,7 +256,7 @@ const SideBar: React.FC<SideBarProps> = ({
                     }`}
                   >
                     <Zap size={18} />
-                    Trụ
+                    Chargers
                   </Link>
                 </li>
                 <li>
@@ -269,7 +269,7 @@ const SideBar: React.FC<SideBarProps> = ({
                     }`}
                   >
                     <Plug size={18} />
-                    Đầu sạc
+                    Connectors
                   </Link>
                 </li>
                 <li>
@@ -282,7 +282,7 @@ const SideBar: React.FC<SideBarProps> = ({
                     }`}
                   >
                     <BadgeDollarSign size={18} />
-                    Biểu phí
+                    Tariffs
                   </Link>
                 </li>
               </ul>

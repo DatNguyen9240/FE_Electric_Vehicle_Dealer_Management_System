@@ -44,7 +44,7 @@ const MembershipPlanForm: React.FC = () => {
   });
 
   React.useEffect(() => {
-    setTitle(isEdit ? "Chỉnh sửa gói thành viên" : "Tạo gói thành viên mới");
+    setTitle(isEdit ? "Edit Membership Plan" : "Create New Membership Plan");
   }, [setTitle, isEdit]);
 
   React.useEffect(() => {
@@ -76,9 +76,9 @@ const MembershipPlanForm: React.FC = () => {
         const getErrorMessage = (e: unknown) => {
           try {
             const ae = e as { response?: { data?: { message?: string } }; message?: string };
-            return ae?.response?.data?.message || ae?.message || "Không tải được dữ liệu";
+            return ae?.response?.data?.message || ae?.message || "Failed to load data";
           } catch {
-            return "Không tải được dữ liệu";
+            return "Failed to load data";
           }
         };
         setError(getErrorMessage(err));
@@ -109,9 +109,9 @@ const MembershipPlanForm: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Không thể lưu gói";
+          return ae?.response?.data?.message || ae?.message || "Cannot save plan";
         } catch {
-          return "Không thể lưu gói";
+          return "Cannot save plan";
         }
       };
       setError(getErrorMessage(err));
@@ -133,24 +133,24 @@ const MembershipPlanForm: React.FC = () => {
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 mb-4"
       >
-        <ArrowLeft size={18} /> Quay lại
+        <ArrowLeft size={18} /> Back
       </button>
 
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">
-            {isEdit ? "Chỉnh sửa gói thành viên" : "Tạo gói thành viên mới"}
+            {isEdit ? "Edit Membership Plan" : "Create New Membership Plan"}
           </h2>
         </div>
         <form onSubmit={handleSubmit} className="p-6">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Đang tải dữ liệu...</div>
+            <div className="text-center py-8 text-gray-500">Loading data...</div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mã gói {!isEdit && <span className="text-red-500">*</span>}
+                    Plan Code {!isEdit && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -159,13 +159,13 @@ const MembershipPlanForm: React.FC = () => {
                     disabled={isEdit}
                     required={!isEdit}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-100"
-                    placeholder="VD: BASIC, PRO"
+                    placeholder="e.g., BASIC, PRO"
                   />
-                  {isEdit && <p className="text-xs text-gray-500 mt-1">Không thể thay đổi mã gói</p>}
+                  {isEdit && <p className="text-xs text-gray-500 mt-1">Plan code cannot be changed</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên gói <span className="text-red-500">*</span>
+                    Plan Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -173,12 +173,12 @@ const MembershipPlanForm: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    placeholder="VD: Gói cơ bản"
+                    placeholder="e.g., Basic Plan"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phí hàng tháng (VND)
+                    Monthly Fee (VND)
                   </label>
                   <input
                     type="number"
@@ -189,7 +189,7 @@ const MembershipPlanForm: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -202,11 +202,11 @@ const MembershipPlanForm: React.FC = () => {
               </div>
 
               <div className="mb-6">
-                <h3 className="text-md font-medium text-gray-900 mb-4">Quyền lợi (Modifiers)</h3>
+                <h3 className="text-md font-medium text-gray-900 mb-4">Benefits (Modifiers)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Giảm giá theo kWh (%)
+                      Price per kWh Discount (%)
                     </label>
                     <input
                       type="number"
@@ -219,7 +219,7 @@ const MembershipPlanForm: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Giảm giá theo phút (%)
+                      Price per Minute Discount (%)
                     </label>
                     <input
                       type="number"
@@ -232,7 +232,7 @@ const MembershipPlanForm: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Giảm phí chờ (%)
+                      Idle Fee Discount (%)
                     </label>
                     <input
                       type="number"
@@ -245,7 +245,7 @@ const MembershipPlanForm: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Thời gian miễn phí chờ (phút)
+                      Grace Period Bonus (minutes)
                     </label>
                     <input
                       type="number"
@@ -258,7 +258,7 @@ const MembershipPlanForm: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Giảm số dư tối thiểu (%)
+                      Minimum Balance Discount (%)
                     </label>
                     <input
                       type="number"
@@ -271,7 +271,7 @@ const MembershipPlanForm: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ưu tiên hàng đợi
+                      Queue Priority
                     </label>
                     <input
                       type="number"
@@ -295,14 +295,14 @@ const MembershipPlanForm: React.FC = () => {
                   disabled={submitting}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
                 >
-                  {submitting ? "Đang lưu..." : "Lưu"}
+                  {submitting ? "Saving..." : "Save"}
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate(-1)}
                   className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm"
                 >
-                  Hủy
+                  Cancel
                 </button>
               </div>
             </>

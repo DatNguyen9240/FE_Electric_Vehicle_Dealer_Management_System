@@ -4,7 +4,7 @@ import type { SidebarMenuItem } from "@components/Layouts/SideBar";
 import { Outlet } from "react-router-dom";
 import LableTitle from "@components/Layouts/LableTitle";
 import { useTitle } from "../contexts";
-import { Home, Users, CreditCard, BatteryCharging, Cpu, Zap, FileText, Crown, Car } from "lucide-react";
+import { Home, Users, CreditCard, BatteryCharging, Cpu, Zap, FileText, Crown, Car, AlertTriangle, MessageSquare } from "lucide-react";
 
 const AdminLayout: React.FC = () => {
   const { title } = useTitle();
@@ -23,6 +23,8 @@ const AdminLayout: React.FC = () => {
             { key: "bookings", label: "Bookings", icon: <BatteryCharging size={20} />, to: "/admin/bookings" },
             { key: "sessions", label: "Sessions", icon: <Zap size={20} />, to: "/admin/sessions" },
             { key: "invoices", label: "Invoices", icon: <FileText size={20} />, to: "/admin/invoices" },
+            { key: "incidents", label: "Incidents", icon: <AlertTriangle size={20} />, to: "/admin/incidents" },
+            { key: "feedbacks", label: "Feedbacks", icon: <MessageSquare size={20} />, to: "/admin/feedbacks" },
             { key: "membership-plans", label: "Membership Plans", icon: <Crown size={20} />, to: "/admin/membership-plans" },
             { key: "ai", label: "AI Forecast", icon: <Cpu size={20} />, to: "/admin/ai-forecast" },
           ] as SidebarMenuItem[]

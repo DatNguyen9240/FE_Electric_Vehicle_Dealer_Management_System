@@ -29,7 +29,7 @@ const ChargersManager: React.FC = () => {
 	const [search, setSearch] = React.useState("");
 
 
-	React.useEffect(() => { setTitle("Quản lí trụ"); }, [setTitle]);
+	React.useEffect(() => { setTitle("Charger Management"); }, [setTitle]);
 
 	const asRecord = (v: unknown): Record<string, unknown> | null =>
 		v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -37,9 +37,9 @@ const ChargersManager: React.FC = () => {
 	const getErrorMessage = (e: unknown) => {
 		try {
 			const ae = e as { response?: { data?: { message?: string } }; message?: string };
-			return ae?.response?.data?.message || ae?.message || "Không tải được danh sách trụ";
+			return ae?.response?.data?.message || ae?.message || "Failed to load charger list";
 		} catch {
-			return "Không tải được danh sách trụ";
+			return "Failed to load charger list";
 		}
 	};
 
@@ -73,13 +73,13 @@ const ChargersManager: React.FC = () => {
 	// creation/edit moved to dedicated pages
 
 	const remove = async (id: string) => {
-		if (!confirm("Xoá trụ này?")) return;
+		if (!confirm("Delete this charger?")) return;
 		try {
 			await api.delete(`/chargers/${id}`);
-			toast.success("Xóa trụ thành công!");
+			toast.success("Charger deleted successfully!");
 			await load();
 		} catch (e: any) {
-			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi xoá trụ";
+			const errorMsg = e?.response?.data?.message || e?.message || "Error deleting charger";
 			toast.error(errorMsg);
 		}
 	};
@@ -102,15 +102,15 @@ const ChargersManager: React.FC = () => {
 					)
 				);
 			}
-			toast.success(`Đã ${next === "ONLINE" ? "bật" : "tắt"} trụ sạc`);
+			toast.success(`Charger ${next === "ONLINE" ? "turned on" : "turned off"}`);
 		} catch (e: any) {
-			// Rollback nếu có lỗi
+			// Rollback on error
 			setRows(prevRows => 
 				prevRows.map(charger => 
 					charger._id === c._id ? { ...charger, status: c.status } : charger
 				)
 			);
-			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi đổi trạng thái";
+			const errorMsg = e?.response?.data?.message || e?.message || "Error changing status";
 			toast.error(errorMsg);
 		}
 	};
@@ -136,33 +136,33 @@ const ChargersManager: React.FC = () => {
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
 						<input
 							type="text"
-							placeholder="Tìm kiếm trụ..."
+							placeholder="Search charger..."
 							value={search}
 							className="border border-[#333333] rounded-lg pl-10 pr-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
 							onChange={(e) => setSearch(e.target.value)}
 						/>
 					</div>
 				</div>
-				<button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"><Plus size={18} /> Tạo trụ mới</button>
+				<button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"><Plus size={18} /> Create New Charger</button>
 			</div>
 			<div className="bg-white rounded-xl border">
 				<table className="min-w-full text-sm">
 					<thead>
 						<tr className="text-gray-500 border-b">
-							<th className="px-4 py-3 text-left font-semibold">Trạm</th>
-							<th className="px-4 py-3 text-left font-semibold">Tên</th>
-							<th className="px-4 py-3 text-left font-semibold">Mã</th>
-							<th className="px-4 py-3 text-left font-semibold">Loại</th>
-							<th className="px-4 py-3 text-left font-semibold">Công suất (kW)</th>
-							<th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-							<th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+							<th className="px-4 py-3 text-left font-semibold">Station</th>
+							<th className="px-4 py-3 text-left font-semibold">Name</th>
+							<th className="px-4 py-3 text-left font-semibold">Code</th>
+							<th className="px-4 py-3 text-left font-semibold">Type</th>
+							<th className="px-4 py-3 text-left font-semibold">Power (kW)</th>
+							<th className="px-4 py-3 text-left font-semibold">Status</th>
+							<th className="px-4 py-3 text-right font-semibold">Actions</th>
 						</tr>
 					</thead>
 					<tbody>
 						{loading ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>Đang tải...</td></tr>
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>Loading...</td></tr>
 						) : filtered.length === 0 ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>Chưa có trụ</td></tr>
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>No chargers yet</td></tr>
 						) : filtered.map((c) => {
 							const stationName = stations.find((s) => s._id === c.stationId)?.name || "—";
 							return (
@@ -189,7 +189,7 @@ const ChargersManager: React.FC = () => {
 													? "text-green-600 hover:text-green-700" 
 													: "text-gray-400 hover:text-gray-600"
 											}`}
-											title={c.status === "ONLINE" ? "Tắt trụ" : "Bật trụ"}
+											title={c.status === "ONLINE" ? "Turn off charger" : "Turn on charger"}
 										>
 											{c.status === "ONLINE" ? (
 												<div className="flex items-center gap-1">
@@ -203,8 +203,8 @@ const ChargersManager: React.FC = () => {
 												</div>
 											)}
 										</button>
-										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3" title="Chỉnh sửa"><Pencil size={16} /></button>
-										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Xóa"><Trash2 size={16} /></button>
+										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3" title="Edit"><Pencil size={16} /></button>
+										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Delete"><Trash2 size={16} /></button>
 									</td>
 								</tr>
 							);

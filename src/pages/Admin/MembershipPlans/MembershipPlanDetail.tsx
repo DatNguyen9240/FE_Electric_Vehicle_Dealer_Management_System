@@ -24,14 +24,14 @@ type MembershipPlanDetail = {
 
 const formatCurrency = (value?: number) => {
   if (typeof value !== "number") return "—";
-  return `${value.toLocaleString("vi-VN")} VND`;
+  return `${value.toLocaleString("en-US")} VND`;
 };
 
 const formatDateTime = (value?: string) => {
   if (!value) return "—";
   try {
     const d = new Date(value);
-    return new Intl.DateTimeFormat("vi-VN", {
+    return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -64,7 +64,7 @@ const MembershipPlanDetail: React.FC = () => {
   const [data, setData] = React.useState<MembershipPlanDetail | null>(null);
 
   React.useEffect(() => {
-    setTitle("Chi tiết gói thành viên");
+    setTitle("Membership Plan Details");
   }, [setTitle]);
 
   React.useEffect(() => {
@@ -82,9 +82,9 @@ const MembershipPlanDetail: React.FC = () => {
         const getErrorMessage = (e: unknown) => {
           try {
             const ae = e as { response?: { data?: { message?: string } }; message?: string };
-            return ae?.response?.data?.message || ae?.message || "Không tải được chi tiết gói";
+            return ae?.response?.data?.message || ae?.message || "Failed to load plan details";
           } catch {
-            return "Không tải được chi tiết gói";
+            return "Failed to load plan details";
           }
         };
         setError(getErrorMessage(err));
@@ -104,9 +104,9 @@ const MembershipPlanDetail: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Không thể kích hoạt gói";
+          return ae?.response?.data?.message || ae?.message || "Cannot activate plan";
         } catch {
-          return "Không thể kích hoạt gói";
+          return "Cannot activate plan";
         }
       };
       alert(getErrorMessage(err));
@@ -115,7 +115,7 @@ const MembershipPlanDetail: React.FC = () => {
 
   const handleDeactivate = async () => {
     if (!planId) return;
-    if (!confirm("Bạn có chắc muốn tắt gói này?")) return;
+    if (!confirm("Are you sure you want to deactivate this plan?")) return;
     try {
       await api.patch(`/admin/membership-plans/${planId}/deactivate`);
       if (data) setData({ ...data, status: "INACTIVE" });
@@ -123,9 +123,9 @@ const MembershipPlanDetail: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Không thể tắt gói";
+          return ae?.response?.data?.message || ae?.message || "Cannot deactivate plan";
         } catch {
-          return "Không thể tắt gói";
+          return "Cannot deactivate plan";
         }
       };
       alert(getErrorMessage(err));
@@ -134,7 +134,7 @@ const MembershipPlanDetail: React.FC = () => {
 
   const handleDelete = async () => {
     if (!planId) return;
-    if (!confirm("Bạn có chắc muốn xóa gói này? Hành động này không thể hoàn tác.")) return;
+    if (!confirm("Are you sure you want to delete this plan? This action cannot be undone.")) return;
     try {
       await api.delete(`/admin/membership-plans/${planId}`);
       navigate("/admin/membership-plans");
@@ -142,9 +142,9 @@ const MembershipPlanDetail: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Không thể xóa gói";
+          return ae?.response?.data?.message || ae?.message || "Cannot delete plan";
         } catch {
-          return "Không thể xóa gói";
+          return "Cannot delete plan";
         }
       };
       alert(getErrorMessage(err));
@@ -157,13 +157,13 @@ const MembershipPlanDetail: React.FC = () => {
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 mb-4"
       >
-        <ArrowLeft size={18} /> Quay lại
+        <ArrowLeft size={18} /> Back
       </button>
 
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Thông tin gói thành viên</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Membership Plan Information</h2>
             <div className="flex items-center gap-3">
               {data?.status && (
                 <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${badgeClass(data.status)}`}>
@@ -175,74 +175,74 @@ const MembershipPlanDetail: React.FC = () => {
                 onClick={() => navigate(`/admin/membership-plans/edit/${planId}`)}
                 className="inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50"
               >
-                <Edit size={16} /> Chỉnh sửa
+                <Edit size={16} /> Edit
               </button>
               {data?.status === "ACTIVE" ? (
                 <button
                   onClick={handleDeactivate}
                   className="inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm hover:bg-orange-50 text-orange-600"
                 >
-                  <PowerOff size={16} /> Tắt gói
+                  <PowerOff size={16} /> Deactivate
                 </button>
               ) : (
                 <button
                   onClick={handleActivate}
                   className="inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm hover:bg-green-50 text-green-600"
                 >
-                  <Power size={16} /> Kích hoạt
+                  <Power size={16} /> Activate
                 </button>
               )}
               <button
                 onClick={handleDelete}
                 className="inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm hover:bg-red-50 text-red-600"
               >
-                <Trash2 size={16} /> Xóa
+                <Trash2 size={16} /> Delete
               </button>
             </div>
           </div>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div className="text-sm text-gray-500">Mã gói</div>
+            <div className="text-sm text-gray-500">Plan Code</div>
             <div className="font-medium">{data?.code || "—"}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Tên gói</div>
+            <div className="text-sm text-gray-500">Plan Name</div>
             <div className="font-medium">{data?.name || "—"}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Phí hàng tháng</div>
+            <div className="text-sm text-gray-500">Monthly Fee</div>
             <div className="font-medium">{formatCurrency(data?.monthly_fee_vnd)}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Tạo lúc</div>
+            <div className="text-sm text-gray-500">Created At</div>
             <div className="font-medium">{formatDateTime(data?.created_at)}</div>
           </div>
           <div className="md:col-span-2">
-            <div className="text-sm text-gray-500 mb-2">Quyền lợi (Modifiers)</div>
+            <div className="text-sm text-gray-500 mb-2">Benefits (Modifiers)</div>
             <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs text-gray-500">Giảm giá theo kWh (%)</div>
+                <div className="text-xs text-gray-500">Price per kWh Discount (%)</div>
                 <div className="font-medium">{data?.mods?.pricePerKwhPctOff ?? 0}%</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Giảm giá theo phút (%)</div>
+                <div className="text-xs text-gray-500">Price per Minute Discount (%)</div>
                 <div className="font-medium">{data?.mods?.pricePerMinPctOff ?? 0}%</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Giảm phí chờ (%)</div>
+                <div className="text-xs text-gray-500">Idle Fee Discount (%)</div>
                 <div className="font-medium">{data?.mods?.idleFeePerMinPctOff ?? 0}%</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Thời gian miễn phí chờ (phút)</div>
+                <div className="text-xs text-gray-500">Grace Period Bonus (minutes)</div>
                 <div className="font-medium">{data?.mods?.graceMinBonus ?? 0}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Giảm số dư tối thiểu (%)</div>
+                <div className="text-xs text-gray-500">Minimum Balance Discount (%)</div>
                 <div className="font-medium">{data?.mods?.minBalancePctOff ?? 0}%</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Ưu tiên hàng đợi</div>
+                <div className="text-xs text-gray-500">Queue Priority</div>
                 <div className="font-medium">{data?.mods?.queueBoost ?? 0}</div>
               </div>
             </div>
@@ -252,7 +252,7 @@ const MembershipPlanDetail: React.FC = () => {
           <div className="px-6 pb-6 text-red-600 text-sm">{error}</div>
         )}
         {loading && (
-          <div className="px-6 pb-6 text-gray-500 text-sm">Đang tải dữ liệu...</div>
+          <div className="px-6 pb-6 text-gray-500 text-sm">Loading data...</div>
         )}
       </div>
     </div>

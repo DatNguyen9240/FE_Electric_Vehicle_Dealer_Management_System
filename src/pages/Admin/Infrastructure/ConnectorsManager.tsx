@@ -30,10 +30,12 @@ const ConnectorsManager: React.FC = () => {
 	const [loading, setLoading] = React.useState(false);
 	const [error, setError] = React.useState<string | null>(null);
 	const [search, setSearch] = React.useState("");
+	const [stationFilter, setStationFilter] = React.useState<string>("");
+	const [statusFilter, setStatusFilter] = React.useState<string>("");
 	const isFirstMount = React.useRef(true);
 
 
-	React.useEffect(() => { setTitle("Quản lí đầu sạc"); }, [setTitle]);
+	React.useEffect(() => { setTitle("Connector Management"); }, [setTitle]);
 
 	const asRecord = (v: unknown): Record<string, unknown> | null =>
 		v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -41,9 +43,9 @@ const ConnectorsManager: React.FC = () => {
 	const getErrorMessage = (e: unknown) => {
 		try {
 			const ae = e as { response?: { data?: { message?: string } }; message?: string };
-			return ae?.response?.data?.message || ae?.message || "Không tải được danh sách đầu sạc";
+			return ae?.response?.data?.message || ae?.message || "Failed to load connector list";
 		} catch {
-			return "Không tải được danh sách đầu sạc";
+			return "Failed to load connector list";
 		}
 	};
 
@@ -51,8 +53,13 @@ const ConnectorsManager: React.FC = () => {
 		setLoading(true);
 		setError(null);
 		try {
+			// Build query params for connectors API
+			const connectorParams: any = { limit: 1000 };
+			if (stationFilter) connectorParams.stationId = stationFilter;
+			if (statusFilter) connectorParams.status = statusFilter;
+
 			const [coRes, sRes, chRes] = await Promise.all([
-				api.get("/connectors", { params: { limit: 1000 } }),
+				api.get("/connectors", { params: connectorParams }),
 				api.get("/stations", { params: { limit: 1000 } }),
 				api.get("/chargers", { params: { limit: 1000 } }),
 			]);
@@ -70,7 +77,7 @@ const ConnectorsManager: React.FC = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [stationFilter, statusFilter]);
 
 	React.useEffect(() => { load(); }, [load]);
 
@@ -88,13 +95,13 @@ const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/
 // creation/edit moved to dedicated pages
 
 	const remove = async (id: string) => {
-		if (!confirm("Xoá đầu sạc này?")) return;
+		if (!confirm("Delete this connector?")) return;
 		try {
 			await api.delete(`/connectors/${id}`);
-			toast.success("Xóa đầu sạc thành công!");
+			toast.success("Connector deleted successfully!");
 			await load();
 		} catch (e: any) {
-			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi xoá đầu sạc";
+			const errorMsg = e?.response?.data?.message || e?.message || "Error deleting connector";
 			toast.error(errorMsg);
 		}
 	};
@@ -118,37 +125,62 @@ const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/
 		<div className="p-6">
 			{/* Toolbar like Tariffs */}
 			<div className="flex items-center justify-between mb-4">
-				<div className="flex items-center gap-4">
+				<div className="flex items-center gap-4 flex-wrap">
 					<div className="relative">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
 						<input
 							type="text"
-							placeholder="Tìm kiếm đầu sạc..."
+							placeholder="Search connector..."
 							value={search}
 							className="border border-[#333333] rounded-lg pl-10 pr-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
 							onChange={(e) => setSearch(e.target.value)}
 						/>
 					</div>
+					<select
+						value={stationFilter}
+						onChange={(e) => setStationFilter(e.target.value)}
+						className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+					>
+						<option value="">Station: All</option>
+						{stations.map((s) => (
+							<option key={s._id} value={s._id}>
+								{s.name || s.code || s._id}
+							</option>
+						))}
+					</select>
+					<select
+						value={statusFilter}
+						onChange={(e) => setStatusFilter(e.target.value)}
+						className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+					>
+						<option value="">Status: All</option>
+						<option value="IDLE">IDLE</option>
+						<option value="OFFLINE">OFFLINE</option>
+						<option value="RESERVED">RESERVED</option>
+						<option value="CHARGING">CHARGING</option>
+						<option value="FINISHED">FINISHED</option>
+					</select>
 				</div>
-				<button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"><Plus size={18} /> Thêm đầu sạc</button>
+				<button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"><Plus size={18} /> Add Connector</button>
 			</div>
 			<div className="bg-white rounded-xl border">
 				<table className="min-w-full text-sm">
 					<thead>
 						<tr className="text-gray-500 border-b">
-							<th className="px-4 py-3 text-left font-semibold">Trạm</th>
-							<th className="px-4 py-3 text-left font-semibold">Trụ</th>
-							<th className="px-4 py-3 text-left font-semibold">Mã</th>
-							<th className="px-4 py-3 text-left font-semibold">Loại</th>
-							<th className="px-4 py-3 text-left font-semibold">Công suất (kW)</th>
-							<th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
+							<th className="px-4 py-3 text-left font-semibold">Station</th>
+							<th className="px-4 py-3 text-left font-semibold">Charger</th>
+							<th className="px-4 py-3 text-left font-semibold">Code</th>
+							<th className="px-4 py-3 text-left font-semibold">Type</th>
+							<th className="px-4 py-3 text-left font-semibold">Power (kW)</th>
+							<th className="px-4 py-3 text-left font-semibold">Status</th>
+							<th className="px-4 py-3 text-right font-semibold">Actions</th>
 						</tr>
 					</thead>
 					<tbody>
 						{loading ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>Đang tải...</td></tr>
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>Loading...</td></tr>
 						) : filtered.length === 0 ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>Chưa có đầu sạc</td></tr>
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>No connectors yet</td></tr>
 						) : filtered.map((c) => {
 							const stationName = stations.find((s) => s._id === c.stationId)?.name || "—";
 							const chargerName = chargers.find((ch) => ch._id === c.chargerId)?.name || "—";
@@ -172,8 +204,8 @@ const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/
 									</td>
 									<td className="px-4 py-3 text-right">
 										
-										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3" title="Chỉnh sửa"><Pencil size={16} /></button>
-										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Xóa"><Trash2 size={16} /></button>
+										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3" title="Edit"><Pencil size={16} /></button>
+										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Delete"><Trash2 size={16} /></button>
 									</td>
 								</tr>
 							);

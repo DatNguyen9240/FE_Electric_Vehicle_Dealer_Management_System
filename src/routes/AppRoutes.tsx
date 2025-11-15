@@ -90,6 +90,24 @@ const MembershipPlanForm = lazy(
 const InvoiceUpdate = lazy(
   () => import("@pages/Admin/Invoices/InvoiceUpdate")
 );
+const IncidentManager = lazy(
+  () => import("@pages/Admin/Incidents/IncidentManager")
+);
+const IncidentDetail = lazy(
+  () => import("@pages/Admin/Incidents/IncidentDetail")
+);
+const IncidentEdit = lazy(
+  () => import("@pages/Admin/Incidents/IncidentEdit")
+);
+const FeedbackManager = lazy(
+  () => import("@pages/Admin/Feedbacks/FeedbackManager")
+);
+const FeedbackDetail = lazy(
+  () => import("@pages/Admin/Feedbacks/FeedbackDetail")
+);
+const FeedbackEdit = lazy(
+  () => import("@pages/Admin/Feedbacks/FeedbackEdit")
+);
 
 const createLazyRoute = (
   Component: React.LazyExoticComponent<React.ComponentType<object>>,
@@ -335,6 +353,48 @@ export default function AppRoutes() {
             element={createLazyRoute(
               InvoiceUpdate,
               "Loading invoice update..."
+            )}
+          />
+          <Route
+            path="/admin/incidents"
+            element={createLazyRoute(
+              IncidentManager,
+              "Loading incident management..."
+            )}
+          />
+          <Route
+            path="/admin/incidents/view/:incidentId"
+            element={createLazyRoute(
+              IncidentDetail,
+              "Loading incident detail..."
+            )}
+          />
+          <Route
+            path="/admin/incidents/edit/:incidentId"
+            element={createLazyRoute(
+              IncidentEdit,
+              "Loading incident edit..."
+            )}
+          />
+          <Route
+            path="/admin/feedbacks"
+            element={createLazyRoute(
+              FeedbackManager,
+              "Loading feedback management..."
+            )}
+          />
+          <Route
+            path="/admin/feedbacks/view/:feedbackId"
+            element={createLazyRoute(
+              FeedbackDetail,
+              "Loading feedback detail..."
+            )}
+          />
+          <Route
+            path="/admin/feedbacks/edit/:feedbackId"
+            element={createLazyRoute(
+              FeedbackEdit,
+              "Loading feedback edit..."
             )}
           />
           <Route

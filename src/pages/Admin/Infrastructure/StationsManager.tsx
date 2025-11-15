@@ -15,7 +15,7 @@ type Station = {
 // form moved to create/edit page
 
 const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
-const getErrorMessage = (eVal: unknown, fallback = "Có lỗi xảy ra") => {
+const getErrorMessage = (eVal: unknown, fallback = "An error occurred") => {
 	if (!eVal) return fallback;
 	if (typeof eVal === "string") return eVal;
 	if (eVal instanceof Error) return eVal.message;
@@ -35,7 +35,7 @@ const StationsManager: React.FC = () => {
 	const [search, setSearch] = React.useState("");
 	const navigate = useNavigate();
 
-	React.useEffect(() => { setTitle("Quản lí trạm"); }, [setTitle]);
+	React.useEffect(() => { setTitle("Station Management"); }, [setTitle]);
 
 	const load = React.useCallback(async () => {
 		setLoading(true);
@@ -52,7 +52,7 @@ const StationsManager: React.FC = () => {
 			}
 			setRows(list);
 		} catch (err: unknown) {
-			setError(getErrorMessage(err, "Không tải được danh sách trạm"));
+			setError(getErrorMessage(err, "Failed to load station list"));
 		} finally {
 			setLoading(false);
 		}
@@ -66,12 +66,12 @@ const StationsManager: React.FC = () => {
 	// creation/edit moved to dedicated pages like Tariffs
 
 	const remove = async (id: string) => {
-		if (!confirm("Xoá trạm này?")) return;
+		if (!confirm("Delete this station?")) return;
 		try {
 			await api.delete(`/stations/${id}`);
 			await load();
 		} catch (err: unknown) {
-			alert(getErrorMessage(err, "Lỗi xoá trạm"));
+			alert(getErrorMessage(err, "Error deleting station"));
 		}
 	};
 
@@ -96,7 +96,7 @@ const StationsManager: React.FC = () => {
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
 						<input
 							type="text"
-							placeholder="Tìm kiếm trạm..."
+							placeholder="Search station..."
 							value={search}
 							className="border border-[#333333] rounded-lg pl-10 pr-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
 							onChange={(e) => setSearch(e.target.value)}
@@ -105,7 +105,7 @@ const StationsManager: React.FC = () => {
 				</div>
 				<button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
 					<Plus size={18} />
-					Tạo trạm mới
+					Create New Station
 				</button>
 			</div>
 
@@ -113,17 +113,17 @@ const StationsManager: React.FC = () => {
 				<table className="min-w-full text-sm">
 					<thead>
 						<tr className="text-gray-500 border-b">
-							<th className="px-4 py-3 text-left font-semibold">Tên</th>
-							<th className="px-4 py-3 text-left font-semibold">Toạ độ</th>
-							<th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-							<th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+							<th className="px-4 py-3 text-left font-semibold">Name</th>
+							<th className="px-4 py-3 text-left font-semibold">Coordinates</th>
+							<th className="px-4 py-3 text-left font-semibold">Status</th>
+							<th className="px-4 py-3 text-right font-semibold">Actions</th>
 						</tr>
 					</thead>
 					<tbody>
 						{loading ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={4}>Đang tải...</td></tr>
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={4}>Loading...</td></tr>
 						) : filtered.length === 0 ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={4}>Chưa có trạm</td></tr>
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={4}>No stations yet</td></tr>
 						) : filtered.map((s) => (
 							<tr key={s._id} className="border-b last:border-b-0">
 								<td className="px-4 py-3">{s.name}</td>

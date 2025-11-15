@@ -1,6 +1,18 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { fetchUsers, getUser, updateUser, deleteUser } from "./UserThunks";
 
+export interface UserVehicle {
+  id: string;
+  user_id: string;
+  license_plate?: string;
+  plug_type?: string;
+  make?: string;
+  model?: string;
+  battery_kwh?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface User {
   _id: string;
   id: string;
@@ -11,6 +23,7 @@ export interface User {
   status: "ACTIVE" | "SUSPENDED";
   created_at: string;
   updated_at?: string;
+  vehicles?: UserVehicle[];
 }
 
 interface UserState {

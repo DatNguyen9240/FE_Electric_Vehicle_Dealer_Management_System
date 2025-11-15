@@ -5,7 +5,7 @@ import { ArrowLeft, Save, X } from "lucide-react";
 import api from "@libs/axios";
 import { useTitle } from "@contexts";
 
-type ConnectorPayload = { stationId: string; chargerId: string; type: string; powerKw: number; status: string; code: string };
+type ConnectorPayload = { chargerId: string; status: string; code: string };
 
 const ConnectorsCreateEdit: React.FC = () => {
   const { setTitle } = useTitle();
@@ -14,20 +14,20 @@ const ConnectorsCreateEdit: React.FC = () => {
   const isEdit = Boolean(connectorId);
 
   type Station = { _id: string; name?: string; code?: string };
-  type Charger = { _id: string; stationId?: string; name?: string; code?: string };
+  type Charger = { _id: string; stationId?: string; name?: string; code?: string; connectorType?: string; powerKw?: number };
 
   const [stations, setStations] = React.useState<Station[]>([]);
   const [chargers, setChargers] = React.useState<Charger[]>([]);
-  const [form, setForm] = React.useState<ConnectorPayload>({ stationId: "", chargerId: "", type: "DC_CCS2", powerKw: 7.2, status: "IDLE", code: "" });
+  const [selectedStationId, setSelectedStationId] = React.useState<string>("");
+  const [form, setForm] = React.useState<ConnectorPayload>({ chargerId: "", status: "IDLE", code: "" });
+  const [connectorData, setConnectorData] = React.useState<{ type?: string; powerKw?: number; stationId?: string }>({});
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => { setTitle(isEdit ? "Sửa đầu sạc" : "Thêm đầu sạc"); }, [isEdit, setTitle]);
+  React.useEffect(() => { setTitle(isEdit ? "Edit Connector" : "Add Connector"); }, [isEdit, setTitle]);
 
   const asRecord = (v: unknown): Record<string, unknown> | null =>
     v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
-
- ;
 
   React.useEffect(() => {
     (async () => {
@@ -42,10 +42,10 @@ const ConnectorsCreateEdit: React.FC = () => {
         const cl = (Array.isArray(cd) ? cd : (asRecord(cd)?.items ?? asRecord(cd)?.data ?? [])) as Charger[];
         setStations(sl);
         setChargers(cl);
-        if (!form.stationId && sl[0]?._id) setForm((f) => ({ ...f, stationId: sl[0]._id }));
+        if (!selectedStationId && sl[0]?._id) setSelectedStationId(sl[0]._id);
         if (!form.chargerId && cl[0]?._id) setForm((f) => ({ ...f, chargerId: cl[0]._id }));
       } catch (e: any) {
-        toast.error("Không thể tải danh sách trạm/trụ sạc");
+        toast.error("Failed to load station/charger list");
       }
     })();
   }, []);
@@ -57,9 +57,19 @@ const ConnectorsCreateEdit: React.FC = () => {
         setLoading(true);
         const r = await api.get(`/connectors/${connectorId}`);
         const c = r.data;
-        setForm({ stationId: c.stationId, chargerId: c.chargerId, type: c.type, powerKw: c.powerKw, status: c.status, code: c.code });
+        setForm({ 
+          chargerId: c.chargerId, 
+          status: (c.status || "IDLE").toUpperCase(), 
+          code: c.code 
+        });
+        setConnectorData({
+          type: c.type,
+          powerKw: c.powerKw,
+          stationId: c.stationId
+        });
+        setSelectedStationId(c.stationId);
       } catch (e: any) {
-        const errorMsg = e?.response?.data?.message || e?.message || "Không tải được đầu sạc";
+        const errorMsg = e?.response?.data?.message || e?.message || "Failed to load connector";
         setError(errorMsg);
         toast.error(errorMsg);
       } finally { setLoading(false); }
@@ -69,33 +79,88 @@ const ConnectorsCreateEdit: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.stationId) {
-      toast.error("Vui lòng chọn trạm sạc");
+    if (!form.chargerId) {
+      toast.error("Please select a charger");
       return;
     }
 
-    if (!form.chargerId) {
-      toast.error("Vui lòng chọn trụ sạc");
+    if (!isEdit && !form.code?.trim()) {
+      toast.error("Please enter connector code");
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
+      
       if (isEdit) {
-        await api.put(`/connectors/${connectorId}`, form);
-        toast.success("Cập nhật đầu sạc thành công!");
+        // Update: Send code and status (backend auto-syncs type and powerKw from charger)
+        await api.put(`/connectors/${connectorId}`, { code: form.code });
+        // Update status separately using PATCH endpoint
+        if (form.status) {
+          await api.patch(`/connectors/${connectorId}/status`, { status: form.status.toUpperCase() });
+        }
+        toast.success("Connector updated successfully!");
       } else {
-        await api.post(`/connectors`, form);
-        toast.success("Tạo đầu sạc thành công!");
+        // Create: Only send chargerId, status, code (backend auto-sets stationId, type, powerKw from charger)
+        const payload = {
+          chargerId: form.chargerId,
+          status: (form.status || "IDLE").toUpperCase(),
+          code: form.code,
+        };
+        await api.post(`/connectors`, payload);
+        toast.success("Connector created successfully!");
       }
       navigate("/admin/infrastructure/connectors");
     } catch (e: any) {
-      const errorMsg = e?.response?.data?.message || e?.message || "Lỗi lưu đầu sạc";
+      const errorMsg = e?.response?.data?.message || e?.message || "Error saving connector";
       setError(errorMsg);
       toast.error(errorMsg);
     } finally { setLoading(false); }
   };
+
+  // Filter chargers by selected station (for create) or connector's station (for edit)
+  const filteredChargers = React.useMemo(() => {
+    if (isEdit && connectorData.stationId) {
+      // In edit mode, show chargers from the connector's station
+      return chargers.filter((ch) => ch.stationId === connectorData.stationId);
+    }
+    if (!selectedStationId) return chargers;
+    return chargers.filter((ch) => ch.stationId === selectedStationId);
+  }, [chargers, selectedStationId, isEdit, connectorData.stationId]);
+
+  // Update chargerId when station changes (if current charger is not in new station) - only for create mode
+  React.useEffect(() => {
+    if (!isEdit && selectedStationId && filteredChargers.length > 0) {
+      const currentCharger = chargers.find((ch) => ch._id === form.chargerId);
+      if (!currentCharger || currentCharger.stationId !== selectedStationId) {
+        const newCharger = filteredChargers[0];
+        setForm((f) => ({ ...f, chargerId: newCharger._id }));
+        // Auto-fill type and powerKw from charger
+        if (newCharger.connectorType && newCharger.powerKw !== undefined) {
+          setConnectorData({
+            type: newCharger.connectorType,
+            powerKw: newCharger.powerKw,
+            stationId: selectedStationId
+          });
+        }
+      }
+    }
+  }, [selectedStationId, filteredChargers, isEdit, form.chargerId, chargers]);
+
+  // Auto-fill type and powerKw when charger is selected in create mode
+  React.useEffect(() => {
+    if (!isEdit && form.chargerId) {
+      const selectedCharger = chargers.find((ch) => ch._id === form.chargerId);
+      if (selectedCharger) {
+        setConnectorData({
+          type: selectedCharger.connectorType || "",
+          powerKw: selectedCharger.powerKw,
+          stationId: selectedCharger.stationId
+        });
+      }
+    }
+  }, [form.chargerId, chargers, isEdit]);
 
   const handleCancel = () => {
     navigate("/admin/infrastructure/connectors");
@@ -104,7 +169,7 @@ const ConnectorsCreateEdit: React.FC = () => {
   if (loading && isEdit) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading data...</div>
       </div>
     );
   }
@@ -119,14 +184,14 @@ const ConnectorsCreateEdit: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={16} />
-            Quay lại
+            Back
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {isEdit ? "Chỉnh sửa đầu sạc" : "Tạo đầu sạc mới"}
+              {isEdit ? "Edit Connector" : "Create New Connector"}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {isEdit ? "Cập nhật thông tin đầu sạc" : "Điền thông tin để tạo đầu sạc mới"}
+              {isEdit ? "Update connector information" : "Fill in information to create a new connector"}
             </p>
           </div>
         </div>
@@ -135,45 +200,57 @@ const ConnectorsCreateEdit: React.FC = () => {
       {/* Form */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Thông tin đầu sạc</h2>
+          <h2 className="text-lg font-medium text-gray-900">Connector Information</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Station */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạm sạc <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  value={form.stationId}
-                  onChange={(e) => setForm({ ...form, stationId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Chọn trạm</option>
-                  {stations.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name || s.code || s._id}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Station - Only for create, read-only for edit */}
+              {!isEdit ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Station <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={selectedStationId}
+                    onChange={(e) => setSelectedStationId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select station</option>
+                    {stations.map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.name || s.code || s._id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Station
+                  </label>
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                    {stations.find((s) => s._id === connectorData.stationId)?.name || connectorData.stationId || "—"}
+                  </div>
+                </div>
+              )}
 
               {/* Charger */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trụ sạc <span className="text-red-500">*</span>
+                  Charger <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
                   value={form.chargerId}
                   onChange={(e) => setForm({ ...form, chargerId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={isEdit}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
                 >
-                  <option value="">Chọn trụ</option>
-                  {chargers.map((ch) => (
+                  <option value="">Select charger</option>
+                  {filteredChargers.map((ch) => (
                     <option key={ch._id} value={ch._id}>
                       {ch.name || ch.code || ch._id}
                     </option>
@@ -181,57 +258,45 @@ const ConnectorsCreateEdit: React.FC = () => {
                 </select>
               </div>
 
-              {/* Type */}
+              {/* Type - Read-only (auto-synced from charger) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Loại <span className="text-red-500">*</span>
+                  Type
                 </label>
-                <select
-                  required
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="DC_CCS2">DC CCS2</option>
-                  <option value="CHAdeMO">CHAdeMO</option>
-                </select>
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  {connectorData.type || "—"}
+                </div>
               </div>
 
-              {/* Power */}
+              {/* Power - Read-only (auto-synced from charger) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Công suất (kW) <span className="text-red-500">*</span>
+                  Power (kW)
                 </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  step="0.1"
-                  value={form.powerKw || ""}
-                  onChange={(e) => setForm({ ...form, powerKw: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập công suất"
-                />
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  {connectorData.powerKw !== undefined ? `${connectorData.powerKw} kW` : "—"}
+                </div>
               </div>
 
               {/* Code */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mã đầu sạc
+                  Connector Code {!isEdit && <span className="text-red-500">*</span>}
                 </label>
                 <input
                   type="text"
+                  required={!isEdit}
                   value={form.code}
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập mã đầu sạc"
+                  placeholder="Enter connector code"
                 />
               </div>
 
               {/* Status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạng thái <span className="text-red-500">*</span>
+                  Status <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -262,7 +327,7 @@ const ConnectorsCreateEdit: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X size={16} />
-                Hủy
+                Cancel
               </button>
               <button
                 type="submit"
@@ -270,7 +335,7 @@ const ConnectorsCreateEdit: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save size={16} />
-                {loading ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Tạo đầu sạc"}
+                {loading ? "Saving..." : isEdit ? "Save Changes" : "Create Connector"}
               </button>
             </div>
           </div>
@@ -281,5 +346,6 @@ const ConnectorsCreateEdit: React.FC = () => {
 };
 
 export default ConnectorsCreateEdit;
+
 
 

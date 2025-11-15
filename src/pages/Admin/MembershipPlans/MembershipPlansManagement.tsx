@@ -24,14 +24,14 @@ type MembershipPlanItem = {
 
 const formatCurrency = (value?: number) => {
   if (typeof value !== "number") return "—";
-  return `${value.toLocaleString("vi-VN")} VND`;
+  return `${value.toLocaleString("en-US")} VND`;
 };
 
 const formatDateTime = (value?: string) => {
   if (!value) return "—";
   try {
     const d = new Date(value);
-    return new Intl.DateTimeFormat("vi-VN", {
+    return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -65,7 +65,7 @@ const MembershipPlansManagement: React.FC = () => {
   const [rows, setRows] = React.useState<MembershipPlanItem[]>([]);
 
   React.useEffect(() => {
-    setTitle("Quản lí gói thành viên");
+    setTitle("Membership Plans Management");
   }, [setTitle]);
 
   const fetchData = React.useCallback(async () => {
@@ -90,9 +90,9 @@ const MembershipPlansManagement: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Lỗi khi tải dữ liệu";
+          return ae?.response?.data?.message || ae?.message || "Error loading data";
         } catch {
-          return "Lỗi khi tải dữ liệu";
+          return "Error loading data";
         }
       };
       setError(getErrorMessage(err));
@@ -114,9 +114,9 @@ const MembershipPlansManagement: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Không thể kích hoạt gói";
+          return ae?.response?.data?.message || ae?.message || "Cannot activate plan";
         } catch {
-          return "Không thể kích hoạt gói";
+          return "Cannot activate plan";
         }
       };
       alert(getErrorMessage(err));
@@ -125,7 +125,7 @@ const MembershipPlansManagement: React.FC = () => {
 
   const handleDeactivate = async (id?: string) => {
     if (!id) return;
-    if (!confirm("Bạn có chắc muốn tắt gói này?")) return;
+    if (!confirm("Are you sure you want to deactivate this plan?")) return;
     try {
       await api.patch(`/admin/membership-plans/${id}/deactivate`);
       fetchData();
@@ -133,9 +133,9 @@ const MembershipPlansManagement: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Không thể tắt gói";
+          return ae?.response?.data?.message || ae?.message || "Cannot deactivate plan";
         } catch {
-          return "Không thể tắt gói";
+          return "Cannot deactivate plan";
         }
       };
       alert(getErrorMessage(err));
@@ -144,7 +144,7 @@ const MembershipPlansManagement: React.FC = () => {
 
   const handleDelete = async (id?: string) => {
     if (!id) return;
-    if (!confirm("Bạn có chắc muốn xóa gói này? Hành động này không thể hoàn tác.")) return;
+    if (!confirm("Are you sure you want to delete this plan? This action cannot be undone.")) return;
     try {
       await api.delete(`/admin/membership-plans/${id}`);
       fetchData();
@@ -152,9 +152,9 @@ const MembershipPlansManagement: React.FC = () => {
       const getErrorMessage = (e: unknown) => {
         try {
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
-          return ae?.response?.data?.message || ae?.message || "Không thể xóa gói";
+          return ae?.response?.data?.message || ae?.message || "Cannot delete plan";
         } catch {
-          return "Không thể xóa gói";
+          return "Cannot delete plan";
         }
       };
       alert(getErrorMessage(err));
@@ -170,7 +170,7 @@ const MembershipPlansManagement: React.FC = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm kiếm theo mã/tên"
+              placeholder="Search by code/name"
               className="border border-[#333333] rounded-lg px-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
             />
           </div>
@@ -180,7 +180,7 @@ const MembershipPlansManagement: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
             >
-              <option value="">Tất cả trạng thái</option>
+              <option value="">All statuses</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
             </select>
@@ -190,33 +190,33 @@ const MembershipPlansManagement: React.FC = () => {
           onClick={() => navigate("/admin/membership-plans/create")}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
         >
-          <Plus size={16} /> Tạo gói mới
+          <Plus size={16} /> Create New Plan
         </button>
       </div>
 
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Danh sách gói thành viên</h2>
-            <span className="text-sm text-gray-500">{rows.length} gói</span>
+            <h2 className="text-lg font-medium text-gray-900">Membership Plans List</h2>
+            <span className="text-sm text-gray-500">{rows.length} plans</span>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phí hàng tháng</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tạo lúc</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Fee</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Đang tải dữ liệu...</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
               ) : error ? (
                 <tr>
@@ -224,7 +224,7 @@ const MembershipPlansManagement: React.FC = () => {
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Không có gói nào</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No plans found</td>
                 </tr>
               ) : (
                 rows.map((p) => (
@@ -243,7 +243,7 @@ const MembershipPlansManagement: React.FC = () => {
                       <a
                         href={`/admin/membership-plans/view/${p._id}`}
                         className="text-gray-400 hover:text-blue-600"
-                        title="Xem chi tiết"
+                        title="View details"
                       >
                         <Eye size={16} />
                       </a>
@@ -251,7 +251,7 @@ const MembershipPlansManagement: React.FC = () => {
                         <button
                           onClick={() => handleDeactivate(p._id)}
                           className="text-gray-400 hover:text-orange-600"
-                          title="Tắt gói"
+                          title="Deactivate plan"
                         >
                           <PowerOff size={16} />
                         </button>
@@ -259,7 +259,7 @@ const MembershipPlansManagement: React.FC = () => {
                         <button
                           onClick={() => handleActivate(p._id)}
                           className="text-gray-400 hover:text-green-600"
-                          title="Kích hoạt gói"
+                          title="Activate plan"
                         >
                           <Power size={16} />
                         </button>
@@ -267,7 +267,7 @@ const MembershipPlansManagement: React.FC = () => {
                       <button
                         onClick={() => handleDelete(p._id)}
                         className="text-gray-400 hover:text-red-600"
-                        title="Xóa gói"
+                        title="Delete plan"
                       >
                         <Trash2 size={16} />
                       </button>

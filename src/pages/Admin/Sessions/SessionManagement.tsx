@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Eye } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import api from "@libs/axios";
 import { useTitle } from "@contexts";
 
@@ -35,21 +35,7 @@ const STATUS_OPTIONS = [
   { key: "STOPPED", label: "Stopped" },
 ] as const;
 
-const formatDateTime = (value?: string | null) => {
-  if (!value) return "—";
-  try {
-    const d = new Date(value);
-    return new Intl.DateTimeFormat("vi-VN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(d);
-  } catch {
-    return value ?? "—";
-  }
-};
+
 
 const badgeClass = (status?: string | null) => {
   switch (status) {
@@ -76,7 +62,7 @@ const SessionManagement: React.FC = () => {
   const [statuses, setStatuses] = React.useState<string[]>([]);
   const [page, setPage] = React.useState(1);
   const [limit] = React.useState(20);
-  const [sort, setSort] = React.useState<string>("-startedAt");
+  const [sort] = React.useState<string>("-startedAt");
 
   // Station filter
   const [stations, setStations] = React.useState<Station[]>([]);
@@ -171,14 +157,7 @@ const SessionManagement: React.FC = () => {
     }
   };
 
-  const onSortToggle = (field: string) => {
-    setPage(1);
-    setSort((prev) => {
-      if (prev === field) return "-" + field;
-      if (prev === "-" + field) return field;
-      return "-" + field;
-    });
-  };
+  
 
   return (
     <div className="p-6">
