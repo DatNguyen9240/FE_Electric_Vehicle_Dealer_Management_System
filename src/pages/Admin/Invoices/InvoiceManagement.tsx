@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Eye } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import api from "@libs/axios";
 import { useTitle } from "@contexts";
 

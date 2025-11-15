@@ -18,15 +18,7 @@ export interface Incident {
   updatedAt: string;
 }
 
-interface IncidentResponse {
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-  items: Incident[];
-}
+
 
 interface IncidentState {
   data: Incident[];

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Search, Eye, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { Search, Eye, Star } from "lucide-react";
 import { fetchFeedbacks } from "@redux/slice/Feedback/FeedbackThunks";
 import { clearError } from "@redux/slice/Feedback/FeedbackSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
