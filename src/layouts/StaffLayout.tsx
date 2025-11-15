@@ -2,7 +2,7 @@ import React from "react";
 import SideBar from "@components/Layouts/SideBar";
 import { Outlet, useNavigate } from "react-router-dom";
 import LableTitle from "@components/Layouts/LableTitle";
-import { Home, CreditCard, Zap, AlertCircle, CalendarCheck } from "lucide-react";
+import { Home, CreditCard, Zap, AlertCircle, CalendarCheck, MessageCircle } from "lucide-react";
 import type { SidebarMenuItem } from "@components/Layouts/SideBar";
 import { useTitle } from "../contexts";
 import { useDispatch } from "react-redux";
@@ -18,6 +18,7 @@ const StaffLayout: React.FC = () => {
     { key: "sessions", label: "Sessions", icon: <Zap size={20} />, to: "/staff/sessions" },
     { key: "incidents", label: "Incidents", icon: <AlertCircle size={20} />, to: "/staff/incidents" },
     { key: "bookings", label: "Bookings", icon: <CalendarCheck size={20} />, to: "/staff/bookings" },
+    { key: "feedbacks", label: "Feedbacks", icon: <MessageCircle size={20} />, to: "/staff/feedbacks" },
     { key: "invoices", label: "Invoices", icon: <CreditCard size={20} />, to: "/staff/invoices" },
   ];
 

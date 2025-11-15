@@ -41,6 +41,7 @@ const StaffBookings = lazy(() => import("@pages/Staff/Bookings"));
 const StaffChargingSessions = lazy(() => import("@pages/Staff/ChargingSessions"));
 const StaffIncidents = lazy(() => import("@pages/Staff/Incidents"));
 const StaffInvoices = lazy(() => import("@pages/Staff/Invoices"));
+const StaffFeedbacks = lazy(() => import("@pages/Staff/Feedbacks"));
 const StationsManager = lazy(() => import("@pages/Admin/Infrastructure/StationsManager"));
 const ChargersManager = lazy(() => import("@pages/Admin/Infrastructure/ChargersManager"));
 const ConnectorsManager = lazy(() => import("@pages/Admin/Infrastructure/ConnectorsManager"));
@@ -173,6 +174,10 @@ export default function AppRoutes() {
           <Route
             path="/staff/bookings"
             element={createLazyRoute(StaffBookings, "Loading bookings...")}
+          />
+          <Route
+            path="/staff/feedbacks"
+            element={createLazyRoute(StaffFeedbacks, "Loading feedbacks...")}
           />
           <Route
             path="/staff/sessions"
