@@ -298,7 +298,7 @@ const ChargingSessions: React.FC = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">Customer</th>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium">Plate</th>
+              <th className="px-4 py-2 text-left text-gray-600 font-medium">BookingID</th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">Station</th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">Connector</th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">Started</th>

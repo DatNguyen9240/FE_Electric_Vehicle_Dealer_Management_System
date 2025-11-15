@@ -62,7 +62,8 @@ const SideBar: React.FC<SideBarProps> = ({
   React.useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest("#sidebar-avatar-dropdown")) {
+      // Consider clicks inside avatar button OR inside the dropdown menu as inside
+      if (!target.closest("#sidebar-avatar-dropdown") && !target.closest("#sidebar-avatar-dropdown-menu")) {
         setDropdownOpen(false);
       }
     };

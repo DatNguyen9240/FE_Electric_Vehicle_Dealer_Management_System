@@ -14,9 +14,15 @@ const Login: React.FC = () => {
     e.preventDefault();
     dispatch(loginUser({ email, password: pass }))
       .unwrap()
-      .then(() => {
+      .then((payload: any) => {
         toast.success("Login successful!");
-        setTimeout(() => navigate("/"), 1200);
+        // Redirect based on role returned from backend
+        const role = payload?.user?.role ?? payload?.role;
+        setTimeout(() => {
+          if (role === "staff") return navigate("/staff");
+          if (role === "admin") return navigate("/admin");
+          navigate("/");
+        }, 600);
       })
       .catch((err) => {
         if (err) toast.error(err);
