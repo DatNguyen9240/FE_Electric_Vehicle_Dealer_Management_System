@@ -19,12 +19,12 @@ export const fetchUsers = createAsyncThunk(
   }
 );
 
-// GET /api/v1/users/:id - Lấy thông tin 1 user (chỉ admin)
+// GET current authenticated user's profile (uses /profile)
 export const getUser = createAsyncThunk(
   "user/getUser",
-  async (userId: string, { rejectWithValue }) => {
+  async (_: void, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/users/${userId}`);
+      const res = await api.get(`/profile`);
       return res.data;
     } catch (error) {
       const err = error as AxiosError<{ msg?: string }>;
@@ -35,15 +35,12 @@ export const getUser = createAsyncThunk(
   }
 );
 
-// PUT /api/v1/users/:id - Cập nhật thông tin user (chỉ admin)
+// PATCH /api/v1/profile - Cập nhật profile của user hiện tại
 export const updateUser = createAsyncThunk(
   "user/updateUser",
-  async (
-    { userId, userData }: { userId: string; userData: Partial<User> },
-    { rejectWithValue }
-  ) => {
+  async (userData: Partial<User>, { rejectWithValue }) => {
     try {
-      const res = await api.put(`/users/${userId}`, userData);
+      const res = await api.patch(`/profile`, userData);
       return res.data;
     } catch (error) {
       const err = error as AxiosError<{ msg?: string }>;
