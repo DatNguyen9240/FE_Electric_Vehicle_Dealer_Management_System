@@ -64,7 +64,7 @@ const BookingManagementDetail: React.FC = () => {
   const [data, setData] = React.useState<BookingDetail | null>(null);
 
   React.useEffect(() => {
-    setTitle("Chi tiết đặt chỗ");
+    setTitle("Booking Details");
   }, [setTitle]);
 
   React.useEffect(() => {
@@ -82,9 +82,9 @@ const BookingManagementDetail: React.FC = () => {
         const getErrorMessage = (e: unknown) => {
           try {
             const ae = e as { response?: { data?: { message?: string } }; message?: string };
-            return ae?.response?.data?.message || ae?.message || "Không tải được chi tiết đặt chỗ";
+            return ae?.response?.data?.message || ae?.message || "Unable to load booking details";
           } catch {
-            return "Không tải được chi tiết đặt chỗ";
+            return "Unable to load booking details";
           }
         };
         setError(getErrorMessage(err));
@@ -101,13 +101,13 @@ const BookingManagementDetail: React.FC = () => {
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 mb-4"
       >
-        <ArrowLeft size={18} /> Quay lại
+        <ArrowLeft size={18} /> Back
       </button>
 
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Thông tin đặt chỗ</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Booking Information</h2>
             {data?.status && (
               <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${badgeClass(data.status)}`}>
                 <span className="w-2 h-2 rounded-full bg-current"></span>
@@ -118,7 +118,7 @@ const BookingManagementDetail: React.FC = () => {
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div className="text-sm text-gray-500">Mã đặt chỗ</div>
+            <div className="text-sm text-gray-500">Booking ID</div>
             <div className="font-medium">{data?.id || data?._id || "—"}</div>
           </div>
           <div>
@@ -126,7 +126,7 @@ const BookingManagementDetail: React.FC = () => {
             <div className="font-medium">{data?.user?.name || data?.user?.email || data?.user?.id || "—"}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Trạm</div>
+            <div className="text-sm text-gray-500">Station</div>
             <div className="font-medium">{data?.station?.name || data?.station?.code || "—"}</div>
           </div>
           <div>
@@ -134,19 +134,19 @@ const BookingManagementDetail: React.FC = () => {
             <div className="font-medium">{data?.connector?.code || data?.connector?.type || "—"}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Slot bắt đầu</div>
+            <div className="text-sm text-gray-500">Start Slot</div>
             <div className="font-medium">{fmt(data?.slotStart)}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Slot kết thúc</div>
+            <div className="text-sm text-gray-500">End Slot</div>
             <div className="font-medium">{fmt(data?.slotEnd)}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Tạo lúc</div>
+            <div className="text-sm text-gray-500">Created At</div>
             <div className="font-medium">{fmt(data?.createdAt)}</div>
           </div>
           <div>
-            <div className="text-sm text-gray-500">Biển số xe</div>
+            <div className="text-sm text-gray-500">License Plate</div>
             <div className="font-medium">{data?.vehicle?.licensePlate || "—"}</div>
           </div>
         </div>
@@ -154,7 +154,7 @@ const BookingManagementDetail: React.FC = () => {
           <div className="px-6 pb-6 text-red-600 text-sm">{error}</div>
         )}
         {loading && (
-          <div className="px-6 pb-6 text-gray-500 text-sm">Đang tải dữ liệu...</div>
+          <div className="px-6 pb-6 text-gray-500 text-sm">Loading data...</div>
         )}
       </div>
     </div>

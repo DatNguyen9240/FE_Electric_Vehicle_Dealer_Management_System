@@ -18,7 +18,7 @@ const StationsCreateEdit: React.FC = () => {
   const [form, setForm] = React.useState<StationPayload>({ name: "", lat: 0, lng: 0, status: "ONLINE" });
 
   React.useEffect(() => {
-    setTitle(isEdit ? "Sửa trạm" : "Tạo trạm");
+    setTitle(isEdit ? "Edit Station" : "Create Station");
   }, [isEdit, setTitle]);
 
   React.useEffect(() => {
@@ -34,8 +34,8 @@ const StationsCreateEdit: React.FC = () => {
       } catch (err: unknown) {
         if (!mounted) return;
         const e = err as any;
-        setError(e?.response?.data?.message || e?.message || "Không tải được trạm");
-        toast.error(e?.response?.data?.message || e?.message || "Không tải được trạm");
+        setError(e?.response?.data?.message || e?.message || "Failed to load station");
+        toast.error(e?.response?.data?.message || e?.message || "Failed to load station");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -47,7 +47,7 @@ const StationsCreateEdit: React.FC = () => {
     e.preventDefault();
     
     if (!form.name.trim()) {
-      toast.error("Vui lòng nhập tên trạm");
+      toast.error("Please enter station name");
       return;
     }
 
@@ -56,14 +56,14 @@ const StationsCreateEdit: React.FC = () => {
       setError(null);
       if (isEdit) {
         await api.put(`/stations/${stationId}`, form);
-        toast.success("Cập nhật trạm thành công!");
+        toast.success("Station updated successfully!");
       } else {
         await api.post(`/stations`, form);
-        toast.success("Tạo trạm thành công!");
+        toast.success("Station created successfully!");
       }
       navigate("/admin/infrastructure/stations");
     } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Lỗi lưu trạm");
+      setError(e?.response?.data?.message || e?.message || "Error saving station");
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ const StationsCreateEdit: React.FC = () => {
   if (loading && isEdit) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading data...</div>
       </div>
     );
   }
@@ -91,14 +91,14 @@ const StationsCreateEdit: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={16} />
-            Quay lại
+            Back
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {isEdit ? "Chỉnh sửa trạm sạc" : "Tạo trạm sạc mới"}
+              {isEdit ? "Edit Charging Station" : "Create New Charging Station"}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {isEdit ? "Cập nhật thông tin trạm sạc" : "Điền thông tin để tạo trạm sạc mới"}
+              {isEdit ? "Update charging station information" : "Fill in information to create a new charging station"}
             </p>
           </div>
         </div>
@@ -107,7 +107,7 @@ const StationsCreateEdit: React.FC = () => {
       {/* Form */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Thông tin trạm sạc</h2>
+          <h2 className="text-lg font-medium text-gray-900">Charging Station Information</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -116,7 +116,7 @@ const StationsCreateEdit: React.FC = () => {
               {/* Name */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tên trạm <span className="text-red-500">*</span>
+                  Station Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -124,14 +124,14 @@ const StationsCreateEdit: React.FC = () => {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập tên trạm"
+                  placeholder="Enter station name"
                 />
               </div>
 
               {/* Latitude */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Vĩ độ (Lat) <span className="text-red-500">*</span>
+                  Latitude (Lat) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -140,14 +140,14 @@ const StationsCreateEdit: React.FC = () => {
                   value={form.lat || ""}
                   onChange={(e) => setForm({ ...form, lat: Number(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập vĩ độ"
+                  placeholder="Enter latitude"
                 />
               </div>
 
               {/* Longitude */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kinh độ (Lng) <span className="text-red-500">*</span>
+                  Longitude (Lng) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -156,14 +156,14 @@ const StationsCreateEdit: React.FC = () => {
                   value={form.lng || ""}
                   onChange={(e) => setForm({ ...form, lng: Number(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập kinh độ"
+                  placeholder="Enter longitude"
                 />
               </div>
 
               {/* Status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạng thái <span className="text-red-500">*</span>
+                  Status <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -173,6 +173,7 @@ const StationsCreateEdit: React.FC = () => {
                 >
                   <option value="ONLINE">ONLINE</option>
                   <option value="OFFLINE">OFFLINE</option>
+                  <option value="MAINTENANCE">MAINTENANCE</option>
                 </select>
               </div>
             </div>
@@ -191,7 +192,7 @@ const StationsCreateEdit: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X size={16} />
-                Hủy
+                Cancel
               </button>
               <button
                 type="submit"
@@ -199,7 +200,7 @@ const StationsCreateEdit: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save size={16} />
-                {loading ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Tạo trạm"}
+                {loading ? "Saving..." : isEdit ? "Save Changes" : "Create Station"}
               </button>
             </div>
           </div>

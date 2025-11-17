@@ -1,5 +1,4 @@
 import React from "react";
-import api from "../../../libs/axios";
 import {
   LineChart,
   Line,
@@ -10,78 +9,72 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-
-
-type ChartSectionProps = {
-  data?: any;
-  loading?: boolean;
+type RevenueSeriesPoint = {
+  bucket: string;
+  total: number;
 };
 
-const ChartSection: React.FC<ChartSectionProps> = ({ data: propData, loading: propLoading }) => {
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const [data, setData] = React.useState<unknown | null>(null);
+type RevenueSeries = {
+  unit?: "day" | "month";
+  points?: RevenueSeriesPoint[];
+};
 
-  React.useEffect(() => {
-    if (propData) {
-      setData(propData);
-      return;
+type ChartSectionProps = {
+  revenueSeries?: RevenueSeries | null;
+  loading?: boolean;
+  rangeLabel?: string;
+};
+
+const formatLabel = (bucket: string | undefined, unit: string | undefined) => {
+  if (!bucket) return "";
+  if (unit === "day") {
+    // bucket format YYYY-MM-DD
+    const d = new Date(bucket);
+    if (!Number.isNaN(d.getTime())) {
+      return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1)
+        .toString()
+        .padStart(2, "0")}`;
     }
-    let mounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const res = await api.get("/analytics/admin/overview");
-        if (mounted) setData(res.data as unknown);
-      } catch (err) {
-        // keep a console trace for debugging without failing the UI
-        console.error("Failed to load admin overview:", err);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [propData]);
+  }
+  if (unit === "month") {
+    // bucket format YYYY-MM
+    const [year, month] = bucket.split("-");
+    if (year && month) {
+      return `${month}/${year}`;
+    }
+  }
+  return bucket;
+};
 
-  const displayData = propData || data;
-  const displayLoading = propLoading !== undefined ? propLoading : loading;
-
-  const chartData = (displayData?.revenue?.monthly || []).map((m: any) => ({ name: m.month, value: m.total }));
-  const [range, setRange] = React.useState<'3M' | '6M'>('6M');
-  const displayedChartData = React.useMemo(() => {
-    if (!chartData || chartData.length === 0) return [];
-    if (range === '3M') return chartData.slice(-3);
-    return chartData.slice(-6);
-  }, [chartData, range]);
+const ChartSection: React.FC<ChartSectionProps> = ({
+  revenueSeries,
+  loading = false,
+  rangeLabel,
+}) => {
+  const unit = revenueSeries?.unit;
+  const chartData =
+    revenueSeries?.points?.map((point) => ({
+      name: formatLabel(point.bucket, unit),
+      value: point.total ?? 0,
+    })) ?? [];
 
   return (
     <>
       <div className="flex items-center justify-between mb-4">
-        <span className="font-semibold text-lg">Charger Report</span>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setRange('6M')}
-            className={`px-3 py-1 rounded border bg-gray-100 font-medium text-sm shadow-sm ${range === '6M' ? 'border-blue-500 text-blue-600 bg-blue-50' : ''}`}
-          >
-            6 Months
-          </button>
-          <button
-            onClick={() => setRange('3M')}
-            className={`px-3 py-1 rounded border bg-gray-100 font-medium text-sm shadow-sm ${range === '3M' ? 'border-blue-500 text-blue-600 bg-blue-50' : ''}`}
-          >
-            3 Months
-          </button>
-        </div>
+        <span className="font-semibold text-lg">Revenue by {unit === "day" ? "day" : "month"}</span>
+        {rangeLabel && (
+          <span className="text-sm text-gray-500">Range: {rangeLabel}</span>
+        )}
       </div>
-      {/* Chart with recharts */}
       <div className="flex-1 flex items-center justify-center">
-        {displayLoading ? (
+        {loading ? (
           <div className="text-gray-400">Loading...</div>
+        ) : chartData.length === 0 ? (
+          <div className="text-gray-400">No data available</div>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={220}>
             <LineChart
-              data={displayedChartData}
+              data={chartData}
               margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
@@ -92,8 +85,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ data: propData, loading: pr
                 type="monotone"
                 dataKey="value"
                 stroke="#2563eb"
-                strokeWidth={3}>
-              </Line>
+                strokeWidth={3}
+                dot={{ r: 3 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         )}

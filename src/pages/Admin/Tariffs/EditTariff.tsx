@@ -10,7 +10,7 @@ import { useTitle } from "../../../contexts";
 import api from "../../../libs/axios";
 
 const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
-const getErrorMessage = (eVal: unknown, fallback = "Có lỗi xảy ra") => {
+const getErrorMessage = (eVal: unknown, fallback = "An error occurred") => {
   if (!eVal) return fallback;
   if (typeof eVal === "string") return eVal;
   if (eVal instanceof Error) return eVal.message;
@@ -43,15 +43,13 @@ const EditTariff: React.FC = () => {
     connectorType: "DC_CCS2",
     mode: "hybrid",
     pricePerKwh: 0,
-    pricePerMin: 0,
-    idleFeePerMin: 0,
     graceMin: 0,
     active: true,
     effectiveFrom: "",
   });
 
   useEffect(() => {
-    setTitle("Chỉnh sửa biểu giá sạc");
+    setTitle("Edit Tariff");
     fetchStations();
   }, [setTitle]);
 
@@ -68,8 +66,6 @@ const EditTariff: React.FC = () => {
         connectorType: selectedTariff.connectorType || "DC_CCS2",
         mode: selectedTariff.mode,
         pricePerKwh: selectedTariff.pricePerKwh,
-        pricePerMin: selectedTariff.pricePerMin,
-        idleFeePerMin: selectedTariff.idleFeePerMin,
         graceMin: selectedTariff.graceMin,
         active: selectedTariff.active,
         effectiveFrom: new Date(selectedTariff.effectiveFrom)
@@ -111,10 +107,10 @@ const EditTariff: React.FC = () => {
         })
       ).unwrap();
 
-      toast.success("Cập nhật biểu giá thành công!");
+      toast.success("Tariff updated successfully!");
       navigate("/admin/tariffs");
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, "Có lỗi xảy ra khi cập nhật!"));
+      toast.error(getErrorMessage(err, "An error occurred while updating!"));
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +140,7 @@ const EditTariff: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading data...</div>
       </div>
     );
   }
@@ -152,7 +148,7 @@ const EditTariff: React.FC = () => {
   if (!selectedTariff) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg text-red-500">Không tìm thấy biểu giá</div>
+        <div className="text-lg text-red-500">Tariff not found</div>
       </div>
     );
   }
@@ -171,13 +167,13 @@ const EditTariff: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={16} />
-            Quay lại
+            Back
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Chỉnh sửa biểu giá sạc
+              Edit Tariff
             </h1>
-            <p className="text-sm text-gray-500 mt-1">Trạm: {stationName}</p>
+            <p className="text-sm text-gray-500 mt-1">Station: {stationName}</p>
           </div>
         </div>
       </div>
@@ -185,7 +181,7 @@ const EditTariff: React.FC = () => {
       {/* Edit Form */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Thông tin biểu giá</h2>
+          <h2 className="text-lg font-medium text-gray-900">Tariff Information</h2>
         </div>
 
         <form onSubmit={handleUpdateTariff}>
@@ -194,7 +190,7 @@ const EditTariff: React.FC = () => {
               {/* Station */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạm sạc <span className="text-red-500">*</span>
+                  Station <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -204,7 +200,7 @@ const EditTariff: React.FC = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Chọn trạm</option>
+                  <option value="">Select station</option>
                   {stations.map((station) => (
                     <option key={station._id} value={station._id}>
                       {station.name}
@@ -216,7 +212,7 @@ const EditTariff: React.FC = () => {
               {/* Connector Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Loại kết nối <span className="text-red-500">*</span>
+                  Connector Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -234,7 +230,7 @@ const EditTariff: React.FC = () => {
               {/* Mode */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Chế độ <span className="text-red-500">*</span>
+                  Mode <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -244,16 +240,16 @@ const EditTariff: React.FC = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="energy">Energy (Theo năng lượng)</option>
-                  <option value="time">Time (Theo thời gian)</option>
-                  <option value="hybrid">Hybrid (Hỗn hợp)</option>
+                  <option value="energy">Energy</option>
+                  <option value="time">Time</option>
+                  <option value="hybrid">Hybrid</option>
                 </select>
               </div>
 
               {/* Effective From */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hiệu lực từ <span className="text-red-500">*</span>
+                  Effective From <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="datetime-local"
@@ -269,7 +265,7 @@ const EditTariff: React.FC = () => {
               {/* Price per kWh */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Giá/kWh (VND) <span className="text-red-500">*</span>
+                  Price/kWh (VND) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -287,52 +283,10 @@ const EditTariff: React.FC = () => {
                 />
               </div>
 
-              {/* Price per Min */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Giá/phút (VND) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  step="100"
-                  value={formData.pricePerMin}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      pricePerMin: Number(e.target.value),
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Idle Fee per Min */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phí chờ/phút (VND) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  step="100"
-                  value={formData.idleFeePerMin}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      idleFeePerMin: Number(e.target.value),
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
               {/* Grace Min */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Thời gian miễn phí (phút) <span className="text-red-500">*</span>
+                  Grace Period (minutes) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -362,7 +316,7 @@ const EditTariff: React.FC = () => {
                   className="rounded"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Đang áp dụng
+                  Active
                 </span>
               </label>
             </div>
@@ -376,7 +330,7 @@ const EditTariff: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X size={16} />
-                Hủy
+                Cancel
               </button>
               <button
                 type="submit"
@@ -384,7 +338,7 @@ const EditTariff: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save size={16} />
-                {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
+                {isLoading ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>
@@ -394,45 +348,45 @@ const EditTariff: React.FC = () => {
       {/* Current Info Summary */}
       <div className="mt-6 bg-gray-50 rounded-lg p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Thông tin hiện tại
+          Current Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white p-4 rounded-lg">
-            <div className="text-sm text-gray-500">Trạm</div>
+            <div className="text-sm text-gray-500">Station</div>
             <div className="text-lg font-medium text-gray-900">{stationName}</div>
           </div>
           <div className="bg-white p-4 rounded-lg">
-            <div className="text-sm text-gray-500">Chế độ</div>
+            <div className="text-sm text-gray-500">Mode</div>
             <div className="text-lg font-medium text-blue-600">
               {selectedTariff.mode}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg">
-            <div className="text-sm text-gray-500">Giá/kWh</div>
+            <div className="text-sm text-gray-500">Price/kWh</div>
             <div className="text-lg font-medium text-gray-900">
               {formatVND(selectedTariff.pricePerKwh)}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg">
-            <div className="text-sm text-gray-500">Loại kết nối</div>
+            <div className="text-sm text-gray-500">Connector Type</div>
             <div className="text-lg font-medium text-gray-900">
               {selectedTariff.connectorType || "N/A"}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg">
-            <div className="text-sm text-gray-500">Hiệu lực từ</div>
+            <div className="text-sm text-gray-500">Effective From</div>
             <div className="text-lg font-medium text-gray-900">
               {formatDate(selectedTariff.effectiveFrom)}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg">
-            <div className="text-sm text-gray-500">Trạng thái</div>
+            <div className="text-sm text-gray-500">Status</div>
             <div
               className={`text-lg font-medium ${
                 selectedTariff.active ? "text-green-600" : "text-gray-600"
               }`}
             >
-              {selectedTariff.active ? "Đang áp dụng" : "Không hiệu lực"}
+              {selectedTariff.active ? "Active" : "Inactive"}
             </div>
           </div>
         </div>

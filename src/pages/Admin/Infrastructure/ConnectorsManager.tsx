@@ -2,8 +2,8 @@ import React from "react";
 import api from "@libs/axios";
 import { toast } from "react-toastify";
 import { useTitle } from "@contexts";
-import { Plus, Trash2, Pencil, Power, PowerOff, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Plus, Trash2, Power, PowerOff, Search, ChevronRight, Home } from "lucide-react";
+import { useNavigate, useLocation, useParams, Link } from "react-router-dom";
 
 type Station = { _id: string; name?: string; code?: string };
  type Charger = { _id: string; name?: string; code?: string; stationId: string };
@@ -23,15 +23,20 @@ type Connector = {
 const ConnectorsManager: React.FC = () => {
 	const { setTitle } = useTitle();
 	const navigate = useNavigate();
+	const location = useLocation();
+	const { stationId, chargerId } = useParams<{ stationId?: string; chargerId?: string }>();
 	const [rows, setRows] = React.useState<Connector[]>([]);
-	const [stations, setStations] = React.useState<Station[]>([]);
-	const [chargers, setChargers] = React.useState<Charger[]>([]);
+	const [station, setStation] = React.useState<Station | null>(null);
+	const [charger, setCharger] = React.useState<Charger | null>(null);
 	const [loading, setLoading] = React.useState(false);
 	const [error, setError] = React.useState<string | null>(null);
 	const [search, setSearch] = React.useState("");
+	const [statusFilter, setStatusFilter] = React.useState<string>("");
+	const isFirstMount = React.useRef(true);
 
-
-	React.useEffect(() => { setTitle("Quản lí đầu sạc"); }, [setTitle]);
+	React.useEffect(() => { 
+		setTitle(charger ? `Connectors - ${charger.name}` : station ? `Connectors - ${station.name}` : "Connector Management"); 
+	}, [setTitle, station, charger]);
 
 	const asRecord = (v: unknown): Record<string, unknown> | null =>
 		v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -39,216 +44,273 @@ const ConnectorsManager: React.FC = () => {
 	const getErrorMessage = (e: unknown) => {
 		try {
 			const ae = e as { response?: { data?: { message?: string } }; message?: string };
-			return ae?.response?.data?.message || ae?.message || "Không tải được danh sách đầu sạc";
+			return ae?.response?.data?.message || ae?.message || "Failed to load connector list";
 		} catch {
-			return "Không tải được danh sách đầu sạc";
+			return "Failed to load connector list";
 		}
 	};
 
 	const load = React.useCallback(async () => {
+		if (!stationId || !chargerId) {
+			setError("Station ID and Charger ID are required");
+			return;
+		}
 		setLoading(true);
 		setError(null);
 		try {
-			const [coRes, sRes, chRes] = await Promise.all([
-				api.get("/connectors", { params: { limit: 1000 } }),
-				api.get("/stations", { params: { limit: 1000 } }),
-				api.get("/chargers", { params: { limit: 1000 } }),
+			// Load station and charger info
+			const [sRes, chRes] = await Promise.all([
+				api.get(`/stations/${stationId}`),
+				api.get(`/chargers/${chargerId}`),
 			]);
+			const stationData = sRes.data as Station;
+			const chargerData = chRes.data as Charger;
+			setStation(stationData);
+			setCharger(chargerData);
+
+			// Load connectors for this charger
+			const connectorParams: any = { limit: 1000, stationId, chargerId };
+			if (statusFilter) connectorParams.status = statusFilter;
+
+			const coRes = await api.get("/connectors", { params: connectorParams });
 			const cData: unknown = coRes.data;
-			const sData: unknown = sRes.data;
-			const chData: unknown = chRes.data;
 			const list = (Array.isArray(cData) ? (cData as Connector[]) : (asRecord(cData)?.items ?? asRecord(cData)?.data ?? [])) as Connector[];
-			const sts = (Array.isArray(sData) ? (sData as Station[]) : (asRecord(sData)?.items ?? asRecord(sData)?.data ?? [])) as Station[];
-			const chs = (Array.isArray(chData) ? (chData as Charger[]) : (asRecord(chData)?.items ?? asRecord(chData)?.data ?? [])) as Charger[];
 			setRows(list);
-			setStations(sts);
-			setChargers(chs);
 		} catch (err: unknown) {
 			setError(getErrorMessage(err));
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [stationId, chargerId, statusFilter]);
 
 	React.useEffect(() => { load(); }, [load]);
 
-const openCreate = () => { navigate("/admin/infrastructure/connectors/create"); };
-const openEdit = (c: Connector) => { navigate(`/admin/infrastructure/connectors/edit/${c._id}`); };
+	// Reload data when returning from edit/create page
+	React.useEffect(() => {
+		if (location.pathname === "/admin/infrastructure/connectors" && !isFirstMount.current) {
+			load();
+		}
+		isFirstMount.current = false;
+	}, [location.pathname, load]);
 
-// creation/edit moved to dedicated pages
-
-	const remove = async (id: string) => {
-		if (!confirm("Xoá đầu sạc này?")) return;
-		try {
-			await api.delete(`/connectors/${id}`);
-			toast.success("Xóa đầu sạc thành công!");
-			await load();
-		} catch (e: any) {
-			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi xoá đầu sạc";
-			toast.error(errorMsg);
+	const openCreate = () => { 
+		if (stationId && chargerId) {
+			navigate(`/admin/infrastructure/stations/${stationId}/chargers/${chargerId}/connectors/create`); 
+		} else {
+			navigate("/admin/infrastructure/connectors/create"); 
 		}
 	};
 
+// creation/edit moved to dedicated pages
+
 	const toggleStatus = async (c: Connector) => {
-		// Chỉ toggle giữa IDLE và OFFLINE
-		// Nếu status là IDLE → chuyển sang OFFLINE
-		// Nếu status là OFFLINE → chuyển sang IDLE
-		// Các status khác (RESERVED, FINISHED, etc.) không toggle
+		// Toggle between IDLE and OFFLINE only
+		// Only allow toggle if status is IDLE or OFFLINE
 		if (c.status !== "IDLE" && c.status !== "OFFLINE") {
-			toast.warning(`Không thể toggle trạng thái ${c.status}. Chỉ có thể toggle giữa IDLE và OFFLINE.`);
+			toast.info("Cannot toggle connector while in use (RESERVED, CHARGING, or FINISHED)");
 			return;
 		}
-		
 		const next = c.status === "IDLE" ? "OFFLINE" : "IDLE";
-		const originalStatus = c.status; // Lưu status gốc để rollback
-		
-		// Optimistic update - cập nhật UI ngay lập tức
+		// Optimistic update
 		setRows(prevRows => 
 			prevRows.map(connector => 
 				connector._id === c._id ? { ...connector, status: next } : connector
 			)
 		);
-		
 		try {
-			const response = await api.put(`/connectors/${c._id}`, { ...c, status: next });
-			// Chỉ cập nhật nếu response trả về status là IDLE hoặc OFFLINE
-			// Nếu server trả về status khác (như RESERVED), giữ nguyên optimistic update
-			if (response.data && response.data.status && (response.data.status === "IDLE" || response.data.status === "OFFLINE")) {
+			const response = await api.patch(`/connectors/${c._id}/status`, { status: next });
+			if (response.data && response.data.status) {
 				setRows(prevRows => 
 					prevRows.map(connector => 
 						connector._id === c._id ? { ...connector, status: response.data.status } : connector
 					)
 				);
-			} else if (response.data && response.data.status && response.data.status !== next) {
-				// Nếu server trả về status khác với expected, có thể server đã reject hoặc có business logic khác
-				// Giữ nguyên optimistic update vì đã gửi thành công
-				console.warn(`Server trả về status ${response.data.status} khác với expected ${next}`);
 			}
-			toast.success(`Đã ${next === "IDLE" ? "bật" : "tắt"} đầu sạc`);
+			toast.success(`Connector ${next === "IDLE" ? "activated" : "deactivated"}`);
 		} catch (e: any) {
-			// Rollback nếu có lỗi
+			// Rollback on error
 			setRows(prevRows => 
 				prevRows.map(connector => 
-					connector._id === c._id ? { ...connector, status: originalStatus } : connector
+					connector._id === c._id ? { ...connector, status: c.status } : connector
 				)
 			);
-			const errorMsg = e?.response?.data?.message || e?.message || "Lỗi đổi trạng thái";
+			const errorMsg = e?.response?.data?.message || e?.message || "Error changing status";
 			toast.error(errorMsg);
 		}
 	};
 
+	const remove = async (id: string) => {
+		if (!confirm("Delete this connector?")) return;
+		try {
+			await api.delete(`/connectors/${id}`);
+			toast.success("Connector deleted successfully!");
+			await load();
+		} catch (e: any) {
+			const errorMsg = e?.response?.data?.message || e?.message || "Error deleting connector";
+			toast.error(errorMsg);
+		}
+	};
+
+	
+
 	const filtered = rows.filter((c) => {
 		const q = search.trim().toLowerCase();
 		if (!q) return true;
-		const stationName = stations.find((s) => s._id === c.stationId)?.name || "";
-		const chargerName = chargers.find((ch) => ch._id === c.chargerId)?.name || "";
 		return (
 			c.code.toLowerCase().includes(q) ||
-			c.type.toLowerCase().includes(q) ||
-			stationName.toLowerCase().includes(q) ||
-			chargerName.toLowerCase().includes(q)
+			c.type.toLowerCase().includes(q)
 		);
 	});
 
 	return (
 		<div className="p-6">
-			{/* Toolbar like Tariffs */}
+			{/* Breadcrumb */}
+			<div className="flex items-center gap-2 text-sm mb-4">
+				<Link to="/admin/infrastructure/stations" className="hover:text-blue-600 flex items-center gap-1 text-gray-600">
+					<Home size={16} />
+					Stations
+				</Link>
+				<ChevronRight size={16} className="text-gray-400" />
+				{station && (
+					<>
+						<Link 
+							to={`/admin/infrastructure/stations/${stationId}/chargers`} 
+							className="hover:text-blue-600 text-gray-600"
+						>
+							{station.name}
+						</Link>
+						<ChevronRight size={16} className="text-gray-400" />
+					</>
+				)}
+				{charger && (
+					<>
+						<Link 
+							to={`/admin/infrastructure/stations/${stationId}/chargers`} 
+							className="hover:text-blue-600 text-gray-600"
+						>
+							{charger.name}
+						</Link>
+						<ChevronRight size={16} className="text-gray-400" />
+					</>
+				)}
+				<span className="text-gray-900 font-medium">Connectors</span>
+			</div>
+
+			{/* Toolbar */}
 			<div className="flex items-center justify-between mb-4">
-				<div className="flex items-center gap-4">
+				<div className="flex items-center gap-4 flex-wrap">
 					<div className="relative">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
 						<input
 							type="text"
-							placeholder="Tìm kiếm đầu sạc..."
+							placeholder="Search connector..."
 							value={search}
 							className="border border-[#333333] rounded-lg pl-10 pr-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
 							onChange={(e) => setSearch(e.target.value)}
 						/>
 					</div>
+					<select
+						value={statusFilter}
+						onChange={(e) => setStatusFilter(e.target.value)}
+						className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+					>
+						<option value="">Status: All</option>
+						<option value="IDLE">IDLE</option>
+						<option value="OFFLINE">OFFLINE</option>
+						<option value="RESERVED">RESERVED</option>
+						<option value="CHARGING">CHARGING</option>
+						<option value="FINISHED">FINISHED</option>
+					</select>
 				</div>
-				<button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"><Plus size={18} /> Thêm đầu sạc</button>
+				<button 
+					onClick={openCreate} 
+					disabled={rows.length >= 2}
+					className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
+						rows.length >= 2
+							? "bg-gray-400 text-white cursor-not-allowed"
+							: "bg-blue-600 text-white hover:bg-blue-700"
+					}`}
+					title={rows.length >= 2 ? "Maximum 2 connectors per charger" : "Add Connector"}
+				>
+					<Plus size={16} /> Add Connector
+				</button>
 			</div>
 			<div className="bg-white rounded-xl border">
 				<table className="min-w-full text-sm">
 					<thead>
 						<tr className="text-gray-500 border-b">
-							<th className="px-4 py-3 text-left font-semibold">Trạm</th>
-							<th className="px-4 py-3 text-left font-semibold">Trụ</th>
-							<th className="px-4 py-3 text-left font-semibold">Mã</th>
-							<th className="px-4 py-3 text-left font-semibold">Loại</th>
-							<th className="px-4 py-3 text-left font-semibold">Công suất (kW)</th>
-							<th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-							<th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+							<th className="px-4 py-3 text-left font-semibold">Code</th>
+							<th className="px-4 py-3 text-left font-semibold">Type</th>
+							<th className="px-4 py-3 text-left font-semibold">Power (kW)</th>
+							<th className="px-4 py-3 text-left font-semibold">Status</th>
+							<th className="px-4 py-3 text-right font-semibold">Actions</th>
 						</tr>
 					</thead>
 					<tbody>
 						{loading ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>Đang tải...</td></tr>
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={5}>Loading...</td></tr>
 						) : filtered.length === 0 ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>Chưa có đầu sạc</td></tr>
-						) : filtered.map((c) => {
-							const stationName = stations.find((s) => s._id === c.stationId)?.name || "—";
-							const chargerName = chargers.find((ch) => ch._id === c.chargerId)?.name || "—";
-							return (
-								<tr key={c._id} className="border-b last:border-b-0">
-									<td className="px-4 py-3">{stationName}</td>
-									<td className="px-4 py-3">{chargerName}</td>
-									<td className="px-4 py-3">{c.code}</td>
-									<td className="px-4 py-3">{c.type}</td>
-									<td className="px-4 py-3">{c.powerKw}</td>
-									<td className="px-4 py-3">
-										<span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={5}>No connectors yet</td></tr>
+						) : filtered.map((c) => (
+							<tr key={c._id} className="border-b last:border-b-0 hover:bg-gray-50 transition-colors">
+								<td className="px-4 py-3">{c.code}</td>
+								<td className="px-4 py-3">{c.type}</td>
+								<td className="px-4 py-3">{c.powerKw}</td>
+								<td className="px-4 py-3">
+									<span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+										c.status === "IDLE" 
+											? "bg-green-50 text-green-600" 
+											: c.status === "OFFLINE"
+											? "bg-gray-50 text-gray-600"
+											: "bg-yellow-50 text-yellow-600"
+									}`}>
+										{c.status}
+									</span>
+								</td>
+								<td className="px-4 py-3 text-right">
+									<button 
+										onClick={() => toggleStatus(c)} 
+										className={`mr-3 transition-colors ${
 											c.status === "IDLE" 
-												? "bg-green-50 text-green-600" 
+												? "text-green-600 hover:text-green-700" 
 												: c.status === "OFFLINE"
-												? "bg-gray-50 text-gray-600"
-												: "bg-yellow-50 text-yellow-600"
-										}`}>
-											{c.status}
-										</span>
-									</td>
-									<td className="px-4 py-3 text-right">
-										<button 
-											onClick={() => toggleStatus(c)} 
-											className={`mr-3 transition-colors ${
-												c.status === "IDLE" 
-													? "text-green-600 hover:text-green-700" 
-													: c.status === "OFFLINE"
-													? "text-gray-400 hover:text-gray-600"
-													: "text-gray-300 hover:text-gray-400 cursor-not-allowed"
-											}`}
-											title={c.status === "IDLE" ? "Tắt đầu sạc" : c.status === "OFFLINE" ? "Bật đầu sạc" : `Không thể toggle trạng thái ${c.status}`}
-											disabled={c.status !== "IDLE" && c.status !== "OFFLINE"}
-										>
-											{(c.status === "IDLE") ? (
-												<div className="flex items-center gap-1">
-													<Power size={18} className="text-green-600" />
-													<span className="text-xs text-green-600">ON</span>
-												</div>
-											) : (c.status === "OFFLINE") ? (
-												<div className="flex items-center gap-1">
-													<PowerOff size={18} className="text-gray-400" />
-													<span className="text-xs text-gray-400">OFF</span>
-												</div>
-											) : (
-												<div className="flex items-center gap-1">
-													<PowerOff size={18} className="text-gray-400" />
-													<span className="text-xs text-gray-400">-</span>
-												</div>
-											)}
-										</button>
-										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3" title="Chỉnh sửa"><Pencil size={16} /></button>
-										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Xóa"><Trash2 size={16} /></button>
-									</td>
-								</tr>
-							);
-						})}
+												? "text-gray-400 hover:text-gray-600"
+												: "text-yellow-600 hover:text-yellow-700 cursor-not-allowed opacity-60"
+										}`}
+										title={
+											c.status === "IDLE" 
+												? "Deactivate connector" 
+												: c.status === "OFFLINE"
+												? "Activate connector"
+												: "Cannot toggle while in use"
+										}
+										disabled={c.status !== "IDLE" && c.status !== "OFFLINE"}
+									>
+										{c.status === "IDLE" ? (
+											<div className="flex items-center gap-1">
+												<Power size={18} className="text-green-600" />
+												<span className="text-xs text-green-600">ON</span>
+											</div>
+										) : c.status === "OFFLINE" ? (
+											<div className="flex items-center gap-1">
+												<PowerOff size={18} className="text-gray-400" />
+												<span className="text-xs text-gray-400">OFF</span>
+											</div>
+										) : (
+											<div className="flex items-center gap-1">
+												<Power size={18} className="text-yellow-600" />
+												<span className="text-xs text-yellow-600">{c.status}</span>
+											</div>
+										)}
+									</button>
+									<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Delete"><Trash2 size={16} /></button>
+								</td>
+							</tr>
+						))}
 					</tbody>
 				</table>
 				{error && <div className="px-4 py-3 text-red-600 text-sm">{error}</div>}
 			</div>
-
-
 		</div>
 	);
 };

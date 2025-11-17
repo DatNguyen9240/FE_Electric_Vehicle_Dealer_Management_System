@@ -9,81 +9,71 @@ type ChargerPayload = { stationId: string; name: string; code: string; connector
 
 type Station = { _id: string; name?: string; code?: string };
 
-const ChargersCreateEdit: React.FC = () => {
+const ChargersCreate: React.FC = () => {
   const { setTitle } = useTitle();
-  const { chargerId } = useParams();
+  const { stationId } = useParams<{ stationId?: string }>();
   const navigate = useNavigate();
-  const isEdit = Boolean(chargerId);
 
-  const [stations, setStations] = React.useState<Station[]>([]);
-  const [form, setForm] = React.useState<ChargerPayload>({ stationId: "", name: "", code: "", connectorType: "AC", powerKw: 7.2, status: "ONLINE" });
+  const [stationInfo, setStationInfo] = React.useState<Station | null>(null);
+  const [form, setForm] = React.useState<ChargerPayload>({ stationId: stationId || "", name: "", code: "", connectorType: "DC_CCS2", powerKw: 7.2, status: "ONLINE" });
   const [loading, setLoading] = React.useState(false);
+  const [loadingStation, setLoadingStation] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => { setTitle(isEdit ? "Sửa trụ" : "Tạo trụ"); }, [isEdit, setTitle]);
+  React.useEffect(() => { setTitle("Create Charger"); }, [setTitle]);
 
+  // Load station info when stationId is available
   React.useEffect(() => {
+    if (!stationId) {
+      setError("Station ID is required");
+      setLoadingStation(false);
+      return;
+    }
+
     (async () => {
       try {
-        const s = await api.get("/stations", { params: { limit: 1000 } });
-        const d: unknown = s.data;
-        const list = (Array.isArray(d)
-          ? (d as Station[])
-          : (d && typeof d === "object"
-            ? ((d as Record<string, unknown>).items ?? (d as Record<string, unknown>).data ?? (d as Record<string, unknown>).stations ?? [])
-            : [])) as Station[];
-        setStations(list);
-        if (!form.stationId && list[0]?._id) setForm((f) => ({ ...f, stationId: list[0]._id }));
+        setLoadingStation(true);
+        const stationRes = await api.get(`/stations/${stationId}`);
+        const station: Station = stationRes.data;
+        setStationInfo(station);
+        setForm((f) => ({ ...f, stationId: station._id }));
       } catch (e: any) {
-        toast.error("Không thể tải danh sách trạm sạc");
-      }
-    })();
-  }, []);
-
-  React.useEffect(() => {
-    (async () => {
-      if (!isEdit) return;
-      try {
-        setLoading(true);
-        const r = await api.get(`/chargers/${chargerId}`);
-        const c = r.data;
-        setForm({ stationId: c.stationId, name: c.name, code: c.code, connectorType: c.connectorType, powerKw: c.powerKw, status: c.status });
-      } catch (e: any) {
-        const errorMsg = e?.response?.data?.message || e?.message || "Không tải được trụ";
+        const errorMsg = e?.response?.data?.message || e?.message || "Failed to load station";
         setError(errorMsg);
         toast.error(errorMsg);
       } finally {
-        setLoading(false);
+        setLoadingStation(false);
       }
     })();
-  }, [isEdit, chargerId]);
+  }, [stationId]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!form.stationId) {
-      toast.error("Vui lòng chọn trạm sạc");
+      toast.error("Please select a station");
       return;
     }
 
     if (!form.name.trim()) {
-      toast.error("Vui lòng nhập tên trụ");
+      toast.error("Please enter charger name");
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      if (isEdit) {
-        await api.put(`/chargers/${chargerId}`, form);
-        toast.success("Cập nhật trụ thành công!");
+      await api.post(`/chargers`, form);
+      toast.success("Charger created successfully!");
+      // Navigate back to appropriate route based on context
+      if (stationId) {
+        navigate(`/admin/infrastructure/stations/${stationId}/chargers`);
       } else {
-        await api.post(`/chargers`, form);
-        toast.success("Tạo trụ thành công!");
+        navigate("/admin/infrastructure/chargers");
       }
-      navigate("/admin/infrastructure/chargers");
     } catch (e: any) {
-      const errorMsg = e?.response?.data?.message || e?.message || "Lỗi lưu trụ";
+      const errorMsg = e?.response?.data?.message || e?.message || "Error saving charger";
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -92,13 +82,28 @@ const ChargersCreateEdit: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate("/admin/infrastructure/chargers");
+    // Navigate back to appropriate route based on context
+    if (stationId) {
+      navigate(`/admin/infrastructure/stations/${stationId}/chargers`);
+    } else {
+      navigate("/admin/infrastructure/chargers");
+    }
   };
 
-  if (loading && isEdit) {
+  if (loadingStation) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading station information...</div>
+      </div>
+    );
+  }
+
+  if (!stationId) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          Station ID is required. Please navigate from a station page.
+        </div>
       </div>
     );
   }
@@ -113,14 +118,14 @@ const ChargersCreateEdit: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={16} />
-            Quay lại
+            Back
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {isEdit ? "Chỉnh sửa trụ sạc" : "Tạo trụ sạc mới"}
+              Create New Charger
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {isEdit ? "Cập nhật thông tin trụ sạc" : "Điền thông tin để tạo trụ sạc mới"}
+              Fill in information to create a new charger
             </p>
           </div>
         </div>
@@ -129,36 +134,26 @@ const ChargersCreateEdit: React.FC = () => {
       {/* Form */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Thông tin trụ sạc</h2>
+          <h2 className="text-lg font-medium text-gray-900">Charger Information</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Station */}
+              {/* Station - Read-only */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạm sạc <span className="text-red-500">*</span>
+                  Station
                 </label>
-                <select
-                  required
-                  value={form.stationId}
-                  onChange={(e) => setForm({ ...form, stationId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Chọn trạm</option>
-                  {stations.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name || s.code || s._id}
-                    </option>
-                  ))}
-                </select>
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                  {stationInfo?.name || stationInfo?.code || stationId || "—"}
+                </div>
               </div>
 
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tên trụ <span className="text-red-500">*</span>
+                  Charger Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -166,28 +161,28 @@ const ChargersCreateEdit: React.FC = () => {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập tên trụ"
+                  placeholder="Enter charger name"
                 />
               </div>
 
               {/* Code */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mã trụ
+                  Code
                 </label>
                 <input
                   type="text"
                   value={form.code}
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập mã trụ"
+                  placeholder="Enter charger code"
                 />
               </div>
 
               {/* Connector Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Loại kết nối <span className="text-red-500">*</span>
+                  Connector Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -195,15 +190,15 @@ const ChargersCreateEdit: React.FC = () => {
                   onChange={(e) => setForm({ ...form, connectorType: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="AC">AC</option>
-                  <option value="DC">DC</option>
+                  <option value="DC_CCS2">DC CCS2</option>
+                  <option value="CHAdeMO">CHAdeMO</option>
                 </select>
               </div>
 
               {/* Power */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Công suất (kW) <span className="text-red-500">*</span>
+                  Power (kW) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -213,14 +208,14 @@ const ChargersCreateEdit: React.FC = () => {
                   value={form.powerKw || ""}
                   onChange={(e) => setForm({ ...form, powerKw: Number(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập công suất"
+                  placeholder="Enter power"
                 />
               </div>
 
               {/* Status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạng thái <span className="text-red-500">*</span>
+                  Status <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -248,7 +243,7 @@ const ChargersCreateEdit: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X size={16} />
-                Hủy
+                Cancel
               </button>
               <button
                 type="submit"
@@ -256,7 +251,7 @@ const ChargersCreateEdit: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save size={16} />
-                {loading ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Tạo trụ"}
+                {loading ? "Saving..." : "Create Charger"}
               </button>
             </div>
           </div>
@@ -266,6 +261,5 @@ const ChargersCreateEdit: React.FC = () => {
   );
 };
 
-export default ChargersCreateEdit;
-
+export default ChargersCreate;
 

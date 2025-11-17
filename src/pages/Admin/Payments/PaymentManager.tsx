@@ -7,8 +7,15 @@ import { clearError } from "@redux/slice/Payment/PaymentSlice";
 import type { Payment } from "@redux/slice/Payment/PaymentSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import { useTitle } from "../../../contexts";
+import api from "../../../libs/axios";
 
 const tabs = ["Succeeded", "Refunded", "All"];
+
+type User = {
+  id: string;
+  name: string;
+  email?: string;
+};
 
 const PaymentManager: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -18,9 +25,35 @@ const PaymentManager: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState("Succeeded");
   const [searchTerm, setSearchTerm] = useState("");
+  const [usersMap, setUsersMap] = useState<Record<string, User>>({});
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Fetch users to get names
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        const res = await api.get("/users");
+        const usersList = Array.isArray(res.data) ? res.data : (res.data?.users || []);
+        const map: Record<string, User> = {};
+        usersList.forEach((user: User) => {
+          if (user.id) {
+            map[user.id] = user;
+          }
+        });
+        setUsersMap(map);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        // Don't show toast as this is optional data
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
-    setTitle("Quản lí thanh toán");
+    setTitle("Payment Management");
     dispatch(fetchPayments({ page: 1, limit: 20 }));
   }, [dispatch, setTitle]);
 
@@ -72,31 +105,41 @@ const PaymentManager: React.FC = () => {
 
   const getCategoryLabel = (category?: string) => {
     switch (category) {
-      case "SUBSCRIPTION": return "Mua gói";
-      case "CHARGE": return "Sạc xe";
-      case "IDLE_FEE": return "Phí chờ";
-      case "ADJUSTMENT": return "Điều chỉnh";
-      case "OTHER": return "Khác";
-      default: return category || "Không xác định";
+      case "SUBSCRIPTION": return "Subscription";
+      case "CHARGE": return "Charging";
+      case "IDLE_FEE": return "Idle Fee";
+      case "ADJUSTMENT": return "Adjustment";
+      case "OTHER": return "Other";
+      default: return category || "Unknown";
     }
   };
 
   
+
+  // Helper to get user name
+  const getUserName = (userId: string): string => {
+    const user = usersMap[userId];
+    if (user) {
+      return user.name || user.email || userId;
+    }
+    return userId; // Fallback to ID if user not loaded
+  };
 
   // Filter payments based on search term
   const filteredPayments = payments.filter((payment: Payment) => {
     const needle = searchTerm.trim().toLowerCase();
     if (!needle) return true;
     const idemp = (payment.idempotency_key || "").toString().toLowerCase();
-    const user = (payment.user_id || "").toString().toLowerCase();
+    const userId = (payment.user_id || "").toString().toLowerCase();
+    const userName = getUserName(payment.user_id).toLowerCase();
     const method = (payment.method || "").toString().toLowerCase();
-    return idemp.includes(needle) || user.includes(needle) || method.includes(needle);
+    return idemp.includes(needle) || userId.includes(needle) || userName.includes(needle) || method.includes(needle);
   });
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading data...</div>
       </div>
     );
   }
@@ -141,7 +184,7 @@ const PaymentManager: React.FC = () => {
             <tr className="text-gray-500 border-b">
               
               <th className="px-4 py-3 text-left font-semibold">Customer</th>
-              <th className="px-4 py-3 text-left font-semibold">Loại giao dịch</th>
+              <th className="px-4 py-3 text-left font-semibold">Transaction Type</th>
               <th className="px-4 py-3 text-left font-semibold">Method</th>
 
               <th className="px-4 py-3 text-left font-semibold">Amount</th>
@@ -154,7 +197,7 @@ const PaymentManager: React.FC = () => {
             {!payments || payments.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                  Không có dữ liệu thanh toán
+                  No payment data
                 </td>
               </tr>
             ) : (
@@ -165,7 +208,13 @@ const PaymentManager: React.FC = () => {
                 >
                  
                   <td className="px-4 py-3">
-                    {payment.user_id}
+                    {loadingUsers ? (
+                      <span className="text-gray-400">Loading...</span>
+                    ) : (
+                      <div className="flex flex-col">
+                        <span className="font-medium">{getUserName(payment.user_id)}</span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium`}>
@@ -206,7 +255,7 @@ const PaymentManager: React.FC = () => {
               onClick={() => dispatch(fetchPayments({ page: (pagination?.page || 1) - 1, limit: pagination?.limit || 20 }))}
               className="px-3 py-1 border rounded disabled:opacity-50"
             >
-              Trước
+              Previous
             </button>
             <span className="px-3 py-1">
               {pagination?.page || 1} / {pagination?.pages || 1}
@@ -216,7 +265,7 @@ const PaymentManager: React.FC = () => {
               onClick={() => dispatch(fetchPayments({ page: (pagination?.page || 1) + 1, limit: pagination?.limit || 20 }))}
               className="px-3 py-1 border rounded disabled:opacity-50"
             >
-              Sau
+              Next
             </button>
           </div>
         </div>

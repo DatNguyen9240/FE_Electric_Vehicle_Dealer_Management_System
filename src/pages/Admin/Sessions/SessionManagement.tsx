@@ -1,24 +1,25 @@
 import React from "react";
-import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Eye } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import api from "@libs/axios";
 import { useTitle } from "@contexts";
 
-type BookingItem = {
-  _id: string;
+type SessionItem = {
+  _id?: string;
   id?: string;
-  status: string;
-  slotStart: string;
-  slotEnd: string;
-  createdAt?: string;
-  updatedAt?: string;
+  status?: string | null;
+  startedAt?: string | null;
+  stoppedAt?: string | null;
+  createdAt?: string | null;
   user?: { id?: string; name?: string; email?: string; phone?: string } | null;
-  station?: { id?: string; name?: string; code?: string; address?: string; province?: string } | null;
-  connector?: { id?: string; code?: string; type?: string; powerKw?: number } | null;
+  station?: { id?: string; name?: string; code?: string } | null;
+  connector?: { id?: string; code?: string; type?: string } | null;
+  booking?: { id?: string } | null;
+  invoice?: { id?: string; amount?: number; status?: string } | null;
 };
 
 type ListResponse = {
   pagination: { page: number; limit: number; total: number; pages: number };
-  items: BookingItem[];
+  items: SessionItem[];
 };
 
 type Station = {
@@ -28,47 +29,30 @@ type Station = {
 };
 
 const STATUS_OPTIONS = [
-  { key: "RESERVED", label: "Reserved" },
-  { key: "CHECKED_IN", label: "Check-in" },
-  { key: "CANCELLED", label: "Cancelled" },
-  { key: "NO_SHOW", label: "No-show" },
+  { key: "PENDING", label: "Pending" },
+  { key: "CHARGING", label: "Charging" },
   { key: "COMPLETED", label: "Completed" },
+  { key: "STOPPED", label: "Stopped" },
 ] as const;
 
-const formatDateTime = (value?: string) => {
-  if (!value) return "—";
-  try {
-    const d = new Date(value);
-    return new Intl.DateTimeFormat("vi-VN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(d);
-  } catch {
-    return value;
-  }
-};
 
-const badgeClass = (status: string) => {
+
+const badgeClass = (status?: string | null) => {
   switch (status) {
-    case "RESERVED":
-      return "bg-blue-50 text-blue-700";
-    case "CHECKED_IN":
+    case "PENDING":
       return "bg-yellow-50 text-yellow-700";
-    case "CANCELLED":
-      return "bg-red-50 text-red-600";
-    case "NO_SHOW":
-      return "bg-orange-50 text-orange-700";
-    case "COMPLETED":
+    case "CHARGING":
       return "bg-green-50 text-green-700";
+    case "COMPLETED":
+      return "bg-blue-50 text-blue-700";
+    case "STOPPED":
+      return "bg-gray-100 text-gray-600";
     default:
       return "bg-gray-50 text-gray-600";
   }
 };
 
-const BookingManagement: React.FC = () => {
+const SessionManagement: React.FC = () => {
   const { setTitle } = useTitle();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -76,21 +60,24 @@ const BookingManagement: React.FC = () => {
   // Filters & query state
   const [search, setSearch] = React.useState("");
   const [statuses, setStatuses] = React.useState<string[]>([]);
-  // date range not required in simplified UI
   const [page, setPage] = React.useState(1);
   const [limit] = React.useState(20);
-  const [sort, setSort] = React.useState<string>("-slotStart");
+  const [sort] = React.useState<string>("-startedAt");
 
   // Station filter
   const [stations, setStations] = React.useState<Station[]>([]);
   const [stationId, setStationId] = React.useState<string>("");
 
-  const [rows, setRows] = React.useState<BookingItem[]>([]);
+  // Time range filters
+  const [from, setFrom] = React.useState<string>("");
+  const [to, setTo] = React.useState<string>("");
+
+  const [rows, setRows] = React.useState<SessionItem[]>([]);
   const [total, setTotal] = React.useState(0);
   const [pages, setPages] = React.useState(0);
 
   React.useEffect(() => {
-    setTitle("Booking Management");
+    setTitle("Session Management");
   }, [setTitle]);
 
   // Load stations for filter
@@ -121,12 +108,13 @@ const BookingManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<ListResponse>("/admin/bookings", {
+      const res = await api.get<ListResponse>("/admin/sessions", {
         params: {
           search: search || undefined,
           status: statuses.length ? statuses.join(",") : undefined,
-          // date filters omitted in simplified UI
           stationId: stationId || undefined,
+          from: from || undefined,
+          to: to || undefined,
           page,
           limit,
           sort,
@@ -138,7 +126,6 @@ const BookingManagement: React.FC = () => {
     } catch (err: unknown) {
       const getErrorMessage = (e: unknown) => {
         try {
-          // axios shape
           const ae = e as { response?: { data?: { message?: string } }; message?: string };
           return ae?.response?.data?.message || ae?.message || "Error loading data";
         } catch {
@@ -149,7 +136,7 @@ const BookingManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, statuses, stationId, page, limit, sort]);
+  }, [search, statuses, stationId, from, to, page, limit, sort]);
 
   React.useEffect(() => {
     fetchData();
@@ -158,36 +145,22 @@ const BookingManagement: React.FC = () => {
   const toggleStatusTab = (statusKey: string) => {
     setPage(1);
     if (statusKey === "ALL") {
-      // Chọn "ALL" thì bỏ tất cả filter
       setStatuses([]);
     } else {
-      // Chọn status khác - nếu đã chọn rồi thì bỏ chọn (về ALL), nếu chưa thì chỉ chọn status đó
       setStatuses((prev) => {
         if (prev.includes(statusKey)) {
-          // Đang chọn rồi, bỏ chọn về ALL
           return [];
         } else {
-          // Chọn status mới, chỉ giữ status này
           return [statusKey];
         }
       });
     }
   };
 
-  const onSortToggle = (field: string) => {
-    setPage(1);
-    setSort((prev) => {
-      if (prev === field) return "-" + field;
-      if (prev === "-" + field) return field; // toggle desc -> asc
-      return "-" + field; // default to desc
-    });
-  };
-
   
 
   return (
     <div className="p-6">
-      {/* Toolbar (match Payment layout) */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -195,11 +168,10 @@ const BookingManagement: React.FC = () => {
             <input
               value={search}
               onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-              placeholder="Search user"
+              placeholder="Search user/booking"
               className="border border-[#333333] rounded-lg px-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
             />
           </div>
-          {/* Station filter */}
           <div>
             <select
               value={stationId}
@@ -212,10 +184,24 @@ const BookingManagement: React.FC = () => {
               ))}
             </select>
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="datetime-local"
+              value={from}
+              onChange={(e) => { setPage(1); setFrom(e.target.value); }}
+              className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+            />
+            <span className="text-sm text-gray-500">to</span>
+            <input
+              type="datetime-local"
+              value={to}
+              onChange={(e) => { setPage(1); setTo(e.target.value); }}
+              className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Status Tabs (multi-select -> CSV) */}
       <div className="flex gap-6 border-b mb-4">
         <button
           className={`py-2 px-2 text-sm font-medium border-b-2 transition-all ${
@@ -242,11 +228,10 @@ const BookingManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-xl border">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Booking List</h2>
+            <h2 className="text-lg font-medium text-gray-900">Session List</h2>
             <span className="text-sm text-gray-500">{total} results</span>
           </div>
         </div>
@@ -258,11 +243,6 @@ const BookingManagement: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Connector</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button onClick={() => onSortToggle("slotStart")} className="inline-flex items-center gap-1">
-                    Start Slot <ArrowUpDown size={14} className="text-gray-400" />
-                  </button>
-                </th>
                 
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               </tr>
@@ -270,46 +250,44 @@ const BookingManagement: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">Loading data...</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-red-600">{error}</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-red-600">{error}</td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">No bookings</td>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No sessions</td>
                 </tr>
               ) : (
-                rows.map((b) => (
-                  <tr key={b._id} className="hover:bg-gray-50">
+                rows.map((s) => (
+                  <tr key={s._id || s.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <a
-                        href={`/admin/bookings/view/${b.id || b._id}`}
+                        href={`/admin/sessions/view/${s.id || s._id}`}
                         className="text-blue-600 hover:underline"
                         title="View details"
                       >
-                        {b.id || b._id}
+                        {s.id || s._id}
                       </a>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {b.user?.name || b.user?.email || b.user?.id || "—"}
+                      {s.user?.name || s.user?.email || s.user?.id || "—"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {b.station?.name || b.station?.code || "—"}
+                      {s.station?.name || s.station?.code || "—"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {b.connector?.code || b.connector?.type || "—"}
+                      {s.connector?.code || s.connector?.type || "—"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatDateTime(b.slotStart)}</td>
-                    
                     <td className="px-6 py-4 whitespace-nowrap flex items-center gap-3">
-                      <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${badgeClass(b.status)}`}>
+                      <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${badgeClass(s.status)}`}>
                         <span className="w-2 h-2 rounded-full bg-current"></span>
-                        {b.status}
+                        {s.status || "—"}
                       </span>
                       <a
-                        href={`/admin/bookings/view/${b.id || b._id}`}
+                        href={`/admin/sessions/view/${s.id || s._id}`}
                         className="text-gray-400 hover:text-blue-600"
                         title="View details"
                       >
@@ -322,7 +300,6 @@ const BookingManagement: React.FC = () => {
             </tbody>
           </table>
         </div>
-        {/* Pagination */}
         {pages > 1 && (
           <div className="px-6 py-4 border-t flex items-center justify-between">
             <div className="text-sm text-gray-500">
@@ -351,6 +328,6 @@ const BookingManagement: React.FC = () => {
   );
 };
 
-export default BookingManagement;
+export default SessionManagement;
 
 
