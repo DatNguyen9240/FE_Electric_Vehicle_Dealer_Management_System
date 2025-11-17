@@ -5,8 +5,6 @@ import {
   ChevronsUpDown,
   ServerCog,
   Building2,
-  Plug,
-  Zap,
   BadgeDollarSign,
   ChevronDown,
 } from "lucide-react";
@@ -237,39 +235,13 @@ const SideBar: React.FC<SideBarProps> = ({
                   <Link
                     to="/admin/infrastructure/stations"
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
-                      activePath === "/admin/infrastructure/stations"
+                      activePath.startsWith("/admin/infrastructure/stations")
                         ? "bg-blue-100 text-blue-700"
                         : "text-gray-700 hover:bg-blue-50"
                     }`}
                   >
                     <Building2 size={18} />
                     Stations
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/admin/infrastructure/chargers"
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
-                      activePath === "/admin/infrastructure/chargers"
-                        ? "bg-blue-100 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50"
-                    }`}
-                  >
-                    <Zap size={18} />
-                    Chargers
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/admin/infrastructure/connectors"
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
-                      activePath === "/admin/infrastructure/connectors"
-                        ? "bg-blue-100 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50"
-                    }`}
-                  >
-                    <Plug size={18} />
-                    Connectors
                   </Link>
                 </li>
                 <li>

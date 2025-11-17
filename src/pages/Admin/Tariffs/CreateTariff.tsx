@@ -27,15 +27,13 @@ const CreateTariff: React.FC = () => {
     connectorType: "DC_CCS2",
     mode: "hybrid",
     pricePerKwh: 0,
-    pricePerMin: 0,
-    idleFeePerMin: 0,
     graceMin: 0,
     active: true,
     effectiveFrom: new Date().toISOString().slice(0, 16),
   });
 
   const asRecord = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
-  const getErrorMessage = (eVal: unknown, fallback = "Có lỗi xảy ra") => {
+  const getErrorMessage = (eVal: unknown, fallback = "An error occurred") => {
     if (!eVal) return fallback;
     if (typeof eVal === "string") return eVal;
     if (eVal instanceof Error) return eVal.message;
@@ -48,7 +46,7 @@ const CreateTariff: React.FC = () => {
   };
 
   useEffect(() => {
-    setTitle("Tạo biểu giá sạc mới");
+    setTitle("Create New Tariff");
     fetchStations();
   }, [setTitle]);
 
@@ -65,7 +63,7 @@ const CreateTariff: React.FC = () => {
       setStations(res.data || []);
     } catch (error) {
       console.error("Failed to fetch stations:", error);
-      toast.error("Không thể tải danh sách trạm sạc");
+      toast.error("Failed to load station list");
     }
   };
 
@@ -73,7 +71,7 @@ const CreateTariff: React.FC = () => {
     e.preventDefault();
 
     if (!formData.stationId) {
-      toast.error("Vui lòng chọn trạm sạc");
+      toast.error("Please select a station");
       return;
     }
 
@@ -86,10 +84,10 @@ const CreateTariff: React.FC = () => {
         })
       ).unwrap();
 
-      toast.success("Tạo biểu giá thành công!");
+      toast.success("Tariff created successfully!");
       navigate("/admin/tariffs");
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, "Có lỗi xảy ra khi tạo biểu giá!"));
+      toast.error(getErrorMessage(err, "An error occurred while creating tariff!"));
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +100,7 @@ const CreateTariff: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading data...</div>
       </div>
     );
   }
@@ -117,14 +115,14 @@ const CreateTariff: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={16} />
-            Quay lại
+            Back
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Tạo biểu giá sạc mới
+              Create New Tariff
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Điền thông tin để tạo biểu giá mới
+              Fill in information to create a new tariff
             </p>
           </div>
         </div>
@@ -133,7 +131,7 @@ const CreateTariff: React.FC = () => {
       {/* Create Form */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Thông tin biểu giá</h2>
+          <h2 className="text-lg font-medium text-gray-900">Tariff Information</h2>
         </div>
 
         <form onSubmit={handleCreateTariff}>
@@ -142,7 +140,7 @@ const CreateTariff: React.FC = () => {
               {/* Station */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạm sạc <span className="text-red-500">*</span>
+                  Station <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -152,7 +150,7 @@ const CreateTariff: React.FC = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Chọn trạm</option>
+                  <option value="">Select station</option>
                   {stations.map((station) => (
                     <option key={station._id} value={station._id}>
                       {station.name}
@@ -164,7 +162,7 @@ const CreateTariff: React.FC = () => {
               {/* Connector Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Loại kết nối <span className="text-red-500">*</span>
+                  Connector Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -182,7 +180,7 @@ const CreateTariff: React.FC = () => {
               {/* Mode */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Chế độ <span className="text-red-500">*</span>
+                  Mode <span className="text-red-500">*</span>
                 </label>
                 <select
                   required
@@ -192,16 +190,16 @@ const CreateTariff: React.FC = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="energy">Energy (Theo năng lượng)</option>
-                  <option value="time">Time (Theo thời gian)</option>
-                  <option value="hybrid">Hybrid (Hỗn hợp)</option>
+                  <option value="energy">Energy</option>
+                  <option value="time">Time</option>
+                  <option value="hybrid">Hybrid</option>
                 </select>
               </div>
 
               {/* Effective From */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hiệu lực từ <span className="text-red-500">*</span>
+                  Effective From <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="datetime-local"
@@ -217,7 +215,7 @@ const CreateTariff: React.FC = () => {
               {/* Price per kWh */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Giá/kWh (VND) <span className="text-red-500">*</span>
+                  Price/kWh (VND) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -232,58 +230,14 @@ const CreateTariff: React.FC = () => {
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập giá/kWh"
-                />
-              </div>
-
-              {/* Price per Min */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Giá/phút (VND) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  step="100"
-                  value={formData.pricePerMin || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      pricePerMin: Number(e.target.value),
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập giá/phút"
-                />
-              </div>
-
-              {/* Idle Fee per Min */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phí chờ/phút (VND) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  step="100"
-                  value={formData.idleFeePerMin || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      idleFeePerMin: Number(e.target.value),
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập phí chờ/phút"
+                  placeholder="Enter price/kWh"
                 />
               </div>
 
               {/* Grace Min */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Thời gian miễn phí (phút) <span className="text-red-500">*</span>
+                  Grace Period (minutes) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -297,7 +251,7 @@ const CreateTariff: React.FC = () => {
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập thời gian miễn phí"
+                  placeholder="Enter grace period"
                 />
               </div>
             </div>
@@ -314,11 +268,11 @@ const CreateTariff: React.FC = () => {
                   className="rounded"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Đang áp dụng
+                  Active
                 </span>
               </label>
               <p className="text-xs text-gray-500 mt-1 ml-6">
-                Biểu giá sẽ được áp dụng ngay sau khi tạo nếu được bật
+                The tariff will be applied immediately after creation if enabled
               </p>
             </div>
 
@@ -331,7 +285,7 @@ const CreateTariff: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <X size={16} />
-                Hủy
+                Cancel
               </button>
               <button
                 type="submit"
@@ -339,7 +293,7 @@ const CreateTariff: React.FC = () => {
                 className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save size={16} />
-                {isLoading ? "Đang tạo..." : "Tạo biểu giá"}
+                {isLoading ? "Creating..." : "Create Tariff"}
               </button>
             </div>
           </div>
@@ -349,12 +303,12 @@ const CreateTariff: React.FC = () => {
       {/* Info Section */}
       <div className="mt-6 bg-blue-50 rounded-lg p-6 border border-blue-200">
         <h3 className="text-lg font-medium text-blue-900 mb-2">
-          Lưu ý khi tạo biểu giá
+          Notes when creating tariff
         </h3>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Biểu giá sẽ có hiệu lực từ thời điểm được chọn trong "Hiệu lực từ"</li>
-          <li>Chỉ có thể có một biểu giá đang áp dụng cho mỗi trạm và loại kết nối</li>
-          <li>Vui lòng kiểm tra kỹ thông tin trước khi tạo</li>
+          <li>The tariff will be effective from the selected time in "Effective From"</li>
+          <li>Only one active tariff can exist for each station and connector type</li>
+          <li>Please check the information carefully before creating</li>
         </ul>
       </div>
     </div>

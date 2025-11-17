@@ -2,8 +2,8 @@ import React from "react";
 import api from "@libs/axios";
 import { toast } from "react-toastify";
 import { useTitle } from "@contexts";
-import { Plus, Trash2, Pencil, Power, PowerOff, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Plus, Trash2, Power, PowerOff, Search, ChevronRight, Home } from "lucide-react";
+import { useNavigate, useParams, Link } from "react-router-dom";
 
 type Station = { _id: string; name?: string; code?: string };
 
@@ -22,14 +22,16 @@ type Charger = {
 const ChargersManager: React.FC = () => {
 	const { setTitle } = useTitle();
 	const navigate = useNavigate();
+	const { stationId } = useParams<{ stationId: string }>();
 	const [rows, setRows] = React.useState<Charger[]>([]);
-	const [stations, setStations] = React.useState<Station[]>([]);
+	const [station, setStation] = React.useState<Station | null>(null);
 	const [loading, setLoading] = React.useState(false);
 	const [error, setError] = React.useState<string | null>(null);
 	const [search, setSearch] = React.useState("");
 
-
-	React.useEffect(() => { setTitle("Charger Management"); }, [setTitle]);
+	React.useEffect(() => { 
+		setTitle(station ? `Chargers - ${station.name}` : "Charger Management"); 
+	}, [setTitle, station]);
 
 	const asRecord = (v: unknown): Record<string, unknown> | null =>
 		v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -44,31 +46,46 @@ const ChargersManager: React.FC = () => {
 	};
 
 	const load = React.useCallback(async () => {
+		if (!stationId) {
+			setError("Station ID is required");
+			return;
+		}
 		setLoading(true);
 		setError(null);
 		try {
-			const [cRes, sRes] = await Promise.all([api.get("/chargers", { params: { limit: 1000 } }), api.get("/stations", { params: { limit: 1000 } })]);
+			// Load station info
+			const sRes = await api.get(`/stations/${stationId}`);
+			const stationData = sRes.data as Station;
+			setStation(stationData);
+
+			// Load chargers for this station
+			const cRes = await api.get("/chargers", { params: { stationId, limit: 1000 } });
 			const cData: unknown = cRes.data;
-			const sData: unknown = sRes.data;
 			const list = (Array.isArray(cData)
 				? (cData as Charger[])
 				: (asRecord(cData)?.items ?? asRecord(cData)?.data ?? [])) as Charger[];
-			const sts = (Array.isArray(sData)
-				? (sData as Station[])
-				: (asRecord(sData)?.items ?? asRecord(sData)?.data ?? [])) as Station[];
 			setRows(list);
-			setStations(sts);
 		} catch (err: unknown) {
 			setError(getErrorMessage(err));
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [stationId]);
 
 	React.useEffect(() => { load(); }, [load]);
 
-	const openCreate = () => { navigate("/admin/infrastructure/chargers/create"); };
-	const openEdit = (c: Charger) => { navigate(`/admin/infrastructure/chargers/edit/${c._id}`); };
+	const openCreate = () => { 
+		if (stationId) {
+			navigate(`/admin/infrastructure/stations/${stationId}/chargers/create`); 
+		} else {
+			navigate("/admin/infrastructure/chargers/create"); 
+		}
+	};
+	const viewConnectors = (c: Charger) => { 
+		if (stationId) {
+			navigate(`/admin/infrastructure/stations/${stationId}/chargers/${c._id}/connectors`); 
+		}
+	};
 
 	// creation/edit moved to dedicated pages
 
@@ -85,7 +102,15 @@ const ChargersManager: React.FC = () => {
 	};
 
 	const toggleStatus = async (c: Charger) => {
-		const next = c.status === "ONLINE" ? "OFFLINE" : "ONLINE";
+		// Cycle: ONLINE → OFFLINE → MAINTENANCE → ONLINE
+		let next: string;
+		if (c.status === "ONLINE") {
+			next = "OFFLINE";
+		} else if (c.status === "OFFLINE") {
+			next = "MAINTENANCE";
+		} else {
+			next = "ONLINE";
+		}
 		// Optimistic update - cập nhật UI ngay lập tức
 		setRows(prevRows => 
 			prevRows.map(charger => 
@@ -102,7 +127,12 @@ const ChargersManager: React.FC = () => {
 					)
 				);
 			}
-			toast.success(`Charger ${next === "ONLINE" ? "turned on" : "turned off"}`);
+			const statusMessages: Record<string, string> = {
+				ONLINE: "turned on",
+				OFFLINE: "turned off",
+				MAINTENANCE: "set to maintenance"
+			};
+			toast.success(`Charger ${statusMessages[next] || "updated"}`);
 		} catch (e: any) {
 			// Rollback on error
 			setRows(prevRows => 
@@ -118,18 +148,37 @@ const ChargersManager: React.FC = () => {
 	const filtered = rows.filter((c) => {
 		const q = search.trim().toLowerCase();
 		if (!q) return true;
-		const stationName = stations.find((s) => s._id === c.stationId)?.name || "";
 		return (
 			c.name.toLowerCase().includes(q) ||
 			c.code.toLowerCase().includes(q) ||
-			stationName.toLowerCase().includes(q) ||
 			c.connectorType.toLowerCase().includes(q)
 		);
 	});
 
 	return (
 		<div className="p-6">
-			{/* Toolbar like Tariffs */}
+			{/* Breadcrumb */}
+			<div className="flex items-center gap-2 text-sm mb-4">
+				<Link to="/admin/infrastructure/stations" className="hover:text-blue-600 flex items-center gap-1 text-gray-600">
+					<Home size={16} />
+					Stations
+				</Link>
+				<ChevronRight size={16} className="text-gray-400" />
+				{station && (
+					<>
+						<Link 
+							to="/admin/infrastructure/stations" 
+							className="hover:text-blue-600 text-gray-600"
+						>
+							{station.name}
+						</Link>
+						<ChevronRight size={16} className="text-gray-400" />
+					</>
+				)}
+				<span className="text-gray-900 font-medium">Chargers</span>
+			</div>
+
+			{/* Toolbar */}
 			<div className="flex items-center justify-between mb-4">
 				<div className="flex items-center gap-4">
 					<div className="relative">
@@ -143,13 +192,12 @@ const ChargersManager: React.FC = () => {
 						/>
 					</div>
 				</div>
-				<button onClick={openCreate} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"><Plus size={18} /> Create New Charger</button>
+				<button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"><Plus size={16} /> Create New Charger</button>
 			</div>
 			<div className="bg-white rounded-xl border">
 				<table className="min-w-full text-sm">
 					<thead>
 						<tr className="text-gray-500 border-b">
-							<th className="px-4 py-3 text-left font-semibold">Station</th>
 							<th className="px-4 py-3 text-left font-semibold">Name</th>
 							<th className="px-4 py-3 text-left font-semibold">Code</th>
 							<th className="px-4 py-3 text-left font-semibold">Type</th>
@@ -160,61 +208,77 @@ const ChargersManager: React.FC = () => {
 					</thead>
 					<tbody>
 						{loading ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>Loading...</td></tr>
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={6}>Loading...</td></tr>
 						) : filtered.length === 0 ? (
-							<tr><td className="px-4 py-6 text-gray-500" colSpan={7}>No chargers yet</td></tr>
-						) : filtered.map((c) => {
-							const stationName = stations.find((s) => s._id === c.stationId)?.name || "—";
-							return (
-								<tr key={c._id} className="border-b last:border-b-0">
-									<td className="px-4 py-3">{stationName}</td>
-									<td className="px-4 py-3">{c.name}</td>
-									<td className="px-4 py-3">{c.code}</td>
-									<td className="px-4 py-3">{c.connectorType}</td>
-									<td className="px-4 py-3">{c.powerKw}</td>
-									<td className="px-4 py-3">
-										<span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+							<tr><td className="px-4 py-6 text-gray-500" colSpan={6}>No chargers yet</td></tr>
+						) : filtered.map((c) => (
+							<tr key={c._id} className="border-b last:border-b-0 hover:bg-gray-50 transition-colors">
+								<td className="px-4 py-3">
+									<button
+										onClick={() => viewConnectors(c)}
+										className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium hover:underline"
+									>
+										{c.name}
+										<ChevronRight size={16} />
+									</button>
+								</td>
+								<td className="px-4 py-3">{c.code}</td>
+								<td className="px-4 py-3">{c.connectorType}</td>
+								<td className="px-4 py-3">{c.powerKw}</td>
+								<td className="px-4 py-3">
+									<span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+										c.status === "ONLINE" 
+											? "bg-green-50 text-green-600" 
+											: c.status === "MAINTENANCE"
+											? "bg-yellow-50 text-yellow-600"
+											: "bg-gray-50 text-gray-600"
+									}`}>
+										{c.status}
+									</span>
+								</td>
+								<td className="px-4 py-3 text-right">
+									<button 
+										onClick={() => toggleStatus(c)} 
+										className={`mr-3 transition-colors ${
 											c.status === "ONLINE" 
-												? "bg-green-50 text-green-600" 
-												: "bg-gray-50 text-gray-600"
-										}`}>
-											{c.status === "ONLINE" ? "ONLINE" : "OFFLINE"}
-										</span>
-									</td>
-									<td className="px-4 py-3 text-right">
-										<button 
-											onClick={() => toggleStatus(c)} 
-											className={`mr-3 transition-colors ${
-												c.status === "ONLINE" 
-													? "text-green-600 hover:text-green-700" 
-													: "text-gray-400 hover:text-gray-600"
-											}`}
-											title={c.status === "ONLINE" ? "Turn off charger" : "Turn on charger"}
-										>
-											{c.status === "ONLINE" ? (
-												<div className="flex items-center gap-1">
-													<Power size={18} className="text-green-600" />
-													<span className="text-xs text-green-600">ON</span>
-												</div>
-											) : (
-												<div className="flex items-center gap-1">
-													<PowerOff size={18} className="text-gray-400" />
-													<span className="text-xs text-gray-400">OFF</span>
-												</div>
-											)}
-										</button>
-										<button onClick={() => openEdit(c)} className="text-gray-500 hover:text-blue-600 mr-3" title="Edit"><Pencil size={16} /></button>
-										<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Delete"><Trash2 size={16} /></button>
-									</td>
-								</tr>
-							);
-						})}
+												? "text-green-600 hover:text-green-700" 
+												: c.status === "OFFLINE"
+												? "text-gray-400 hover:text-gray-600"
+												: "text-yellow-600 hover:text-yellow-700"
+										}`}
+										title={
+											c.status === "ONLINE" 
+												? "Turn off charger" 
+												: c.status === "OFFLINE"
+												? "Set to maintenance"
+												: "Turn on charger"
+										}
+									>
+										{c.status === "ONLINE" ? (
+											<div className="flex items-center gap-1">
+												<Power size={18} className="text-green-600" />
+												<span className="text-xs text-green-600">ON</span>
+											</div>
+										) : c.status === "OFFLINE" ? (
+											<div className="flex items-center gap-1">
+												<PowerOff size={18} className="text-gray-400" />
+												<span className="text-xs text-gray-400">OFF</span>
+											</div>
+										) : (
+											<div className="flex items-center gap-1">
+												<Power size={18} className="text-yellow-600" />
+												<span className="text-xs text-yellow-600">MAINT</span>
+											</div>
+										)}
+									</button>
+									<button onClick={() => remove(c._id)} className="text-gray-500 hover:text-red-600" title="Delete"><Trash2 size={16} /></button>
+								</td>
+							</tr>
+						))}
 					</tbody>
 				</table>
 				{error && <div className="px-4 py-3 text-red-600 text-sm">{error}</div>}
 			</div>
-
-
 		</div>
 	);
 };

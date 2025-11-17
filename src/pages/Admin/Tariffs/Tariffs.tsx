@@ -44,7 +44,7 @@ const TariffManager: React.FC = () => {
   const [stations, setStations] = useState<Station[]>([]);
 
   useEffect(() => {
-    setTitle("Quản lý biểu giá sạc");
+    setTitle("Tariff Management");
     dispatch(fetchTariffs());
     fetchStations();
   }, [dispatch, setTitle]);
@@ -74,15 +74,15 @@ const TariffManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa biểu giá này?")) {
+    if (!window.confirm("Are you sure you want to delete this tariff?")) {
       return;
     }
     try {
       await dispatch(deleteTariff(id)).unwrap();
-      toast.success("Xóa biểu giá thành công!");
+      toast.success("Tariff deleted successfully!");
       dispatch(fetchTariffs());
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, "Có lỗi xảy ra khi xóa!"));
+      toast.error(getErrorMessage(err, "An error occurred while deleting!"));
     }
   };
 
@@ -130,7 +130,7 @@ const TariffManager: React.FC = () => {
   if (loading && tariffs.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Đang tải dữ liệu...</div>
+        <div className="text-lg">Loading data...</div>
       </div>
     );
   }
@@ -144,7 +144,7 @@ const TariffManager: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Tìm kiếm biểu giá..."
+              placeholder="Search tariffs..."
               value={searchTerm}
               className="border border-[#333333] rounded-lg pl-10 pr-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -157,25 +157,25 @@ const TariffManager: React.FC = () => {
               onChange={(e) => setFilterActive(e.target.value)}
               className="border border-[#333333] rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
             >
-              <option value="all">Tất cả</option>
-              <option value="active">Đang áp dụng</option>
-              <option value="inactive">Không hiệu lực</option>
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
           </div>
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
         >
-          <Plus size={18} />
-          Tạo biểu giá mới
+          <Plus size={16} />
+          Create New Tariff
         </button>
       </div>
 
       {/* Grouped by Stations */}
       {Object.keys(groupedTariffs).length === 0 ? (
         <div className="bg-white rounded-xl border p-8 text-center text-gray-500">
-          Không có dữ liệu biểu giá
+          No tariff data
         </div>
       ) : (
         <div className="space-y-6">
@@ -189,7 +189,7 @@ const TariffManager: React.FC = () => {
                 <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b">
                   <h3 className="text-lg font-bold text-gray-800">{stationName}</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    {stationTariffs.length} biểu giá
+                    {stationTariffs.length} tariff{stationTariffs.length !== 1 ? 's' : ''}
                   </p>
                 </div>
 
@@ -198,15 +198,13 @@ const TariffManager: React.FC = () => {
                   <table className="min-w-full text-sm">
                     <thead>
                       <tr className="text-gray-500 border-b bg-gray-50">
-                        <th className="px-4 py-3 text-left font-semibold">Loại kết nối</th>
-                        <th className="px-4 py-3 text-left font-semibold">Chế độ</th>
-                        <th className="px-4 py-3 text-left font-semibold">Giá/kWh</th>
-                        <th className="px-4 py-3 text-left font-semibold">Giá/phút</th>
-                        <th className="px-4 py-3 text-left font-semibold">Phí chờ/phút</th>
-                        <th className="px-4 py-3 text-left font-semibold">Thời gian miễn phí (phút)</th>
-                        <th className="px-4 py-3 text-left font-semibold">Hiệu lực từ</th>
-                        <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-                        <th className="px-4 py-3 text-center font-semibold">Thao tác</th>
+                        <th className="px-4 py-3 text-left font-semibold">Connector Type</th>
+                        <th className="px-4 py-3 text-left font-semibold">Mode</th>
+                        <th className="px-4 py-3 text-left font-semibold">Price/kWh</th>
+                        <th className="px-4 py-3 text-left font-semibold">Grace Period (min)</th>
+                        <th className="px-4 py-3 text-left font-semibold">Effective From</th>
+                        <th className="px-4 py-3 text-left font-semibold">Status</th>
+                        <th className="px-4 py-3 text-center font-semibold">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -224,13 +222,7 @@ const TariffManager: React.FC = () => {
                           <td className="px-4 py-3 font-medium">
                             {formatVND(tariff.pricePerKwh)}
                           </td>
-                          <td className="px-4 py-3 font-medium">
-                            {formatVND(tariff.pricePerMin)}
-                          </td>
-                          <td className="px-4 py-3 font-medium">
-                            {formatVND(tariff.idleFeePerMin)}
-                          </td>
-                          <td className="px-4 py-3">{tariff.graceMin} phút</td>
+                          <td className="px-4 py-3">{tariff.graceMin} min</td>
                           <td className="px-4 py-3">{formatDate(tariff.effectiveFrom)}</td>
                           <td className="px-4 py-3">
                             <span
@@ -240,7 +232,7 @@ const TariffManager: React.FC = () => {
                                   : "bg-gray-50 text-gray-600"
                               }`}
                             >
-                              {tariff.active ? "Đang áp dụng" : "Không hiệu lực"}
+                              {tariff.active ? "Active" : "Inactive"}
                             </span>
                           </td>
                           <td className="px-4 py-3">
@@ -248,14 +240,14 @@ const TariffManager: React.FC = () => {
                               <button
                                 onClick={() => handleEdit(tariff)}
                                 className="text-gray-500 hover:text-blue-600 transition-colors"
-                                title="Chỉnh sửa"
+                                title="Edit"
                               >
                                 <Pencil size={16} />
                               </button>
                               <button
                                 onClick={() => handleDelete(tariff._id)}
                                 className="text-gray-500 hover:text-red-600 transition-colors"
-                                title="Xóa"
+                                title="Delete"
                               >
                                 <Trash2 size={16} />
                               </button>

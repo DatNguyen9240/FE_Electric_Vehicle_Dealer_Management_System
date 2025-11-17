@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { ArrowLeft, Edit, Star } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 import { getFeedback } from "@redux/slice/Feedback/FeedbackThunks";
 import { clearError } from "@redux/slice/Feedback/FeedbackSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
@@ -31,12 +31,6 @@ const FeedbackDetail: React.FC = () => {
       dispatch(clearError());
     }
   }, [error, dispatch]);
-
-  const handleEdit = () => {
-    if (selectedFeedback) {
-      navigate(`/admin/feedbacks/edit/${selectedFeedback.id}`);
-    }
-  };
 
   const handleBack = () => {
     navigate("/admin/feedbacks");
@@ -216,17 +210,6 @@ const FeedbackDetail: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3 justify-end mt-4">
-        <button
-          onClick={handleEdit}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Edit size={16} />
-          Edit Feedback
-        </button>
       </div>
     </div>
   );

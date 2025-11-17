@@ -160,7 +160,7 @@ const Bookings: React.FC = () => {
     setProxyOpen(true);
     // fetch connectors online
     api
-      .get('/connectors', { params: { status: 'ONLINE', limit: 100} })
+      .get('/connectors', { params: { status: 'IDLE', limit: 100} })
       .then((res) => {
         const d = res.data as any;
         // try to find items or data

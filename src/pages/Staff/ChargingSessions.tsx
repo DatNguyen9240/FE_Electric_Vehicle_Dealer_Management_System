@@ -83,7 +83,7 @@ const ChargingSessions: React.FC = () => {
   // load connectors and stations for filters
   React.useEffect(() => {
     api
-      .get('/connectors', { params: { status: 'ONLINE', limit: 200 } })
+      .get('/connectors', { params: { status: 'IDLE', limit: 200 } })
       .then((res) => {
         const d = res.data as any;
         const list = Array.isArray(d) ? d : d?.items ?? d?.connectors ?? d?.data ?? [];

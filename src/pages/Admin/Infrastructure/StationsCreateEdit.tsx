@@ -173,6 +173,7 @@ const StationsCreateEdit: React.FC = () => {
                 >
                   <option value="ONLINE">ONLINE</option>
                   <option value="OFFLINE">OFFLINE</option>
+                  <option value="MAINTENANCE">MAINTENANCE</option>
                 </select>
               </div>
             </div>

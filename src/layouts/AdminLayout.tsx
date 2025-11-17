@@ -4,7 +4,7 @@ import type { SidebarMenuItem } from "@components/Layouts/SideBar";
 import { Outlet } from "react-router-dom";
 import LableTitle from "@components/Layouts/LableTitle";
 import { useTitle } from "../contexts";
-import { Home, Users, CreditCard, BatteryCharging, Cpu, Zap, FileText, Crown, Car, AlertTriangle, MessageSquare } from "lucide-react";
+import { Home, Users, CreditCard, BatteryCharging, Cpu, Zap, FileText, Crown, AlertTriangle, MessageSquare } from "lucide-react";
 
 const AdminLayout: React.FC = () => {
   const { title } = useTitle();
@@ -18,7 +18,6 @@ const AdminLayout: React.FC = () => {
           [
             { key: "home", label: "Home", icon: <Home size={20} />, to: "/admin" },
             { key: "users", label: "Users", icon: <Users size={20} />, to: "/admin/users" },
-            { key: "vehicles", label: "Vehicles", icon: <Car size={20} />, to: "/admin/vehicles" },
             { key: "payments", label: "Payment", icon: <CreditCard size={20} />, to: "/admin/payments" },
             { key: "bookings", label: "Bookings", icon: <BatteryCharging size={20} />, to: "/admin/bookings" },
             { key: "sessions", label: "Sessions", icon: <Zap size={20} />, to: "/admin/sessions" },
