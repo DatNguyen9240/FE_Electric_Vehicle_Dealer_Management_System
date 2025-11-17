@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import api from "@libs/axios";
-import { Loader2, Plug, Gauge, Power } from "lucide-react";
+import { Loader2, Plug, Power, PowerOff, RefreshCw } from "lucide-react";
 import { useTitle } from "../../contexts";
 import { useUi } from "../../contexts/uiContextCore";
 
@@ -159,158 +159,153 @@ const StationDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          {filteredStations.length === 1 ? (
-            <div>
-              <div className="flex items-center gap-4">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{filteredStations[0].station?.name ?? 'Station'}</h1>
-                {getStatusBadge(filteredStations[0].station?.status)}
-              </div>
-              {/* Last updated removed per request */}
-            </div>
-          ) : (
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Station Dashboard</h1>
-              <div className="text-sm text-gray-500">{filteredStations.length} stations</div>
-            </div>
-          )}
+          <p className="text-sm uppercase text-gray-500 tracking-wide">Staff Console</p>
+          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">Station dashboard</h1>
+          <p className="text-sm text-gray-500">
+            Monitor stations, connectors, and charger health in real time.
+          </p>
         </div>
+        <button
+          onClick={loadStations}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:border-gray-300 transition"
+        >
+          <RefreshCw size={16} />
+          Refresh data
+        </button>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {[0, 1].map((i) => {
-          const entry = firstTwoConnectors[i];
-          if (entry) {
-            const [k, v] = entry;
-            return (
-              <div
-                key={k}
-                className="bg-gradient-to-r from-gray-50 to-gray-25 p-5 rounded-2xl shadow-sm border border-gray-200"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-sm text-gray-600">{k}</div>
-                    <div className="text-3xl font-bold text-gray-800">{String(v)}</div>
-                  </div>
-                  <Plug className="text-blue-600 w-8 h-8" />
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={`placeholder-${i}`}
-              className="bg-gradient-to-r from-gray-50 to-gray-25 p-5 rounded-2xl shadow-sm border border-gray-200"
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="text-sm text-gray-600">Connector</div>
-                  <div className="text-3xl font-bold text-gray-800">-</div>
-                </div>
-                <Plug className="text-gray-400 w-8 h-8" />
-              </div>
-            </div>
-          );
-        })}
-
-        <div className="bg-gradient-to-r from-blue-100 to-blue-50 p-5 rounded-2xl shadow-sm border border-blue-200">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="text-sm text-gray-600">Power Usage</div>
-              <div className="text-xl font-bold text-blue-700">
-                {aggregated.power.charging} kW / {aggregated.power.total} kW
-              </div>
-              <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
-                <div
-                  style={{ width: `${percentUsed}%` }}
-                  className="h-2 bg-blue-600 rounded-full"
-                />
-              </div>
-              <div className="text-xs text-gray-500 mt-1">{percentUsed}% Used</div>
-            </div>
-            <Gauge className="text-blue-600 w-8 h-8" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl border p-5 shadow-sm">
+          <p className="text-xs uppercase text-gray-500 font-medium">Stations online</p>
+          <p className="text-3xl font-semibold text-gray-900 mt-2">{aggregated.online}</p>
+          <p className="text-xs text-gray-500 mt-1">Out of {filteredStations.length} stations</p>
+        </div>
+        <div className="bg-white rounded-2xl border p-5 shadow-sm">
+          <p className="text-xs uppercase text-gray-500 font-medium">Stations offline</p>
+          <p className="text-3xl font-semibold text-gray-900 mt-2">{aggregated.offline}</p>
+          <p className="text-xs text-gray-500 mt-1">Need investigation</p>
+        </div>
+        <div className="bg-white rounded-2xl border p-5 shadow-sm">
+          <p className="text-xs uppercase text-gray-500 font-medium">Maintenance</p>
+          <p className="text-3xl font-semibold text-gray-900 mt-2">{aggregated.maintenance}</p>
+          <p className="text-xs text-gray-500 mt-1">Scheduled repairs</p>
+        </div>
+        <div className="bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl text-white p-5 shadow-sm">
+          <p className="text-xs uppercase font-medium opacity-80">Power usage</p>
+          <p className="text-2xl font-semibold mt-2">
+            {aggregated.power.charging} kW / {aggregated.power.total} kW
+          </p>
+          <p className="text-xs opacity-80 mt-1">{percentUsed}% used</p>
+          <div className="w-full bg-white/20 rounded-full h-2 mt-3">
+            <div className="bg-white rounded-full h-2" style={{ width: `${percentUsed}%` }} />
           </div>
         </div>
       </div>
 
-      {/* Connector Summary removed — connector stats promoted to top cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {firstTwoConnectors.map(([k, v], idx) => (
+          <div key={idx} className="bg-white rounded-2xl border p-5 shadow-sm flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-blue-50 text-blue-600">
+              <Plug className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs uppercase text-gray-500">{k}</p>
+              <p className="text-2xl font-semibold text-gray-900">{String(v)}</p>
+              <p className="text-xs text-gray-500">Connector status</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {/* Per Station Details */}
-      <div className="space-y-5">
-          {filteredStations.map((s: StationOverview, idx: number) => (
+      <div className="space-y-4">
+        {filteredStations.map((s: StationOverview, idx: number) => (
           <div
             key={s.station?.id ?? idx}
-            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition"
+            className="bg-white rounded-2xl border p-6 shadow-sm hover:shadow-md transition"
           >
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-gray-900">{s.station?.name ?? "Station"}</h2>
+                {getStatusBadge(s.station?.status)}
+              </div>
+              <p className="text-xs text-gray-500">
+                Total connectors: {s.metrics?.totalConnectors ?? 0}
+              </p>
+            </div>
             <div className="grid md:grid-cols-2 gap-5">
-              <div>
-                <div className="font-medium mb-2 flex items-center gap-1 text-gray-700">
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                   <Plug size={16} /> Connectors
-                </div>
+                </p>
                 {(s.connectors ?? []).length === 0 ? (
-                  <div className="text-sm text-gray-500">No connectors</div>
+                  <p className="text-sm text-gray-500">No connectors available.</p>
                 ) : (
-                  <ul className="text-sm space-y-2">
+                  <div className="space-y-2">
                     {(s.connectors ?? []).map((c: Connector) => (
-                      <li
+                      <div
                         key={c.id}
-                        className="flex justify-between bg-gray-50 p-2 rounded-lg border border-gray-100 hover:bg-gray-100 transition"
+                        className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-2 flex items-center justify-between text-sm"
                       >
                         <div>
-                          <div className="font-medium text-gray-800">
-                            {c.code} — {c.type}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Status: {c.status} • {c.powerKw} kW
-                          </div>
+                          <p className="font-semibold text-gray-900">{c.code ?? "Connector"}</p>
+                          <p className="text-xs text-gray-500">
+                            {c.type} • {c.powerKw} kW
+                          </p>
                         </div>
-                      </li>
+                        <span className="text-xs text-gray-600">{c.status}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </div>
-
-              <div>
-                <div className="font-medium mb-2 flex items-center gap-1 text-gray-700">
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                   <Power size={16} /> Chargers
-                </div>
+                </p>
                 {(s.chargers ?? []).length === 0 ? (
-                  <div className="text-sm text-gray-500">No chargers</div>
+                  <p className="text-sm text-gray-500">No chargers available.</p>
                 ) : (
-                  <ul className="text-sm space-y-2">
-                    {(s.chargers ?? []).map((ch: Charger) => (
-                      <li
-                        key={ch.id}
-                        className="bg-gray-50 p-2 rounded-lg border border-gray-100 hover:bg-gray-100 transition flex items-center justify-between"
-                      >
-                        <div>
-                          <div className="font-medium text-gray-800">
-                            {ch.name} ({ch.code})
+                  <div className="space-y-2">
+                    {(s.chargers ?? []).map((ch: Charger) => {
+                      const online = String(ch.status || "").toUpperCase() === "ONLINE";
+                      return (
+                        <div
+                          key={ch.id}
+                          className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-2 flex items-center justify-between text-sm"
+                        >
+                          <div>
+                            <p className="font-semibold text-gray-900">{ch.name ?? ch.code}</p>
+                            <p className="text-xs text-gray-500">
+                              {ch.status} • {ch.powerKw} kW
+                            </p>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            Status: {ch.status} • {ch.powerKw} kW
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleChargerPower(ch.id, ch.status)}
-                            disabled={Boolean(toggling[ch.id ?? ''])}
-                            className={`text-xs px-2 py-1 rounded-md font-medium transition ${
-                              String(ch.status || '').toUpperCase() === 'ONLINE'
-                                ? 'bg-red-500 text-white hover:bg-red-600'
-                                : 'bg-green-500 text-white hover:bg-green-600'
+                            disabled={Boolean(toggling[ch.id ?? ""])}
+                            className={`text-xs rounded-md font-medium transition ${
+                              online
+                                ? "text-green-600 hover:text-green-700"
+                                : "text-gray-400 hover:text-gray-600"
                             }`}
                           >
-                            {String(ch.status || '').toUpperCase() === 'ONLINE' ? 'Turn off' : 'Turn on'}
+                            {online ? (
+                              <div className="flex items-center gap-1">
+                                <Power size={16} className="text-green-600" />
+                                <span className="text-xs text-green-600">ON</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <PowerOff size={16} className="text-gray-400" />
+                                <span className="text-xs text-gray-400">OFF</span>
+                              </div>
+                            )}
                           </button>
                         </div>
-                      </li>
-                    ))}
-                  </ul>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>

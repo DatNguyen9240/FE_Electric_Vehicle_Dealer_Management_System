@@ -4,8 +4,12 @@ import { Button } from "@components/Ui/Button";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@redux/store/store";
-import { createVehicleThunk, fetchVehiclesThunk } from "@redux/slice/Vehical/VehicalThunk";
+import {
+  createVehicleThunk,
+  fetchVehiclesThunk,
+} from "@redux/slice/Vehical/VehicalThunk";
 import { setSelectedVehicle } from "@redux/slice/Vehical/VehicalSlice";
+import { ArrowLeft } from "lucide-react";
 
 export default function NewVehicle() {
   const [model, setModel] = useState("");
@@ -50,7 +54,7 @@ export default function NewVehicle() {
         // Do nothing
       }
 
-      toast.success("Đăng ký xe thành công");
+      toast.success("Vehicle registered successfully");
       navigate("/");
     } catch (err: unknown) {
       const msg =
@@ -67,85 +71,141 @@ export default function NewVehicle() {
   // Creation-only page: no edit/fetch/delete logic
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Register New Vehicle</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Model</label>
-          <input
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-            required
-          />
+    <div className="px-6 py-10">
+      <div className=" mx-20 space-y-6">
+        <button
+          onClick={() => navigate("/")}
+          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition"
+        >
+          <ArrowLeft size={16} />
+          Back to home
+        </button>
+
+        <div className="bg-white rounded-2xl border p-6 shadow-sm space-y-3">
+          <p className="text-sm uppercase text-gray-500 tracking-wide">Your garage</p>
+          <h1 className="text-3xl font-semibold text-gray-900">
+            Register a new EV
+          </h1>
+          <p className="text-sm text-gray-500">
+            Add your vehicle details to book charging sessions faster and keep track of usage.
+          </p>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Plug type</label>
-          <select
-            value={plugType}
-            onChange={(e) => setPlugType(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-            required
+
+        <div className=" gap-6">
+          <form
+            onSubmit={handleSubmit}
+            className=" bg-white rounded-2xl border p-6 shadow-sm space-y-5"
           >
-            {PLUG_TYPES.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Make</label>
-          <input
-            value={make}
-            onChange={(e) => setMake(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-            placeholder="Hyundai, Nissan..."
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">License plate</label>
-          <input
-            value={licensePlate}
-            onChange={(e) => setLicensePlate(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-            placeholder="51H-12345"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Battery (kWh)</label>
-          <input
-            type="number"
-            value={batteryKwh}
-            onChange={(e) => {
-              const v = e.target.value;
-              setBatteryKwh(v === "" ? "" : parseFloat(v));
-            }}
-            className="w-full rounded border px-3 py-2"
-            min={0.1}
-            step={0.1}
-            required
-          />
-        </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Model <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="VinFast VF8, Tesla Model 3..."
+                required
+              />
+            </div>
 
-        {error && <div className="text-sm text-red-600">{error}</div>}
-        <div className="flex items-center gap-3">
-          <label className="inline-flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={isDefault}
-              onChange={(e) => setIsDefault(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm">Set as default vehicle</span>
-          </label>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Plug type
+                </label>
+                <select
+                  value={plugType}
+                  onChange={(e) => setPlugType(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  {PLUG_TYPES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Battery (kWh) <span className="text-red-500">*</span>
+                  </label>
+                <input
+                  type="number"
+                  value={batteryKwh}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setBatteryKwh(v === "" ? "" : parseFloat(v));
+                  }}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min={0.1}
+                  step={0.1}
+                  placeholder="75"
+                  required
+                />
+              </div>
+            </div>
 
-        </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Make / Brand
+                  </label>
+                <input
+                  value={make}
+                  onChange={(e) => setMake(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Hyundai, Nissan..."
+                />
+              </div>
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    License plate
+                  </label>
+                <input
+                  value={licensePlate}
+                  onChange={(e) => setLicensePlate(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="51H-12345"
+                />
+              </div>
+            </div>
 
-        <div className="flex gap-3">
-          <Button type="submit" disabled={loading}>
-            {loading ? "Submitting..." : "Submit"}
-          </Button>
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-xl">
+                {error}
+              </div>
+            )}
+
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={isDefault}
+                onChange={(e) => setIsDefault(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Set as default vehicle
+            </label>
+
+            <div className="flex justify-end gap-3">
+              <Button type="submit" disabled={loading} className="px-6 bg-blue-600 text-white">
+                {loading ? "Saving..." : "Register vehicle"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/wallet")}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+
+          
         </div>
-      </form>
+      </div>
     </div>
   );
 }
