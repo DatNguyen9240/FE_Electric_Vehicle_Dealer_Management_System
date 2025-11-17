@@ -28,12 +28,14 @@ const ChargingSessions: React.FC = () => {
   const [connectors, setConnectors] = React.useState<Array<{ id?: string; code?: string }>>([]);
   const [stations, setStations] = React.useState<Array<{ id?: string; name?: string }>>([]);
   const [filters, setFilters] = React.useState({ connectorId: '', stationId: '', status: '', search: '', sort: '-startedAt' });
+  const [paymentFilter, setPaymentFilter] = React.useState<string>('');
 
   const { showToast, confirm } = useUi();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [preview, setPreview] = React.useState<any | null>(null);
   const [previewLoading, setPreviewLoading] = React.useState(false);
   const [note, setNote] = React.useState<string>('');
+  const [invoiceStatusMap, setInvoiceStatusMap] = React.useState<Record<string, string>>({});
 
     const { setTitle } = useTitle();
     React.useEffect(() => {
@@ -67,10 +69,29 @@ const ChargingSessions: React.FC = () => {
           const tryArrays = ["items", "data", "sessions"] as const;
           for (const key of tryArrays) {
             const val = rec[key];
-            if (Array.isArray(val)) return setSessions(val as Session[]);
+            if (Array.isArray(val)) {
+              const arr = val as Session[];
+              setSessions(arr);
+              // fetch invoice statuses for completed sessions
+              const completedIds = arr
+                .filter((s) => s.status === 'COMPLETED')
+                .map((s) => s.id ?? s._id)
+                .filter(Boolean) as string[];
+              if (completedIds.length) fetchInvoiceStatuses(completedIds);
+              return;
+            }
           }
         }
-        if (Array.isArray(d)) return setSessions(d as Session[]);
+        if (Array.isArray(d)) {
+          const arr = d as Session[];
+          setSessions(arr);
+          const completedIds = arr
+            .filter((s) => s.status === 'COMPLETED')
+            .map((s) => s.id ?? s._id)
+            .filter(Boolean) as string[];
+          if (completedIds.length) fetchInvoiceStatuses(completedIds);
+          return;
+        }
         setSessions([]);
       })
       .catch((err: unknown) => {
@@ -79,6 +100,32 @@ const ChargingSessions: React.FC = () => {
       })
       .finally(() => setLoading(false));
   }, [limit]);
+
+  const fetchInvoiceStatuses = async (sessionIds: string[]) => {
+    try {
+      const pairs = await Promise.all(
+        sessionIds.map(async (sid) => {
+          try {
+            const res = await api.get(`/staff/sessions/${sid}/invoice`);
+            const d = res.data as any;
+            const invoice = d?.invoice;
+            return [sid, invoice?.payment_status ?? null] as [string, string | null];
+          } catch (e) {
+            return [sid, null] as [string, string | null];
+          }
+        })
+      );
+      setInvoiceStatusMap((m) => {
+        const copy = { ...m };
+        for (const [sid, status] of pairs) {
+          if (status) copy[sid] = status;
+        }
+        return copy;
+      });
+    } catch (e) {
+      // ignore
+    }
+  };
 
   // load connectors and stations for filters
   React.useEffect(() => {
@@ -117,6 +164,15 @@ const ChargingSessions: React.FC = () => {
   const applyFilters = () => {
     setPage(1);
     fetch(1);
+  };
+
+  const getDisplayedSessions = () => {
+    if (!paymentFilter) return sessions;
+    return sessions.filter((s) => {
+      const sid = s.id ?? s._id;
+      if (!sid) return false;
+      return invoiceStatusMap[sid] === paymentFilter;
+    });
   };
 
   const stopSession = async (id?: string) => {
@@ -166,6 +222,8 @@ const ChargingSessions: React.FC = () => {
     try {
       await api.post('/staff/payments/onsite', { sessionId: preview.sessionId, method: 'CASH', note: note || undefined });
       showToast('Onsite payment recorded', 'success');
+      // mark invoice as paid in local map so UI updates
+      setInvoiceStatusMap((m) => ({ ...(m || {}), [preview.sessionId]: 'PAID' }));
       setPreview(null);
       fetch(page);
     } catch (err) {
@@ -253,6 +311,20 @@ const ChargingSessions: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Payment</label>
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            >
+              <option value="">All</option>
+              <option value="UNPAID">UNPAID</option>
+              <option value="PAID">PAID</option>
+              <option value="EXPIRED">EXPIRED</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
             <label className="text-sm text-gray-600">Sort</label>
             <select
               value={filters.sort}
@@ -298,7 +370,7 @@ const ChargingSessions: React.FC = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">Customer</th>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium">Plate</th>
+              <th className="px-4 py-2 text-left text-gray-600 font-medium">BookingID</th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">Station</th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">Connector</th>
               <th className="px-4 py-2 text-left text-gray-600 font-medium">Started</th>
@@ -314,7 +386,7 @@ const ChargingSessions: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              sessions.map((s: Session, i: number) => (
+              getDisplayedSessions().map((s: Session, i: number) => (
                 <tr
                   key={s.id ?? s._id ?? i}
                   className="border-t hover:bg-gray-50 transition-colors"
@@ -339,13 +411,21 @@ const ChargingSessions: React.FC = () => {
                         Stop
                       </button>
                     ) : s.status === "COMPLETED" ? (
-                      <button
-                        onClick={() => openInvoicePreview(s.id ?? s._id)}
-                        className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs transition"
-                      >
-                        <Eye size={14} />
-                        Record payment
-                      </button>
+                      (() => {
+                        const sid = s.id ?? s._id;
+                        const isUnpaid = sid ? invoiceStatusMap[sid] === 'UNPAID' : false;
+                        return isUnpaid ? (
+                          <button
+                            onClick={() => openInvoicePreview(sid)}
+                            className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs transition"
+                          >
+                            <Eye size={14} />
+                            Record payment
+                          </button>
+                        ) : (
+                          <span className="text-gray-500 text-xs">{sid && invoiceStatusMap[sid] ? invoiceStatusMap[sid] : '—'}</span>
+                        );
+                      })()
                     ) : (s.booking?.id || s.bookingId) ? (
                       <button
                         onClick={() => startSession(s.booking?.id ?? s.bookingId ?? undefined)}

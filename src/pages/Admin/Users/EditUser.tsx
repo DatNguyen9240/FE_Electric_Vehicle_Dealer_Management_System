@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ArrowLeft, Save, X } from "lucide-react";
-import {  updateUser, getUser } from "@redux/slice/User/UserThunks";
+import { updateUserById, fetchUserById } from "@redux/slice/User/UserThunks";
 import { clearError } from "@redux/slice/User/UserSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import { useTitle } from "../../../contexts";
@@ -30,7 +30,7 @@ const EditUser: React.FC = () => {
 
   useEffect(() => {
     if (userId) {
-      dispatch(getUser(userId));
+      dispatch(fetchUserById(userId));
     }
   }, [dispatch, userId]);
 
@@ -57,7 +57,7 @@ const EditUser: React.FC = () => {
     
     setIsLoading(true);
     try {
-      await dispatch(updateUser({
+      await dispatch(updateUserById({
         userId: userId,
         userData: editForm
       })).unwrap();

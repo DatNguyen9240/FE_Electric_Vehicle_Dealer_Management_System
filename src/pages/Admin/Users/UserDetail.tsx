@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ArrowLeft, Edit, Trash2, Car } from "lucide-react";
-import { deleteUser, getUser } from "@redux/slice/User/UserThunks";
+import { deleteUser, fetchUserById } from "@redux/slice/User/UserThunks";
 import { clearError } from "@redux/slice/User/UserSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import type { UserVehicle } from "@redux/slice/User/UserSlice";
@@ -34,7 +34,7 @@ const UserDetail: React.FC = () => {
   
   useEffect(() => {
     if (userId) {
-      dispatch(getUser(userId));
+      dispatch(fetchUserById(userId));
     }
   }, [dispatch, userId]);
 

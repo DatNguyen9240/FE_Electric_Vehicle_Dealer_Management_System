@@ -9,6 +9,10 @@ import { Home, Users, CreditCard, BatteryCharging, Cpu, Zap, FileText, Crown, Al
 const AdminLayout: React.FC = () => {
   const { title } = useTitle();
 
+ 
+
+  
+
   return (
     <div className="flex h-screen">
       {/* Admin-specific menu passed into generic SideBar */}

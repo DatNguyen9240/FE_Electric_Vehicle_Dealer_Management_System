@@ -1,5 +1,12 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { fetchUsers, getUser, updateUser, deleteUser } from "./UserThunks";
+import {
+  fetchProfile,
+  updateProfile,
+  fetchUsers,
+  fetchUserById,
+  updateUserById,
+  deleteUser,
+} from "./UserThunks";
 
 export interface UserVehicle {
   id: string;
@@ -31,6 +38,7 @@ interface UserState {
   loading: boolean;
   error: string | null;
   selectedUser: User | null;
+  profile: User | null;
 }
 
 const initialState: UserState = {
@@ -38,6 +46,7 @@ const initialState: UserState = {
   loading: false,
   error: null,
   selectedUser: null,
+  profile: null,
 };
 
 const userSlice = createSlice({
@@ -52,7 +61,37 @@ const userSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Fetch all users
+    // Profile (for staff/customer)
+    builder
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profile = action.payload;
+      })
+      .addCase(fetchProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedUser = action.payload.user as User | undefined;
+        if (updatedUser) {
+          state.profile = updatedUser;
+        }
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Admin: fetch all users
     builder
       .addCase(fetchUsers.pending, (state) => {
         state.loading = true;
@@ -67,31 +106,31 @@ const userSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Get single user
+    // Admin: fetch user by id
     builder
-      .addCase(getUser.pending, (state) => {
+      .addCase(fetchUserById.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(getUser.fulfilled, (state, action) => {
+      .addCase(fetchUserById.fulfilled, (state, action) => {
         state.loading = false;
         state.selectedUser = action.payload;
       })
-      .addCase(getUser.rejected, (state, action) => {
+      .addCase(fetchUserById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
 
-    // Update user
+    // Admin: update user by id
     builder
-      .addCase(updateUser.pending, (state) => {
+      .addCase(updateUserById.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateUser.fulfilled, (state, action) => {
+      .addCase(updateUserById.fulfilled, (state, action) => {
         state.loading = false;
-        const updatedUser = action.payload.user;
-        const index = state.data.findIndex(user => user.id === updatedUser.id);
+        const updatedUser = action.payload.user as User;
+        const index = state.data.findIndex((user) => user.id === updatedUser.id);
         if (index !== -1) {
           state.data[index] = updatedUser;
         }
@@ -99,7 +138,7 @@ const userSlice = createSlice({
           state.selectedUser = updatedUser;
         }
       })
-      .addCase(updateUser.rejected, (state, action) => {
+      .addCase(updateUserById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
@@ -112,7 +151,7 @@ const userSlice = createSlice({
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.data = state.data.filter(user => user.id !== action.payload);
+        state.data = state.data.filter((user) => user.id !== action.payload);
         if (state.selectedUser?.id === action.payload) {
           state.selectedUser = null;
         }

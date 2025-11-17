@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import type {Vehicle} from "@redux/slice/Vehical/VehicalSlice";
 import { deleteVehicleThunk } from "@redux/slice/Vehical/VehicalThunk";
 import api from "../libs/axios";
+import { useUi } from "../contexts/uiContextCore";
 
 
 // chart.js (react-chartjs-2). If these packages are not installed run:
@@ -68,6 +69,7 @@ const UserProfile: React.FC = () => {
   const [savingProfile, setSavingProfile] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const dispatch = useDispatch<AppDispatch>();
+  const { showToast } = useUi();
   const vehicles = useSelector(selectVehicles);
   const selectedVehicle = useSelector(selectSelectedVehicleId);
   const vehicalLoading = useSelector(selectVehicalLoading);
@@ -318,14 +320,14 @@ const UserProfile: React.FC = () => {
       setPreviewAvatar(updated.avatar || '/avatar/01.png');
       setIsEditing(false);
       // lightweight success feedback
-      alert('Profile updated successfully');
+      showToast('Profile updated successfully', 'success');
     } catch (err: unknown) {
       // try to extract useful message
       const msg = getErrorMessage(err) || 'Failed to save profile';
       setSaveError(msg);
       // also keep edit mode so user can retry
       console.error('[Profile save] ', err);
-      alert(msg);
+      showToast(msg, 'error');
     } finally {
       setSavingProfile(false);
     }

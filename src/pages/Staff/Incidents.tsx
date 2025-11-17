@@ -89,7 +89,13 @@ const Incidents: React.FC = () => {
       .then((res) => {
         const d = res.data as any;
         const list = Array.isArray(d) ? d : d?.stations ?? d?.items ?? d?.data ?? [];
-        if (Array.isArray(list)) setStations(list);
+        if (Array.isArray(list)) {
+          setStations(list);
+          if (list.length === 1) {
+            const id = list[0]._id ?? list[0].id ?? "";
+            setForm((f) => ({ ...f, stationId: id }));
+          }
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -135,19 +141,30 @@ const Incidents: React.FC = () => {
             <div>
               <label className="text-sm font-medium text-gray-600">Station</label>
               <div>
-                <select
-                  value={form.stationId}
-                  onChange={(e) => setForm((f) => ({ ...f, stationId: e.target.value }))}
-                  className="w-full mt-1 border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                >
-                  <option value="">-- choose station --</option>
-                  {stations.map((s) => (
-                    <option key={s._id ?? s.id} value={s._id ?? s.id}>
-                      {s.name ?? s.id}
-                    </option>
-                  ))}
-                </select>
-                {stationsLoading && <div className="text-xs text-gray-500 mt-1">Loading stations...</div>}
+                {stations.length === 1 ? (
+                  <div className="mt-1">
+                    <input type="hidden" value={form.stationId} />
+                    <div className="w-full mt-1 rounded-lg p-2.5 text-sm bg-gray-50 text-gray-700">
+                      {stations[0].name ?? stations[0].id}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <select
+                      value={form.stationId}
+                      onChange={(e) => setForm((f) => ({ ...f, stationId: e.target.value }))}
+                      className="w-full mt-1 border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    >
+                      <option value="">-- choose station --</option>
+                      {stations.map((s) => (
+                        <option key={s._id ?? s.id} value={s._id ?? s.id}>
+                          {s.name ?? s.id}
+                        </option>
+                      ))}
+                    </select>
+                    {stationsLoading && <div className="text-xs text-gray-500 mt-1">Loading stations...</div>}
+                  </div>
+                )}
               </div>
             </div>
             <div>
@@ -225,7 +242,7 @@ const Incidents: React.FC = () => {
                         <div className="text-xs text-gray-400 mt-1">Status: {status}</div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        {status !== 'RESOLVED' && (
+                        {status === 'IN_PROGRESS' && (
                           <button
                             onClick={() => updateStatus(it.id ?? it._id ?? '', 'RESOLVED')}
                             className="text-sm px-3 py-1.5 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 transition-all"

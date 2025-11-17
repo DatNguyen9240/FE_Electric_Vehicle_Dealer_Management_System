@@ -9,7 +9,8 @@ import { setSelectedVehicle } from "@redux/slice/Vehical/VehicalSlice";
 
 export default function NewVehicle() {
   const [model, setModel] = useState("");
-  const [plugType, setPlugType] = useState("");
+  const PLUG_TYPES = ["CCS2", "CHAdeMO", "AC_Type2", "GB/T", "Other"];
+  const [plugType, setPlugType] = useState<string>(PLUG_TYPES[0]);
   const [make, setMake] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [isDefault, setIsDefault] = useState(false);
@@ -80,13 +81,16 @@ export default function NewVehicle() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Plug type</label>
-          <input
+          <select
             value={plugType}
             onChange={(e) => setPlugType(e.target.value)}
             className="w-full rounded border px-3 py-2"
-            placeholder="CCS2, CHAdeMO, AC_Type2, GB/T, Other"
             required
-          />
+          >
+            {PLUG_TYPES.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Make</label>

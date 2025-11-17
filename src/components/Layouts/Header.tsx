@@ -71,6 +71,7 @@ export default function Header() {
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
   const [loadingNoti, setLoadingNoti] = useState(false);
   const [notiError, setNotiError] = useState<string|null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const vehicleToEdit = vehicles.find((v) => v.id === editingVehicle) ?? null;
 
   // Compute membership plan code for display (PRO, BASIC, FREE)
@@ -93,26 +94,57 @@ export default function Header() {
     setLoadingNoti(true);
     setNotiError(null);
     api.get("/notifications")
-      .then(res => setNotifications(res.data?.data || []))
-      .catch(e => setNotiError(e?.response?.data?.msg || e.message || "Lỗi tải thông báo"))
+      .then((res) => {
+        const payload = res.data || {};
+        const list = payload?.data ?? payload?.notifications ?? payload?.items ?? payload ?? [];
+        setNotifications(Array.isArray(list) ? list : []);
+        if (typeof payload?.unreadCount === 'number') {
+          setUnreadCount(payload.unreadCount);
+        } else {
+          const calc = (Array.isArray(list) ? list : []).filter((n: any) => !n.isRead).length;
+          setUnreadCount(calc);
+        }
+      })
+      .catch((e) => setNotiError(e?.response?.data?.msg || e.message || "Lỗi tải thông báo"))
       .finally(() => setLoadingNoti(false));
   }, [showNoti]);
 
   // Mark all as read
   const markAllRead = async () => {
     try {
-      await api.post("/notifications/read-all");
+      await api.patch("/notifications/read-all");
       setNotifications((n) => n.map((x) => ({ ...x, isRead: true, readAt: x.readAt || new Date().toISOString() })));
+      setUnreadCount(0);
     } catch (e) {
+      // If endpoint not implemented (404), gracefully mark locally so UX isn't blocked
+      const status = (e as any)?.response?.status;
+      if (status === 404) {
+        setNotifications((n) => n.map((x) => ({ ...x, isRead: true, readAt: x.readAt || new Date().toISOString() })));
+        setUnreadCount(0);
+        return;
+      }
       console.error("Failed to mark all notifications as read", e);
     }
   };
   // Mark one as read
   const markOneRead = async (id: string) => {
     try {
-      await api.post(`/notifications/${id}/read`);
+      await api.patch(`/notifications/${id}/read`);
       setNotifications((n) => n.map((x) => (x.id === id ? { ...x, isRead: true, readAt: x.readAt || new Date().toISOString() } : x)));
+      // decrement unreadCount only if it was previously unread
+      setUnreadCount((prev) => {
+        const found = notifications.find((x) => x.id === id);
+        if (found && !found.isRead) return Math.max(0, prev - 1);
+        return prev;
+      });
     } catch (e) {
+      const status = (e as any)?.response?.status;
+      if (status === 404) {
+        // fallback: mark locally
+        setNotifications((n) => n.map((x) => (x.id === id ? { ...x, isRead: true, readAt: x.readAt || new Date().toISOString() } : x)));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        return;
+      }
       console.error(`Failed to mark notification ${id} as read`, e);
     }
   };
@@ -206,7 +238,7 @@ export default function Header() {
                 aria-label="Thông báo"
               >
                 <Bell className="w-6 h-6 text-gray-700" />
-                {notifications.some(n => !n.isRead) && (
+                {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
                 )}
               </button>
