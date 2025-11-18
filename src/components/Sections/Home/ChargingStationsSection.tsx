@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Pagination from "@components/Ui/Pagination";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@redux/store/store";
-import { fetchStationsThunk } from "@redux/slice/Station/StationThunk";
+import { fetchCompatibleStationsThunk } from "@redux/slice/Station/StationThunk";
 
 const ChargingStationsSection: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,8 +17,8 @@ const ChargingStationsSection: React.FC = () => {
   console.log("ChargingStationsSection: stations ->", stations);
 
   useEffect(() => {
-    // fetch stations for this section
-    dispatch(fetchStationsThunk());
+    // fetch only compatible stations and prioritize nearby ones - handled by thunk
+    dispatch(fetchCompatibleStationsThunk());
   }, [dispatch]);
 
   const itemsPerPage = 6;

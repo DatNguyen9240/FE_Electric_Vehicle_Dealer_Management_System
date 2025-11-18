@@ -430,7 +430,6 @@ const StaffInvoices: React.FC = () => {
               {selected.pdf_url && (
                 <a href={selected.pdf_url} target="_blank" rel="noreferrer" className="px-3 py-1 border rounded">PDF</a>
               )}
-              <button onClick={() => setSelected(null)} className="px-3 py-1 border rounded">Close</button>
             </div>
           </div>
         </div>

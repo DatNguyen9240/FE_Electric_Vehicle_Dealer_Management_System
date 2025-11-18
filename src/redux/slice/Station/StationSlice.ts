@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchStationsThunk } from "./StationThunk";
+import { fetchStationsThunk, fetchCompatibleStationsThunk } from "./StationThunk";
 
 export interface Station {
   _id: string;
@@ -45,6 +45,19 @@ const stationSlice = createSlice({
       .addCase(fetchStationsThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string || "Lỗi lấy trạm";
+      });
+    builder
+      .addCase(fetchCompatibleStationsThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCompatibleStationsThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.stations = Array.isArray(action.payload) ? action.payload : [];
+      })
+      .addCase(fetchCompatibleStationsThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || "Lỗi lấy trạm tương thích";
       });
   },
 });

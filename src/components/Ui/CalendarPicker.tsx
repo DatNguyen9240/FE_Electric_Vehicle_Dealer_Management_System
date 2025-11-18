@@ -19,7 +19,8 @@ const CalendarPicker: React.FC<CalendarPickerProps> = ({
     modifiersClassNames={{
       selected: "custom-selected-day",
     }}
-    disabled={{ before: new Date() }}
+    // Disable days before today (allow selection of today and future)
+    disabled={{ before: new Date(new Date().setHours(0, 0, 0, 0)) }}
   />
 );
 

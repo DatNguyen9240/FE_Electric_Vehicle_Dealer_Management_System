@@ -23,7 +23,7 @@ import {
   SelectValue
 } from "@components/Ui/Select";
 
-import { User as UserIcon, LogOut, Wallet, ChevronDown, Edit3, Bell } from "lucide-react";
+import { User as UserIcon, LogOut, Wallet, ChevronDown, Edit3, Bell, Calendar } from "lucide-react";
 import NotificationItem, { type Notification as NotificationType } from "@components/Ui/NotificationItem";
 import api from "@libs/axios";
 import VehicleEditModal from "@components/Vehicle/VehicleEditModal";
@@ -72,6 +72,7 @@ export default function Header() {
   const [loadingNoti, setLoadingNoti] = useState(false);
   const [notiError, setNotiError] = useState<string|null>(null);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [mobileNotiOpen, setMobileNotiOpen] = useState(false);
   const vehicleToEdit = vehicles.find((v) => v.id === editingVehicle) ?? null;
 
   // Compute membership plan code for display (PRO, BASIC, FREE)
@@ -187,7 +188,7 @@ export default function Header() {
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" aria-label="Home">
           <img src={logo} alt="Logo" className="h-10 w-auto" />
@@ -344,6 +345,12 @@ export default function Header() {
                 <DropdownMenuItem asChild>
                   <Link to="/profile">Profile</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/my-bookings" className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    My Bookings
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
@@ -395,6 +402,54 @@ export default function Header() {
                 {n.label}
               </Link>
             ))}
+
+            {/* Mobile: Notifications */}
+            {cookieUser && (
+              <div className="pt-2 border-t">
+                <button
+                  onClick={async () => {
+                    setMobileNotiOpen((v) => !v);
+                    if (!mobileNotiOpen) {
+                      setLoadingNoti(true);
+                      setNotiError(null);
+                      try {
+                        const res = await api.get('/notifications');
+                        const payload = res.data || {};
+                        const list = payload?.data ?? payload?.notifications ?? payload?.items ?? payload ?? [];
+                        setNotifications(Array.isArray(list) ? list : []);
+                        if (typeof payload?.unreadCount === 'number') setUnreadCount(payload.unreadCount);
+                        else setUnreadCount((Array.isArray(list) ? list : []).filter((n:any) => !n.isRead).length);
+                      } catch (e) {
+                        setNotiError((e as any)?.response?.data?.msg ?? (e as any)?.message ?? 'Failed to load notifications');
+                      } finally {
+                        setLoadingNoti(false);
+                      }
+                    }
+                  }}
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-50 flex items-center justify-between"
+                >
+                  <span className="flex items-center gap-2"><Bell className="w-5 h-5" /> Notifications</span>
+                  {unreadCount > 0 && <span className="text-xs text-white bg-red-500 rounded-full px-2">{unreadCount}</span>}
+                </button>
+                {mobileNotiOpen && (
+                  <div className="mt-2 space-y-2">
+                    {loadingNoti ? (
+                      <div className="p-2 text-center text-gray-500">Loading...</div>
+                    ) : notiError ? (
+                      <div className="p-2 text-center text-red-500">{notiError}</div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-2 text-center text-gray-500">No notifications</div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div key={n.id} className="px-2 py-2 rounded hover:bg-gray-50">
+                          <NotificationItem notification={n} onClick={() => markOneRead(n.id)} />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="px-1">
               {vehicalLoading ? (
@@ -464,6 +519,16 @@ export default function Header() {
               >
                 Login
               </Button>
+            )}
+
+            {/* Mobile: wallet and user items */}
+            {cookieUser && (
+              <div className="pt-2">
+                <Link to="/wallet" className="block px-3 py-2 rounded hover:bg-gray-50">Wallet: {wallet?.balance !== undefined ? `${wallet.balance.toLocaleString()}₫` : '...'}</Link>
+                <Link to="/profile" className="block px-3 py-2 rounded hover:bg-gray-50">Profile</Link>
+                <Link to="/my-bookings" className="block px-3 py-2 rounded hover:bg-gray-50">My Bookings</Link>
+                <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-50" onClick={handleLogout}>Logout</button>
+              </div>
             )}
           </div>
         </div>

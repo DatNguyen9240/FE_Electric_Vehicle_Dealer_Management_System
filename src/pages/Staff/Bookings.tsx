@@ -32,7 +32,7 @@ const Bookings: React.FC = () => {
   const [pagination, setPagination] = React.useState({ page: 1, limit: 20, total: 0, pages: 0 });
   const [selected, setSelected] = React.useState<Booking | null>(null);
   
-  const { showToast, confirm } = useUi();
+  const { showToast } = useUi();
   
     const { setTitle } = useTitle();
   
@@ -145,21 +145,6 @@ const Bookings: React.FC = () => {
 
   // Proxy booking feature removed
 
-  const startFromBooking = async (bookingId?: string) => {
-    if (!bookingId) {
-      showToast("Missing booking id", "error");
-      return;
-    }
-    const ok = await confirm("Start session from this booking?");
-    if (!ok) return;
-    api
-      .post(`/sessions/start`, { bookingId, paymentMethod: "ONSITE" })
-      .then(() => {
-        showToast("Session started", "success");
-        fetch(page);
-      })
-      .catch(() => showToast("Failed to start session", "error"));
-  };
 
   return (
   <div className="w-full px-6 py-6">
@@ -330,12 +315,7 @@ const Bookings: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-3 flex gap-2">
-                      <button
-                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
-                        onClick={() => startFromBooking(b.id)}
-                      >
-                        Start
-                      </button>
+                      {/* Start action removed for staff list */}
                       <button
                         className="border border-gray-300 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium"
                         onClick={() => setSelected(b)}

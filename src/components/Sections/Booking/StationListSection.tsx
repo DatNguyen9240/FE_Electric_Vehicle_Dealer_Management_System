@@ -4,7 +4,7 @@ import StationCard from "@components/Ui/StationCard";
 import Pagination from "@components/Ui/Pagination";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@redux/store/store";
-import { fetchStationsThunk } from "@redux/slice/Station/StationThunk";
+import { fetchCompatibleStationsThunk } from "@redux/slice/Station/StationThunk";
 
 const StationListSection: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,7 +17,7 @@ const StationListSection: React.FC = () => {
   );
 
   useEffect(() => {
-    dispatch(fetchStationsThunk());
+    dispatch(fetchCompatibleStationsThunk());
   }, [dispatch]);
 
   const itemsPerPage = 6;

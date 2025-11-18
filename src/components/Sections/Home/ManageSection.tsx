@@ -30,19 +30,13 @@ const ManageSection: React.FC = () => {
             </svg>
           </button>
         </div>
-        {/* Image content */}
+        {/* Image content: replace dual-frame with single frame image */}
         <div className="w-full md:w-3/5 flex justify-center">
-          <div className="relative w-full max-w-xl">
+          <div className="w-full max-w-xl">
             <img
-              src="/frame/01.png"
-              alt="Browser"
+              src="/home/frame.png"
+              alt="App preview"
               className="w-full rounded-xl shadow-xl"
-            />
-            <img
-              src="/frame/02.png"
-              alt="Phone"
-              className="absolute left-1/2 bottom-0 w-2/5 min-w-[160px] -translate-x-1/2 translate-y-8 rounded-xl shadow-xl"
-              style={{ zIndex: 2 }}
             />
           </div>
         </div>

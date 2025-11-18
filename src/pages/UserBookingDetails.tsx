@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 // Booking form removed from right column per request
 import api from "@libs/axios";
@@ -42,6 +42,7 @@ const UserBookingDetails: React.FC = () => {
   
 
   const [connectors, setConnectors] = useState<Connector[]>([]);
+  const [blockedConnectorIds, setBlockedConnectorIds] = useState<Set<string>>(new Set());
   const [loadingConnectors, setLoadingConnectors] = useState(false);
   const [connectorsError, setConnectorsError] = useState<string | null>(null);
   useEffect(() => {
@@ -75,6 +76,17 @@ const UserBookingDetails: React.FC = () => {
     loadCharger();
   }, [chargerId]);
 
+  // read date from query param passed from slots page
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const dateParam = searchParams.get("date");
+    if (dateParam) {
+      // parse as local date: YYYY-MM-DD
+      const parsed = new Date(dateParam + "T00:00:00");
+      setSelectedDate(parsed);
+    }
+  }, [searchParams]);
+
   // helper to reset selection
   const clearSelection = () => {
     setSelectedDate(new Date());
@@ -83,9 +95,60 @@ const UserBookingDetails: React.FC = () => {
 
   const [booking, setBooking] = useState(false);
 
+  // mark connectors that are blocked for the selected time using available-slots
+  useEffect(() => {
+    const fetchSlotAvailability = async () => {
+      try {
+        if (!selectedTimeSlot || !selectedDate || !stationId || connectors.length === 0) return;
+
+        const sel = selectedDate;
+        const yyyy = sel.getFullYear();
+        const mm = String(sel.getMonth() + 1).padStart(2, "0");
+        const dd = String(sel.getDate()).padStart(2, "0");
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        const res = await api.get('/bookings/available-slots', { params: { stationId, date: dateStr } });
+        const slots = res.data?.availableSlots ?? [];
+
+        // find the exact slot that matches selectedTimeSlot (HH:mm)
+        const target = slots.find((s: any) => {
+          const d = new Date(s.slotStart);
+          const hh = String(d.getHours()).padStart(2, '0');
+          const mm = String(d.getMinutes()).padStart(2, '0');
+          return `${hh}:${mm}` === selectedTimeSlot;
+        });
+
+        const availableIds = new Set<string>();
+        if (target && Array.isArray(target.availableConnectors)) {
+          for (const c of target.availableConnectors) {
+            if (c?.connectorId) availableIds.add(String(c.connectorId));
+          }
+        }
+
+        // All connectors present on the charger but NOT in availableIds are blocked
+        const blocked = new Set<string>();
+        for (const c of connectors) {
+          if (!availableIds.has(String(c.id))) blocked.add(String(c.id));
+        }
+
+        setBlockedConnectorIds(blocked);
+      } catch (err) {
+        console.error('Error fetching available slots for booking details', err);
+      }
+    };
+
+    fetchSlotAvailability();
+  }, [selectedTimeSlot, selectedDate, stationId, connectors]);
+
   const bookConnector = async () => {
     if (!selectedConnector) {
       toast.error("Please select a connector first.");
+      return;
+    }
+
+    // Avoid race where selected connector is blocked
+    if (blockedConnectorIds.has(String(selectedConnector))) {
+      toast.error("The selected connector is already booked for this time slot. Please choose another connector.");
       return;
     }
 
@@ -162,18 +225,22 @@ const UserBookingDetails: React.FC = () => {
                   ) : (
                     connectors.map((connector: Connector) => {
                       const isAvailable = connector.status === "Available";
+                      const isBlocked = blockedConnectorIds.has(String(connector.id));
                       const isSelected = selectedConnector === connector.id;
 
                       return (
                         <div
                           key={connector.id}
                           onClick={() => {
-                            if (isAvailable) {
-                              setSelectedConnector(isSelected ? null : connector.id);
+                            if (!isAvailable) return;
+                            if (isBlocked) {
+                              toast.warn('This connector is already booked for the selected slot.');
+                              return;
                             }
+                            setSelectedConnector(isSelected ? null : connector.id);
                           }}
                           className={`relative border-2 rounded-xl p-6 transition-all ${
-                            !isAvailable ? "opacity-50 cursor-not-allowed bg-gray-50" : "cursor-pointer hover:shadow-md"
+                            !isAvailable || isBlocked ? "opacity-50 cursor-not-allowed bg-gray-50" : "cursor-pointer hover:shadow-md"
                           } ${isSelected ? "border-blue-600 bg-blue-50 shadow-lg" : "border-gray-200 hover:border-blue-300"}`}
                         >
                         {/* Selected Badge or Disabled Badge */}
@@ -197,7 +264,16 @@ const UserBookingDetails: React.FC = () => {
                             </div>
                           </div>
                         )}
-                        {!isAvailable && (
+                        {isBlocked && (
+                          <div className="absolute top-4 right-4">
+                            <div className="bg-orange-600 text-white rounded-full p-1" title="Booked">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                        {!isBlocked && !isAvailable && (
                           <div className="absolute top-4 right-4">
                             <div className="bg-gray-400 text-white rounded-full p-1">
                               <svg
@@ -222,11 +298,11 @@ const UserBookingDetails: React.FC = () => {
                         <div className="flex items-center justify-center mb-4">
                           <div
                             className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                              !isAvailable
+                              !isAvailable || isBlocked
                                 ? "bg-gray-300"
-                                : isSelected
-                                ? "bg-blue-600"
-                                : "bg-gray-100"
+                                  : isSelected
+                                  ? "bg-blue-600"
+                                  : "bg-gray-100"
                             }`}
                           >
                             <svg
@@ -235,7 +311,7 @@ const UserBookingDetails: React.FC = () => {
                               viewBox="0 0 24 24"
                               fill="none"
                               className={
-                                !isAvailable
+                                !isAvailable || isBlocked
                                   ? "text-gray-500"
                                   : isSelected
                                   ? "text-white"
@@ -273,8 +349,8 @@ const UserBookingDetails: React.FC = () => {
                               Type:{" "}
                               <span
                                 className={`font-semibold ${
-                                  !isAvailable
-                                    ? "text-gray-500"
+                                  isAvailable && !isBlocked
+                                    ? "bg-green-100 text-green-700"
                                     : "text-gray-900"
                                 }`}
                               >
@@ -300,14 +376,14 @@ const UserBookingDetails: React.FC = () => {
                             <div className="mt-3">
                               <span
                                 className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                                  isAvailable
+                                  isAvailable && !isBlocked
                                     ? "bg-green-100 text-green-700"
                                     : connector.status === "Charging"
                                     ? "bg-red-100 text-red-700"
                                     : "bg-yellow-100 text-yellow-700"
                                 }`}
                               >
-                                {connector.status}
+                                {isBlocked ? "Booked" : connector.status}
                               </span>
                             </div>
                             {connector.remainingTime && (
@@ -337,7 +413,7 @@ const UserBookingDetails: React.FC = () => {
                       type="button"
                       className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50"
                       onClick={bookConnector}
-                      disabled={!selectedConnector || booking}
+                      disabled={!selectedConnector || booking || blockedConnectorIds.has(String(selectedConnector))}
                     >
                       {booking ? "Booking..." : "Book selected connector"}
                     </button>

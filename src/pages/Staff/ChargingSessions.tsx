@@ -34,7 +34,7 @@ const ChargingSessions: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [preview, setPreview] = React.useState<any | null>(null);
   const [previewLoading, setPreviewLoading] = React.useState(false);
-  const [note, setNote] = React.useState<string>('');
+  // note input removed - preview only
   const [invoiceStatusMap, setInvoiceStatusMap] = React.useState<Record<string, string>>({});
 
     const { setTitle } = useTitle();
@@ -208,7 +208,6 @@ const ChargingSessions: React.FC = () => {
       const res = await api.get(`/staff/sessions/${sessionId}/invoice`);
       const d = res.data as any;
       setPreview({ session: d.session, invoice: d.invoice, sessionId });
-      setNote('');
     } catch (err) {
       console.error(err);
       showToast('Failed to load invoice preview', 'error');
@@ -217,20 +216,7 @@ const ChargingSessions: React.FC = () => {
     }
   };
 
-  const recordFromPreview = async () => {
-    if (!preview?.sessionId) return showToast('Missing session id', 'error');
-    try {
-      await api.post('/staff/payments/onsite', { sessionId: preview.sessionId, method: 'CASH', note: note || undefined });
-      showToast('Onsite payment recorded', 'success');
-      // mark invoice as paid in local map so UI updates
-      setInvoiceStatusMap((m) => ({ ...(m || {}), [preview.sessionId]: 'PAID' }));
-      setPreview(null);
-      fetch(page);
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to record payment', 'error');
-    }
-  };
+  // recordFromPreview removed - preview only
 
   const getStatusBadge = (status?: string | null) => {
     const base = "px-2 py-1 rounded-full text-xs font-medium";
@@ -413,14 +399,15 @@ const ChargingSessions: React.FC = () => {
                     ) : s.status === "COMPLETED" ? (
                       (() => {
                         const sid = s.id ?? s._id;
-                        const isUnpaid = sid ? invoiceStatusMap[sid] === 'UNPAID' : false;
-                        return isUnpaid ? (
+                        // Only show invoice preview (no record action) when invoice exists
+                        const hasInvoice = sid ? Boolean(invoiceStatusMap[sid]) : false;
+                        return hasInvoice ? (
                           <button
                             onClick={() => openInvoicePreview(sid)}
                             className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs transition"
                           >
                             <Eye size={14} />
-                            Record payment
+                            View invoice
                           </button>
                         ) : (
                           <span className="text-gray-500 text-xs">{sid && invoiceStatusMap[sid] ? invoiceStatusMap[sid] : '—'}</span>
@@ -499,15 +486,9 @@ const ChargingSessions: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-xs text-gray-500">Note (optional)</label>
-                  <input value={note} onChange={(e) => setNote(e.target.value)} className="w-full border border-gray-200 rounded px-2 py-1 mt-1 text-sm" />
-                </div>
+         
 
-                <div className="flex items-center justify-end gap-2">
-                  <button onClick={() => setPreview(null)} className="px-3 py-1 border rounded">Close</button>
-                  <button onClick={recordFromPreview} className="px-3 py-1 bg-indigo-600 text-white rounded">Record payment</button>
-                </div>
+                {/* Footer removed - actions moved elsewhere */}
               </div>
             )}
           </div>

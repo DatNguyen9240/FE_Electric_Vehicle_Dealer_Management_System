@@ -27,6 +27,7 @@ const ChargingHistory = lazy(() => import("@pages/ChargingHistory"));
 const UserProfile = lazy(() => import("@pages/UserProfile"));
 const UserChargerList = lazy(() => import("@pages/ChargerList"));
 const UserBookingDetails = lazy(() => import("@pages/UserBookingDetails"));
+const MyBookings = lazy(() => import("@pages/MyBookings"));
 const PurchaseMembership = lazy(
   () => import("@pages/PurchaseMembership")
 );
@@ -175,6 +176,7 @@ export default function AppRoutes() {
             path="/booking/station/:stationId/charger/:chargerId/book/:timeSlot"
             element={createLazyRoute(UserBookingDetails, "Loading booking details...")}
           />
+          <Route path="/my-bookings" element={createLazyRoute(MyBookings, "Loading my bookings...")} />
           <Route
             path="/charging-history"
             element={createLazyRoute(ChargingHistory, "Loading charging history...")}
