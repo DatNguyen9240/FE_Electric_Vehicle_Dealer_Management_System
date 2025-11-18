@@ -230,42 +230,6 @@ export default function Header() {
 
         {/* Right */}
         <div className="flex items-center space-x-3">
-          {/* Notification Bell */}
-          {cookieUser && (
-            <div className="relative">
-              <button
-                className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
-                onClick={() => setShowNoti(v => !v)}
-                aria-label="Thông báo"
-              >
-                <Bell className="w-6 h-6 text-gray-700" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-                )}
-              </button>
-              {showNoti && (
-                <div ref={notiPopupRef} className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white border rounded-xl shadow-lg z-50">
-                  <div className="flex items-center justify-between px-4 py-2 border-b">
-                    <span className="font-semibold">Thông báo</span>
-                    <button className="text-xs text-blue-600 hover:underline" onClick={markAllRead}>Đánh dấu đã đọc tất cả</button>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto divide-y">
-                    {loadingNoti ? (
-                      <div className="p-4 text-center text-gray-500">Đang tải...</div>
-                    ) : notiError ? (
-                      <div className="p-4 text-center text-red-500">{notiError}</div>
-                    ) : notifications.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500">Không có thông báo</div>
-                    ) : notifications.map(noti => (
-                      <div key={noti.id} className="hover:bg-gray-50 transition">
-                        <NotificationItem notification={noti} onClick={() => markOneRead(noti.id)} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
           {/* Wallet */}
           {cookieUser && (
             <Link
@@ -276,6 +240,7 @@ export default function Header() {
               <span>{wallet?.balance !== undefined ? `${wallet.balance.toLocaleString()}₫` : "..."}</span>
             </Link>
           )}
+          
 
           {/* Vehicle Select or register button */}
           <div className="hidden md:block">
@@ -330,6 +295,43 @@ export default function Header() {
             )}
           </div>
 
+          {/* Notification Bell (moved next to user account) */}
+          {cookieUser && (
+            <div className="relative">
+              <button
+                className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+                onClick={() => setShowNoti(v => !v)}
+                aria-label="Thông báo"
+              >
+                <Bell className="w-6 h-6 text-gray-700" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+              </button>
+              {showNoti && (
+                <div ref={notiPopupRef} className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white border rounded-xl shadow-lg z-50">
+                  <div className="flex items-center justify-between px-4 py-2 border-b">
+                    <span className="font-semibold">Thông báo</span>
+                    <button className="text-xs text-blue-600 hover:underline" onClick={markAllRead}>Đánh dấu đã đọc tất cả</button>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto divide-y">
+                    {loadingNoti ? (
+                      <div className="p-4 text-center text-gray-500">Đang tải...</div>
+                    ) : notiError ? (
+                      <div className="p-4 text-center text-red-500">{notiError}</div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">Không có thông báo</div>
+                    ) : notifications.map(noti => (
+                      <div key={noti.id} className="hover:bg-gray-50 transition">
+                        <NotificationItem notification={noti} onClick={() => markOneRead(noti.id)} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* User */}
           {cookieUser ? (
             <DropdownMenu>
@@ -343,7 +345,10 @@ export default function Header() {
                   </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem asChild>
-                  <Link to="/profile">Profile</Link>
+                  <Link to="/profile" className="flex items-center">
+                    <UserIcon className="w-4 h-4 mr-2" />
+                    Profile
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/my-bookings" className="flex items-center">
@@ -525,7 +530,9 @@ export default function Header() {
             {cookieUser && (
               <div className="pt-2">
                 <Link to="/wallet" className="block px-3 py-2 rounded hover:bg-gray-50">Wallet: {wallet?.balance !== undefined ? `${wallet.balance.toLocaleString()}₫` : '...'}</Link>
-                <Link to="/profile" className="block px-3 py-2 rounded hover:bg-gray-50">Profile</Link>
+                <Link to="/profile" className="block px-3 py-2 rounded hover:bg-gray-50 flex items-center">
+                  <UserIcon className="w-4 h-4 mr-2" /> Profile
+                </Link>
                 <Link to="/my-bookings" className="block px-3 py-2 rounded hover:bg-gray-50">My Bookings</Link>
                 <button className="w-full text-left px-3 py-2 rounded hover:bg-gray-50" onClick={handleLogout}>Logout</button>
               </div>
