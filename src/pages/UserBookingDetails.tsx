@@ -42,7 +42,7 @@ const UserBookingDetails: React.FC = () => {
   
 
   const [connectors, setConnectors] = useState<Connector[]>([]);
-  const [blockedConnectorIds, setBlockedConnectorIds] = useState<Set<string>>(new Set());
+  // Previously we tracked blocked connectors from available-slots; now we allow selecting any connector
   const [loadingConnectors, setLoadingConnectors] = useState(false);
   const [connectorsError, setConnectorsError] = useState<string | null>(null);
   useEffect(() => {
@@ -95,50 +95,7 @@ const UserBookingDetails: React.FC = () => {
 
   const [booking, setBooking] = useState(false);
 
-  // mark connectors that are blocked for the selected time using available-slots
-  useEffect(() => {
-    const fetchSlotAvailability = async () => {
-      try {
-        if (!selectedTimeSlot || !selectedDate || !stationId || connectors.length === 0) return;
-
-        const sel = selectedDate;
-        const yyyy = sel.getFullYear();
-        const mm = String(sel.getMonth() + 1).padStart(2, "0");
-        const dd = String(sel.getDate()).padStart(2, "0");
-        const dateStr = `${yyyy}-${mm}-${dd}`;
-
-        const res = await api.get('/bookings/available-slots', { params: { stationId, date: dateStr } });
-        const slots = res.data?.availableSlots ?? [];
-
-        // find the exact slot that matches selectedTimeSlot (HH:mm)
-        const target = slots.find((s: any) => {
-          const d = new Date(s.slotStart);
-          const hh = String(d.getHours()).padStart(2, '0');
-          const mm = String(d.getMinutes()).padStart(2, '0');
-          return `${hh}:${mm}` === selectedTimeSlot;
-        });
-
-        const availableIds = new Set<string>();
-        if (target && Array.isArray(target.availableConnectors)) {
-          for (const c of target.availableConnectors) {
-            if (c?.connectorId) availableIds.add(String(c.connectorId));
-          }
-        }
-
-        // All connectors present on the charger but NOT in availableIds are blocked
-        const blocked = new Set<string>();
-        for (const c of connectors) {
-          if (!availableIds.has(String(c.id))) blocked.add(String(c.id));
-        }
-
-        setBlockedConnectorIds(blocked);
-      } catch (err) {
-        console.error('Error fetching available slots for booking details', err);
-      }
-    };
-
-    fetchSlotAvailability();
-  }, [selectedTimeSlot, selectedDate, stationId, connectors]);
+  // Block logic removed — allow selection and attempt to book any connector.
 
   const bookConnector = async () => {
     if (!selectedConnector) {
@@ -146,11 +103,7 @@ const UserBookingDetails: React.FC = () => {
       return;
     }
 
-    // Avoid race where selected connector is blocked
-    if (blockedConnectorIds.has(String(selectedConnector))) {
-      toast.error("The selected connector is already booked for this time slot. Please choose another connector.");
-      return;
-    }
+    // Removed block guard: allow booking attempt — server will enforce availability and return an error if required.
 
     // build slotStart from selectedDate + selectedTimeSlot (HH:mm)
     try {
@@ -225,22 +178,19 @@ const UserBookingDetails: React.FC = () => {
                   ) : (
                     connectors.map((connector: Connector) => {
                       const isAvailable = connector.status === "Available";
-                      const isBlocked = blockedConnectorIds.has(String(connector.id));
+                      // Block tracking removed — any connector can be selected
+                      const isBlocked = false;
                       const isSelected = selectedConnector === connector.id;
 
                       return (
                         <div
                           key={connector.id}
                           onClick={() => {
-                            if (!isAvailable) return;
-                            if (isBlocked) {
-                              toast.warn('This connector is already booked for the selected slot.');
-                              return;
-                            }
+                            // Always allow selecting a connector to view details; do not show any toast or message.
                             setSelectedConnector(isSelected ? null : connector.id);
                           }}
                           className={`relative border-2 rounded-xl p-6 transition-all ${
-                            !isAvailable || isBlocked ? "opacity-50 cursor-not-allowed bg-gray-50" : "cursor-pointer hover:shadow-md"
+                             !isAvailable ? "opacity-80 bg-gray-50" : "cursor-pointer hover:shadow-md"
                           } ${isSelected ? "border-blue-600 bg-blue-50 shadow-lg" : "border-gray-200 hover:border-blue-300"}`}
                         >
                         {/* Selected Badge or Disabled Badge */}
@@ -264,15 +214,7 @@ const UserBookingDetails: React.FC = () => {
                             </div>
                           </div>
                         )}
-                        {isBlocked && (
-                          <div className="absolute top-4 right-4">
-                            <div className="bg-orange-600 text-white rounded-full p-1" title="Booked">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                              </svg>
-                            </div>
-                          </div>
-                        )}
+                        {/* Booked indicator removed — connectors are selectable regardless of blocked state. */}
                         {!isBlocked && !isAvailable && (
                           <div className="absolute top-4 right-4">
                             <div className="bg-gray-400 text-white rounded-full p-1">
@@ -413,7 +355,7 @@ const UserBookingDetails: React.FC = () => {
                       type="button"
                       className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50"
                       onClick={bookConnector}
-                      disabled={!selectedConnector || booking || blockedConnectorIds.has(String(selectedConnector))}
+                      disabled={!selectedConnector || booking}
                     >
                       {booking ? "Booking..." : "Book selected connector"}
                     </button>

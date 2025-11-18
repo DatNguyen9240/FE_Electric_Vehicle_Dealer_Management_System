@@ -517,7 +517,7 @@ const UserProfile: React.FC = () => {
                 </div>
               ) : vehicles.length === 0 ? (
                 <Button variant="default" onClick={() => navigate("/vehicles/new")}>
-                  Đăng ký xe
+                  Register Vehicle
                 </Button>
               ) : !isEditing ? (
                 // non-interactive label-like trigger when not editing

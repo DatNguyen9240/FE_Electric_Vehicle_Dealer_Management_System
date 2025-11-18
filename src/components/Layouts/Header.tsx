@@ -285,7 +285,7 @@ export default function Header() {
               </div>
             ) : cookieUser && vehicles.length === 0 ? (
               <Button variant="default" onClick={() => navigate("/vehicles/new")}> 
-                Đăng ký xe
+                Resigter Vehicle
               </Button>
             ) : (
               <Select
