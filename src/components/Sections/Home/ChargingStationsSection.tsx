@@ -33,9 +33,7 @@ const ChargingStationsSection: React.FC = () => {
     navigate(`/booking/station/${stationId}`);
   };
 
-  const handleViewDetails = (stationId: string) => {
-    navigate(`/station/${stationId}`);
-  };
+  // Details view removed: station details are not shown from the Home cards
 
   return (
     <section className="w-full bg-white py-8">
@@ -67,7 +65,6 @@ const ChargingStationsSection: React.FC = () => {
                   lng={station.lng}
                   address={station.location?.coordinates ? `${station.location.coordinates[1]}, ${station.location.coordinates[0]}` : ""}
                   onBookNow={() => handleBookNow(station._id)}
-                  onViewDetails={() => handleViewDetails(station._id)}
                 />
               ))}
             </div>

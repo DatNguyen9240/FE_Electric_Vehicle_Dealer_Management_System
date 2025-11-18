@@ -70,9 +70,7 @@ const ActiveStationsSection: React.FC = () => {
     navigate(`/booking/${stationId}`);
   };
 
-  const handleViewDetails = (stationId: number) => {
-    navigate(`/station/${stationId}`);
-  };
+  // Details removed on home cards; station search/list pages still allow station detail view if needed.
 
   const handleViewAll = () => {
     navigate("/stations");
@@ -105,7 +103,6 @@ const ActiveStationsSection: React.FC = () => {
               key={station.id}
               {...station}
               onBookNow={() => handleBookNow(station.id)}
-              onViewDetails={() => handleViewDetails(station.id)}
             />
           ))}
         </div>

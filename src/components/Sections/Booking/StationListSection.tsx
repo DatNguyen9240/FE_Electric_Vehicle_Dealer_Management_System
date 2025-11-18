@@ -32,9 +32,7 @@ const StationListSection: React.FC = () => {
     navigate(`/booking/station/${stationId}`);
   };
 
-  const handleViewDetails = (stationId: string) => {
-    navigate(`/station/${stationId}`);
-  };
+  // Station details removed from the list cards. Use the station page for full details.
 
   return (
     <section className="w-full py-12 bg-white">
@@ -56,7 +54,6 @@ const StationListSection: React.FC = () => {
                   status={station.status}
                   address={`${station.location.coordinates[1]}, ${station.location.coordinates[0]}`}
                   onBookNow={() => handleBookNow(station._id)}
-                  onViewDetails={() => handleViewDetails(station._id)}
                 />
               ))}
             </div>

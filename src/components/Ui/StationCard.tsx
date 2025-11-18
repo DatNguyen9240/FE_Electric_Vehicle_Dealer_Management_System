@@ -7,7 +7,7 @@ interface StationCardProps {
   lng?: number;
   address: string;
   onBookNow?: () => void;
-  onViewDetails?: () => void;
+  // onViewDetails removed — details button intentionally omitted from station cards
   onShowMap?: () => void;
 }
 
@@ -18,7 +18,6 @@ const StationCard: React.FC<StationCardProps> = ({
   lng,
   address,
   onBookNow,
-  onViewDetails,
   onShowMap,
 }) => {
   return (
@@ -70,12 +69,7 @@ const StationCard: React.FC<StationCardProps> = ({
           >
             Book Now
           </button>
-          <button
-            onClick={onViewDetails}
-            className="flex-1 min-w-[120px] border border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold py-3 px-6 rounded-lg transition-colors text-base shadow"
-          >
-            Details
-          </button>
+          {/* Removed Details button as per UI update request; keep Book Now and Show Map */}
           <button
             onClick={() => {
               // If consumer provided an onShowMap callback, call it. Otherwise open Google Maps.
