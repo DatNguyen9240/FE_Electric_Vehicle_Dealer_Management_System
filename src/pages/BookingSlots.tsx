@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 
 const BookingSlots: React.FC = () => {
   const navigate = useNavigate();
-  const { stationId, chargerId } = useParams<{ stationId: string; chargerId: string }>();
+  const { stationId } = useParams<{ stationId: string; chargerId: string }>();
 
   return (
     <div className="min-h-screen bg-gray-50">
