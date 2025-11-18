@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import api from "@libs/axios";
-import { X } from "lucide-react";
+// removed modal/close icon by request
 import { useUi } from "../contexts/uiContextCore";
 import { useTitle } from "@contexts";
 
@@ -10,6 +10,9 @@ type Booking = {
   reference?: string;
   station?: { name?: string } | null;
   connector?: { code?: string } | null;
+  stationName?: string;
+  chargerName?: string;
+  connectorName?: string;
   slotStart?: string | null;
   slotEnd?: string | null;
   status?: string;
@@ -23,7 +26,7 @@ type Booking = {
 const MyBookings: React.FC = () => {
   const [list, setList] = React.useState<Booking[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [selected, setSelected] = React.useState<Booking | null>(null);
+  // selection and details removed — actions are disabled
 
   const { showToast, confirm } = useUi();
   const { setTitle } = useTitle();
@@ -52,6 +55,7 @@ const MyBookings: React.FC = () => {
     fetch();
   }, []);
 
+  // Restore cancel action only (user requested cancel button visible)
   const cancelBooking = async (id?: string) => {
     if (!id) return showToast("Missing booking id", "error");
     const ok = await confirm("Cancel this booking?");
@@ -63,18 +67,6 @@ const MyBookings: React.FC = () => {
     } catch (err) {
       console.error(err);
       showToast("Failed to cancel booking", "error");
-    }
-  };
-
-  const tryCheckIn = async (id?: string, paymentMethod?: string | null) => {
-    if (!id) return showToast("Missing booking id", "error");
-    try {
-      await api.post(`/sessions/start`, { bookingId: id, paymentMethod: paymentMethod ?? "WALLET" });
-      showToast("Session started", "success");
-      fetch();
-    } catch (err: any) {
-      console.error(err);
-      showToast(err?.response?.data?.msg ?? err?.message ?? "Failed to start session", "error");
     }
   };
 
@@ -101,18 +93,19 @@ const MyBookings: React.FC = () => {
                   <th className="p-3 text-left">Payment</th>
                   <th className="p-3 text-left">Status</th>
                   <th className="p-3 text-left">Actions</th>
+                  {/* Actions column removed */}
                 </tr>
               </thead>
               <tbody>
                 {list.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-6 text-gray-500">No bookings found.</td>
+                      <td colSpan={7} className="text-center py-6 text-gray-500">No bookings found.</td>
                   </tr>
                 ) : (
                   list.map((b, i) => (
                     <tr key={b.id ?? b._id ?? i} className="border-t hover:bg-gray-50 transition">
-                      <td className="p-3">{b.station?.name ?? '-'}</td>
-                      <td className="p-3">{b.connector?.code ?? '-'}</td>
+                      <td className="p-3">{b.station?.name ?? b.stationName ?? '-'}</td>
+                      <td className="p-3">{b.connector?.code ?? b.connectorName ?? b.chargerName ?? '-'}</td>
                       <td className="p-3">{b.slotStart ? `${new Date(b.slotStart).toLocaleString()} - ${new Date(b.slotEnd ?? b.slotStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '-'}</td>
                       <td className="p-3">{b.vehicle ? `${b.vehicle.make ?? ''} ${b.vehicle.model ?? ''}`.trim() : '-'}</td>
                       <td className="p-3">{b.vehicle?.licensePlate ?? '-'}</td>
@@ -125,15 +118,11 @@ const MyBookings: React.FC = () => {
                           <div className="text-xs text-gray-500 mt-1">Check-in: {new Date(b.checkInDeadline).toLocaleString()}</div>
                         )}
                       </td>
-                      <td className="p-3 flex gap-2">
-                        <button className="px-3 py-1 bg-blue-600 text-white rounded text-xs" onClick={() => setSelected(b)}>Details</button>
-                        {b.status === 'RESERVED' && (
-                          <>
-                            <button className="px-3 py-1 border rounded text-xs" onClick={() => cancelBooking(b.id)}>Cancel</button>
-                            {b.checkInDeadline && new Date(b.checkInDeadline).getTime() > Date.now() && (
-                              <button className="px-3 py-1 bg-emerald-600 text-white rounded text-xs" onClick={() => tryCheckIn(b.id, b.paymentMethod)}>Check-in</button>
-                            )}
-                          </>
+                      <td className="p-3">
+                        {b.status === 'RESERVED' ? (
+                          <button className="px-3 py-1 border rounded text-xs" onClick={() => cancelBooking(b.id)}>Cancel</button>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
                         )}
                       </td>
                     </tr>
@@ -144,44 +133,7 @@ const MyBookings: React.FC = () => {
           </div>
         )}
       </div>
-
-      {selected && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 w-[95%] max-w-2xl relative">
-            <button
-              onClick={() => setSelected(null)}
-              className="absolute top-3 right-3 p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label="Close"
-              title="Close"
-            >
-              <X size={22} className="text-gray-600" />
-            </button>
-            <h3 className="text-lg font-semibold mb-4">Booking details</h3>
-            <div className="text-sm text-gray-700 space-y-2">
-              <div><strong>Station:</strong> {selected.station?.name ?? '-'}</div>
-              <div><strong>Connector:</strong> {selected.connector?.code ?? '-'}</div>
-              <div><strong>Slot start:</strong> {selected.slotStart ? new Date(selected.slotStart).toLocaleString() : '-'}</div>
-              <div><strong>Slot end:</strong> {selected.slotEnd ? new Date(selected.slotEnd).toLocaleString() : '-'}</div>
-              <div><strong>Vehicle:</strong> {selected.vehicle ? `${selected.vehicle.make ?? ''} ${selected.vehicle.model ?? ''}`.trim() : '-'}</div>
-              <div><strong>License plate:</strong> {selected.vehicle?.licensePlate ?? '-'}</div>
-              <div><strong>Payment:</strong> {selected.isPaid ? 'Paid' : 'Unpaid'} {selected.paymentMethod ? ` · ${selected.paymentMethod}` : ''}</div>
-              {selected.checkInDeadline && (
-                <div><strong>Check-in deadline:</strong> {new Date(selected.checkInDeadline).toLocaleString()}</div>
-              )}
-              <div><strong>Status:</strong> {selected.status}</div>
-            </div>
-            <div className="mt-4 flex items-center gap-2">
-              {selected.status === 'RESERVED' && selected.checkInDeadline && new Date(selected.checkInDeadline).getTime() > Date.now() && (
-                <button className="px-3 py-1 bg-emerald-600 text-white rounded" onClick={() => { tryCheckIn(selected.id, selected.paymentMethod); setSelected(null); }}>Check-in / Start</button>
-              )}
-
-              {selected.status === 'RESERVED' && (
-                <button className="px-3 py-1 border rounded" onClick={() => { cancelBooking(selected.id); setSelected(null); }}>Cancel</button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Details modal removed - actions are intentionally omitted */}
     </div>
   );
 };

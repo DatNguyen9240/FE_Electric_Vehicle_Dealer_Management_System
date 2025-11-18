@@ -38,7 +38,7 @@ export const fetchCompatibleStationsThunk = createAsyncThunk(
           });
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
-          const nearRes = await api.get("/stations", { params: { near: `${lat},${lng}`, radiusKm: 10 } });
+          const nearRes = await api.get("/stations", { params: { near: `${lat},${lng}`, radiusKm: 30 } });
           const dn: any = nearRes.data;
           nearList = Array.isArray(dn) ? dn : Array.isArray(dn?.stations) ? dn.stations : Array.isArray(dn?.items) ? dn.items : [];
         } catch (e) {

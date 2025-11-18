@@ -23,7 +23,7 @@ const BookingSlots: React.FC = () => {
             Select Time Slot
           </h1>
           <p className="text-gray-600 text-md ms-5">
-            Charger {chargerId} - Choose your preferred charging time
+            Choose your preferred charging time
           </p>
         </div>
 

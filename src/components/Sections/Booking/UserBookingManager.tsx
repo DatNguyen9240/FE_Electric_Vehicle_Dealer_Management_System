@@ -5,42 +5,11 @@ import { useTitle } from "@contexts";
 import api from "@libs/axios";
 import { useUi } from "../../../contexts/uiContextCore";
 
-const timeSlots = [
-  "07:00",
-  "07:30",
-  "08:00",
-  "08:30",
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "12:30",
-  "13:00",
-  "13:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-  "18:00",
-  "18:30",
-  "19:00",
-  "19:30",
-  "20:00",
-  "20:30",
-  "21:00",
-  "21:30",
-  "22:00",
-  "22:30",
-  "23:00",
-  "23:30",
-];
+const timeSlots = Array.from({ length: 24 * 2 }, (_, i) => {
+  const hour = String(Math.floor(i / 2)).padStart(2, "0");
+  const minute = i % 2 === 0 ? "00" : "30";
+  return `${hour}:${minute}`;
+});
 
 // removed static slot type
 const UserBookingManager: React.FC = () => {
@@ -166,10 +135,9 @@ const UserBookingManager: React.FC = () => {
                   slotDate.setHours(hh, mm, 0, 0);
                   return slotDate > today; // only future times
                 }
-                // keep only time slots provided by backend via availableMap
-                // if still loading slots, show nothing so loading UI can render
+                // show all 24h for the selected day (hide only while loading slots so loading UI renders)
                 if (loadingSlots) return false;
-                return typeof availableMap[time] !== "undefined";
+                return true;
               });
               if (loadingSlots) {
                 return (
