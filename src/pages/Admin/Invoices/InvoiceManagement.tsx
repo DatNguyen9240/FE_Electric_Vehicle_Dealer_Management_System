@@ -3,6 +3,14 @@ import { Search, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import api from "@libs/axios";
 import { useTitle } from "@contexts";
 
+type UserSummary = {
+  id?: string;
+  _id?: string;
+  name?: string;
+  fullName?: string;
+  email?: string;
+};
+
 type InvoiceItem = {
   _id?: string;
   id?: string;
@@ -95,10 +103,43 @@ const InvoiceManagement: React.FC = () => {
   const [rows, setRows] = React.useState<InvoiceItem[]>([]);
   const [total, setTotal] = React.useState(0);
   const [pages, setPages] = React.useState(0);
+  const [usersMap, setUsersMap] = React.useState<Record<string, UserSummary>>({});
+  const [loadingUsers, setLoadingUsers] = React.useState(false);
 
   React.useEffect(() => {
     setTitle("Invoice Management");
   }, [setTitle]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const fetchUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        const res = await api.get("/users");
+        const list = Array.isArray(res.data) ? res.data : res.data?.users || [];
+        const map: Record<string, UserSummary> = {};
+        list.forEach((user: UserSummary) => {
+          const key = user?.id || user?._id;
+          if (key) {
+            map[key] = user;
+          }
+        });
+        if (!cancelled) {
+          setUsersMap(map);
+        }
+      } catch (error) {
+        console.error("Failed to load users for invoices table", error);
+      } finally {
+        if (!cancelled) {
+          setLoadingUsers(false);
+        }
+      }
+    };
+    fetchUsers();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchData = React.useCallback(async () => {
     setLoading(true);
@@ -138,7 +179,15 @@ const InvoiceManagement: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  
+  const getUserName = React.useCallback(
+    (userId?: string) => {
+      if (!userId) return "—";
+      const user = usersMap[userId];
+      if (!user) return userId;
+      return user.name || user.fullName || user.email || userId;
+    },
+    [usersMap]
+  );
 
   const onSortToggle = (field: string) => {
     setPage(1);
@@ -280,7 +329,7 @@ const InvoiceManagement: React.FC = () => {
                       {invoice.session_id || "—"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {invoice.user_id || "—"}
+                      {loadingUsers ? "Loading..." : getUserName(invoice.user_id)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {formatCurrency(invoice.total, invoice.currency)}

@@ -22,6 +22,10 @@ const IncidentDetail: React.FC = () => {
   const { setTitle } = useTitle();
   const [station, setStation] = React.useState<Station | null>(null);
   const [loadingStation, setLoadingStation] = React.useState(false);
+  const [reporterName, setReporterName] = React.useState<string | null>(null);
+  const [resolvedByName, setResolvedByName] = React.useState<string | null>(null);
+  const [loadingReporter, setLoadingReporter] = React.useState(false);
+  const [loadingResolver, setLoadingResolver] = React.useState(false);
 
   useEffect(() => {
     setTitle("Incident Details");
@@ -62,6 +66,50 @@ const IncidentDetail: React.FC = () => {
     };
     fetchStation();
   }, [selectedIncident?.stationId]);
+
+  const resolveUserName = async (
+    userId?: string | null,
+    setters?: {
+      setName: (value: string | null) => void;
+      setLoading: (value: boolean) => void;
+    }
+  ) => {
+    if (!userId) {
+      setters?.setName(null);
+      return;
+    }
+    try {
+      setters?.setLoading(true);
+      const res = await api.get(`/users/${userId}`);
+      const userData = res.data?.user || res.data;
+      if (userData) {
+        setters?.setName(
+          userData.name || userData.fullName || userData.email || userId
+        );
+      } else {
+        setters?.setName(userId);
+      }
+    } catch (err) {
+      console.error("Error fetching user:", err);
+      setters?.setName(userId);
+    } finally {
+      setters?.setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    resolveUserName(selectedIncident?.reportedBy, {
+      setName: setReporterName,
+      setLoading: setLoadingReporter,
+    });
+  }, [selectedIncident?.reportedBy]);
+
+  useEffect(() => {
+    resolveUserName(selectedIncident?.resolvedBy, {
+      setName: setResolvedByName,
+      setLoading: setLoadingResolver,
+    });
+  }, [selectedIncident?.resolvedBy]);
 
   const handleEdit = () => {
     if (selectedIncident) {
@@ -223,7 +271,9 @@ const IncidentDetail: React.FC = () => {
                 Reported By
               </label>
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {selectedIncident.reportedBy}
+                {loadingReporter
+                  ? "Loading..."
+                  : reporterName || selectedIncident.reportedBy || "—"}
               </div>
             </div>
 
@@ -244,7 +294,9 @@ const IncidentDetail: React.FC = () => {
                   Resolved By
                 </label>
                 <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                  {selectedIncident.resolvedBy}
+                  {loadingResolver
+                    ? "Loading..."
+                    : resolvedByName || selectedIncident.resolvedBy}
                 </div>
               </div>
             )}

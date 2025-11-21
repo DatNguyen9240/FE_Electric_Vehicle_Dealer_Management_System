@@ -86,9 +86,6 @@ const MembershipPlanDetail = lazy(
 const MembershipPlanForm = lazy(
   () => import("@pages/Admin/MembershipPlans/MembershipPlanForm")
 );
-const InvoiceUpdate = lazy(
-  () => import("@pages/Admin/Invoices/InvoiceUpdate")
-);
 const IncidentManager = lazy(
   () => import("@pages/Admin/Incidents/IncidentManager")
 );
@@ -327,20 +324,6 @@ export default function AppRoutes() {
             element={createLazyRoute(
               InvoiceManagementDetail,
               "Loading invoice detail..."
-            )}
-          />
-          <Route
-            path="/admin/invoices/update"
-            element={createLazyRoute(
-              InvoiceUpdate,
-              "Loading invoice update..."
-            )}
-          />
-          <Route
-            path="/admin/invoices/update/:invoiceId"
-            element={createLazyRoute(
-              InvoiceUpdate,
-              "Loading invoice update..."
             )}
           />
           <Route

@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Search, Eye, Star } from "lucide-react";
+import { Eye, Star } from "lucide-react";
 import { fetchFeedbacks } from "@redux/slice/Feedback/FeedbackThunks";
 import { clearError } from "@redux/slice/Feedback/FeedbackSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
 import type { Feedback } from "@redux/slice/Feedback/FeedbackSlice";
 import { useTitle } from "../../../contexts";
+import api from "../../../libs/axios";
 
 const FeedbackManager: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -15,10 +16,12 @@ const FeedbackManager: React.FC = () => {
   const { data: feedbacks, loading, error } = useSelector((state: RootState) => state.feedback);
   const { setTitle } = useTitle();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [userIdFilter, setUserIdFilter] = useState<string>("");
+  const [ratingFilter, setRatingFilter] = useState<string>("");
+  const [userIdFilter] = useState<string>("");
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
+  const [usersMap, setUsersMap] = useState<Record<string, { name?: string; fullName?: string; email?: string }>>({});
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
     setTitle("Feedback Management");
@@ -37,6 +40,29 @@ const FeedbackManager: React.FC = () => {
   }, [fetchFeedbacksWithFilters]);
 
   useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        const res = await api.get("/users");
+        const list: any[] = Array.isArray(res.data) ? res.data : res.data?.users || [];
+        const map: Record<string, { name?: string; fullName?: string; email?: string }> = {};
+        list.forEach((user) => {
+          const id = user?.id || user?._id;
+          if (id) {
+            map[id] = { name: user?.name, fullName: user?.fullName, email: user?.email };
+          }
+        });
+        setUsersMap(map);
+      } catch (err) {
+        console.error("Failed to load users for feedback table", err);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
     if (error) {
       toast.error(error);
       dispatch(clearError());
@@ -45,6 +71,13 @@ const FeedbackManager: React.FC = () => {
 
   const handleViewFeedback = (feedbackId: string) => {
     navigate(`/admin/feedbacks/view/${feedbackId}`);
+  };
+
+  const getUserName = (userId?: string | null) => {
+    if (!userId) return "—";
+    const user = usersMap[userId];
+    if (!user) return userId;
+    return user.name || user.fullName || user.email || userId;
   };
 
   const formatDate = (dateString: string | null | undefined) => {
@@ -77,15 +110,19 @@ const FeedbackManager: React.FC = () => {
     );
   };
 
-  // Filter feedbacks based on search term and date range
+  // Filter feedbacks based on filters
   const filteredFeedbacks = feedbacks.filter((feedback: Feedback) => {
-    const needle = searchTerm.trim().toLowerCase();
-    if (needle) {
-      const comment = (feedback.comment || "").toLowerCase();
-      const id = (feedback.id || feedback._id || "").toLowerCase();
-      const userId = (feedback.userId || "").toLowerCase();
-      if (!comment.includes(needle) && !id.includes(needle) && !userId.includes(needle)) {
-        return false;
+    if (ratingFilter) {
+      const bucket = Number(ratingFilter);
+      if (!Number.isNaN(bucket)) {
+        const value =
+          typeof feedback.rating === "number" ? feedback.rating : null;
+        if (value === null) return false;
+        const lowerBound = bucket;
+        const upperBound = bucket === 5 ? 5.0001 : bucket + 1;
+        if (value < lowerBound || value >= upperBound) {
+          return false;
+        }
       }
     }
 
@@ -125,16 +162,20 @@ const FeedbackManager: React.FC = () => {
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search feedback..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="border border-[#333333] rounded-lg px-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
-            />
+          {/* Rating Filter */}
+          <div>
+            <select
+              value={ratingFilter}
+              onChange={(e) => setRatingFilter(e.target.value)}
+              className="border border-[#333333] rounded-lg px-3 py-1 text-sm w-48"
+            >
+              <option value="">All ratings</option>
+              {[5, 4, 3, 2, 1].map((rating) => (
+                <option key={rating} value={rating}>
+                  {rating} stars
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Date Range */}
@@ -154,14 +195,7 @@ const FeedbackManager: React.FC = () => {
             />
           </div>
 
-          {/* User ID Filter */}
-          <input
-            type="text"
-            placeholder="User ID"
-            value={userIdFilter}
-            onChange={(e) => setUserIdFilter(e.target.value)}
-            className="border border-[#333333] rounded-lg px-3 py-1 text-sm w-48"
-          />
+          
         </div>
       </div>
 
@@ -184,7 +218,7 @@ const FeedbackManager: React.FC = () => {
                   ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User ID
+                  User 
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Rating
@@ -204,7 +238,7 @@ const FeedbackManager: React.FC = () => {
               {filteredFeedbacks.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                    {searchTerm || userIdFilter
+                    {ratingFilter || userIdFilter
                       ? "No feedbacks found matching the search criteria"
                       : "No feedbacks yet"}
                   </td>
@@ -216,7 +250,7 @@ const FeedbackManager: React.FC = () => {
                       {feedback.id ? `${feedback.id.slice(0, 8)}...` : feedback._id || "—"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {feedback.userId || "—"}
+                      {loadingUsers ? "Loading..." : getUserName(feedback.userId)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {feedback.rating ? renderStars(feedback.rating) : "—"}
