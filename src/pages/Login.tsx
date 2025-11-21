@@ -63,9 +63,9 @@ const Login: React.FC = () => {
                 <input type="checkbox" className="accent-blue-600" />
                 Remember me
               </label>
-              <a href="#" className="text-blue-600 hover:underline">
+              <button type="button" className="text-blue-600 hover:underline" onClick={() => navigate('/forgot-password')}>
                 Forgot password?
-              </a>
+              </button>
             </div>
             <button
               type="submit"

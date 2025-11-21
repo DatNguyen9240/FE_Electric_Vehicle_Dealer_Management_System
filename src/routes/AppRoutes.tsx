@@ -14,6 +14,9 @@ const FAQ = lazy(() => import("@pages/FAQ"));
 const News = lazy(() => import("@pages/News"));
 const Login = lazy(() => import("@pages/Login"));
 const Signup = lazy(() => import("@pages/Signup"));
+const ForgotPassword = lazy(() => import("@pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("@pages/ResetPassword"));
+const ChangePassword = lazy(() => import("@pages/ChangePassword"));
 const Pricing = lazy(() => import("@pages/Pricing"));
 const AboutUs = lazy(() => import("@pages/AboutUs"));
 const Booking = lazy(() => import("@pages/Booking"));
@@ -24,10 +27,14 @@ const TopupCancel = lazy(() => import("@pages/TopupCancel"));
 const TopupSuccess = lazy(() => import("@pages/TopupSuccess"));
 const BookingSlots = lazy(() => import("@pages/BookingSlots"));
 const ChargingHistory = lazy(() => import("@pages/ChargingHistory"));
+const SessionDetail = lazy(() => import("@pages/Sessions/SessionDetail"));
 const UserProfile = lazy(() => import("@pages/UserProfile"));
+const NotificationSettings = lazy(() => import("@pages/Notifications/Settings"));
 const UserChargerList = lazy(() => import("@pages/ChargerList"));
 const UserBookingDetails = lazy(() => import("@pages/UserBookingDetails"));
 const MyBookings = lazy(() => import("@pages/MyBookings"));
+const MyInvoices = lazy(() => import("@pages/MyInvoices"));
+const MyInvoiceDetail = lazy(() => import("@pages/MyInvoices/InvoiceDetail"));
 const PurchaseMembership = lazy(
   () => import("@pages/PurchaseMembership")
 );
@@ -182,8 +189,19 @@ export default function AppRoutes() {
             element={createLazyRoute(ChargingHistory, "Loading charging history...")}
           />
           <Route
+            path="/sessions/view/:sessionId"
+            element={createLazyRoute(SessionDetail, "Loading session details...")}
+          />
+          <Route
             path="/profile"
             element={createLazyRoute(UserProfile, "Loading user profile...")}
+          />
+          <Route path="/notifications/settings" element={createLazyRoute(NotificationSettings, "Loading notification settings...") } />
+          <Route path="/my-invoices" element={createLazyRoute(MyInvoices, "Loading invoices...")} />
+          <Route path="/my-invoices/view/:invoiceId" element={createLazyRoute(MyInvoiceDetail, "Loading invoice...")} />
+          <Route
+            path="/profile/change-password"
+            element={createLazyRoute(ChangePassword, "Loading change password...")}
           />
           <Route
             path="/vehicles/new"
@@ -202,6 +220,14 @@ export default function AppRoutes() {
         <Route
           path="/login"
           element={createLazyRoute(Login, "Loading login page...")}
+        />
+        <Route
+          path="/forgot-password"
+          element={createLazyRoute(ForgotPassword, "Loading forgot password...")}
+        />
+        <Route
+          path="/reset-password"
+          element={createLazyRoute(ResetPassword, "Loading reset password...")}
         />
         <Route
           path="/signup"

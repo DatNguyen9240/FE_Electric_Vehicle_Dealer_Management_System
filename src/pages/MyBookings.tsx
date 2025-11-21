@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
+import { useLocation } from 'react-router-dom';
 import api from "@libs/axios";
 // removed modal/close icon by request
 import { useUi } from "../contexts/uiContextCore";
@@ -25,6 +26,8 @@ type Booking = {
 
 const MyBookings: React.FC = () => {
   const [list, setList] = React.useState<Booking[]>([]);
+  const [highlightedBooking, setHighlightedBooking] = React.useState<string | null>(null);
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
   const [loading, setLoading] = React.useState(true);
   // selection and details removed — actions are disabled
 
@@ -54,6 +57,27 @@ const MyBookings: React.FC = () => {
   useEffect(() => {
     fetch();
   }, []);
+
+  // read highlight param from URL (e.g. /my-bookings?highlight=bookingId)
+  const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const highlight = params.get('highlight');
+    if (!highlight) return;
+    // clear any previous highlights
+    setHighlightedBooking(null);
+    // wait for table to render
+    setTimeout(() => {
+      // scroll to row and set highlight
+      const el = rowRefs.current[highlight];
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      setHighlightedBooking(highlight);
+      const t = setTimeout(() => setHighlightedBooking(null), 2000);
+      return () => clearTimeout(t);
+    }, 120);
+  }, [location.search]);
 
   // Restore cancel action only (user requested cancel button visible)
   const cancelBooking = async (id?: string) => {
@@ -103,7 +127,13 @@ const MyBookings: React.FC = () => {
                   </tr>
                 ) : (
                   list.map((b, i) => (
-                    <tr key={b.id ?? b._id ?? i} className="border-t hover:bg-gray-50 transition">
+                    <tr
+                      key={b.id ?? b._id ?? i}
+                      ref={(el) => { if (b.id || b._id) rowRefs.current[b.id ?? b._id ?? String(i)] = el; }}
+                      className={`border-t hover:bg-gray-50 transition ${
+                        highlightedBooking && (highlightedBooking === b.id || highlightedBooking === b._id) ? 'bg-yellow-100 animate-pulse' : ''
+                      }`}
+                    >
                       <td className="p-3">{b.station?.name ?? b.stationName ?? '-'}</td>
                       <td className="p-3">{b.connector?.code ?? b.connectorName ?? b.chargerName ?? '-'}</td>
                       <td className="p-3">{b.slotStart ? `${new Date(b.slotStart).toLocaleString()} - ${new Date(b.slotEnd ?? b.slotStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '-'}</td>
