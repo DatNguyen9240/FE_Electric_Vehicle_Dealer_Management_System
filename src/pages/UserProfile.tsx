@@ -407,13 +407,27 @@ const UserProfile: React.FC = () => {
             {/* Edit/Save Buttons */}
             <div className="mt-4 md:mt-0 flex gap-3">
               {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-6 py-1.5 bg-[#2465EA] text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-                >
-                  <Edit2 size={18} />
-                  Edit
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 px-6 py-1.5 bg-[#2465EA] text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+                  >
+                    <Edit2 size={18} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => navigate('/profile/change-password')}
+                    className="flex items-center gap-2 px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Change password
+                  </button>
+                  <button
+                    onClick={() => navigate('/notifications/settings')}
+                    className="flex items-center gap-2 px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Notifications
+                  </button>
+                </>
               ) : (
                 <>
                   <button

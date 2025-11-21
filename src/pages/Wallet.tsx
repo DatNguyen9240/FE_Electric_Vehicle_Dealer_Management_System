@@ -96,6 +96,12 @@ const Wallet: React.FC = () => {
             >
               Xem lịch sử sạc
             </Link>
+            <Link
+              to="/my-invoices"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:border-gray-300 transition"
+            >
+              Xem hóa đơn
+            </Link>
           </div>
         </div>
 

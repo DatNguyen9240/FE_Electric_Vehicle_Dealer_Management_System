@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Link } from 'react-router-dom';
+import api from "../libs/axios";
 
 
 interface ChargingSession {
@@ -14,81 +16,72 @@ interface ChargingSession {
   duration?: string; 
   energyUsed?: number; 
   cost?: number; 
-  status: "RESERVED" | "completed" | "cancelled" | "in-progress" | "CHECKED_IN" | "EXPIRED"; 
+  // server returns statuses in UPPERCASE; mirror that here
+  // server shape: billing, booking, station, chargingPredictions
+  billing?: { totalAmount?: number; breakdown?: { energyKwh?: number } };
+  chargingPredictions?: { energyChargedKwh?: number };
+  chargeDurationMinutes?: number;
+  totalChargingMinutes?: number;
+  id?: string;
+  booking?: { id?: string; _id?: string } | null;
+  bookingId?: string;
+  status: "RESERVED" | "COMPLETED" | "CANCELLED" | "IN_PROGRESS" | "CHECKED_IN" | "EXPIRED";
+  station?: { id?: string; name?: string; code?: string };
   createdAt: string; 
   updatedAt: string; 
 }
 
 const ChargingHistory: React.FC = () => {
   // const { user } = useSelector((state: RootState) => state.auth);
-  const [filter, setFilter] = useState<"all" | "RESERVED" | "completed" | "cancelled" | "in-progress" | "CHECKED_IN" | "EXPIRED">("all");
+  // UI status filter that maps to server `status` param (includes `all` to clear filter)
+  const [statusFilter, setStatusFilter] = useState<"all" | string>("all");
 
-  // Mock data - replace with actual API call
-  const chargingSessions: ChargingSession[] = [
-    {
-      _id: "1",
-      userId: "user123",
-      stationId: "station001",
-      connectorId: "connector001",
-      stationName: "Tesla Supercharger - Downtown",
-      location: "123 Main St, Downtown",
-      slotStart: "2024-01-15T10:30:00Z",
-      slotEnd: "2024-01-15T11:45:00Z",
-      checkInDeadline: "2024-01-15T10:45:00Z",
-      duration: "1h 15m",
-      energyUsed: 45.2,
-      cost: 12.50,
-      status: "completed",
-      createdAt: "2024-01-15T09:00:00Z",
-      updatedAt: "2024-01-15T11:45:00Z"
-    },
-    {
-      _id: "2",
-      userId: "user123",
-      stationId: "station002",
-      connectorId: "connector002",
-      stationName: "EVGo Station - Mall",
-      location: "456 Shopping Ave, Mall District",
-      slotStart: "2024-01-14T14:15:00Z",
-      slotEnd: "2024-01-14T15:30:00Z",
-      checkInDeadline: "2024-01-14T14:30:00Z",
-      duration: "1h 15m",
-      energyUsed: 38.7,
-      cost: 10.25,
-      status: "completed",
-      createdAt: "2024-01-14T13:00:00Z",
-      updatedAt: "2024-01-14T15:30:00Z"
-    },
-    {
-      _id: "3",
-      userId: "user123",
-      stationId: "station003",
-      connectorId: "connector003",
-      stationName: "ChargePoint - Airport",
-      location: "789 Airport Blvd, Terminal 2",
-      slotStart: "2024-01-13T08:00:00Z",
-      slotEnd: "2024-01-13T08:45:00Z",
-      checkInDeadline: "2024-01-13T08:15:00Z",
-      duration: "45m",
-      energyUsed: 25.1,
-      cost: 6.75,
-      status: "RESERVED",
-      createdAt: "2024-01-13T07:30:00Z",
-      updatedAt: "2024-01-13T07:30:00Z"
+  const [chargingSessions, setChargingSessions] = useState<ChargingSession[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [fromDate, setFromDate] = useState<string | null>(null);
+  const [toDate, setToDate] = useState<string | null>(null);
+  // removed duplicate `filter` state — use `statusFilter` everywhere
+
+  const fetchSessions = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: Record<string, unknown> = { page, limit };
+      if (searchQuery) params.search = searchQuery;
+      if (statusFilter && statusFilter !== "all") params.status = statusFilter;
+      if (fromDate) params.from = fromDate;
+      if (toDate) params.to = toDate;
+
+      const res = await api.get("/sessions", { params });
+      const body = res.data || {};
+      setChargingSessions(body.items || []);
+      setTotalPages(body.pagination?.pages || 0);
+    } catch (err: unknown) {
+      setError(typeof err === 'string' ? err : (err as any)?.message || 'Failed to load sessions');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const filteredSessions = chargingSessions.filter(session => 
-    filter === "all" || session.status === filter
-  );
+  useEffect(() => {
+    fetchSessions();
+  }, [page, searchQuery, statusFilter, fromDate, toDate]);
+  // End effect
+
+  const filteredSessions = chargingSessions; // already filtered server side
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed":
+      case "COMPLETED":
         return "bg-green-100 text-green-800";
-      case "cancelled":
+      case "CANCELLED":
         return "bg-red-100 text-red-800";
-      case "in-progress":
+      case "IN_PROGRESS":
         return "bg-blue-100 text-blue-800";
       case "RESERVED":
         return "bg-yellow-100 text-yellow-800";
@@ -101,17 +94,59 @@ const ChargingHistory: React.FC = () => {
     }
   };
 
+    const formatStatus = (status: string) => {
+      if (!status) return '';
+      // to lower, replace underscores with spaces, then title case
+      const s = status.toLowerCase().split('_').join(' ');
+      return s.replace(/\b\w/g, (ch) => ch.toUpperCase());
+    };
+
   return (
       <div className=" p-10 mb-10">
         <div className=" px-5 ">
           <h1 className="text-3xl font-bold text-gray-900 mb-6">Charging History</h1>
           
-          {/* Filter buttons */}
+          {/* Filter controls */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Search (booking id, session id, station)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="px-3 py-2 border rounded-lg"
+              />
+              <input
+                type="date"
+                value={fromDate ?? ''}
+                onChange={(e) => setFromDate(e.target.value || null)}
+                className="px-3 py-2 border rounded-lg"
+              />
+              <input
+                type="date"
+                value={toDate ?? ''}
+                onChange={(e) => setToDate(e.target.value || null)}
+                className="px-3 py-2 border rounded-lg"
+              />
+            </div>
+            <div className="flex-1 flex justify-end">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setStatusFilter('all'); setPage(1); setSearchQuery(''); setFromDate(null); setToDate(null); }}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                    statusFilter === "all" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  All Sessions
+                </button>
+              </div>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2 mb-6">
             <button
-              onClick={() => setFilter("all")}
+              onClick={() => { setStatusFilter("all"); setPage(1); }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                filter === "all"
+                statusFilter === "all"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
@@ -119,9 +154,9 @@ const ChargingHistory: React.FC = () => {
               All Sessions
             </button>
             <button
-              onClick={() => setFilter("RESERVED")}
+              onClick={() => { setStatusFilter("RESERVED"); setPage(1); }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                filter === "RESERVED"
+                statusFilter === "RESERVED"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
@@ -129,9 +164,9 @@ const ChargingHistory: React.FC = () => {
               Reserved
             </button>
             <button
-              onClick={() => setFilter("CHECKED_IN")}
+              onClick={() => { setStatusFilter("CHECKED_IN"); setPage(1); }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                filter === "CHECKED_IN"
+                statusFilter === "CHECKED_IN"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
@@ -139,9 +174,9 @@ const ChargingHistory: React.FC = () => {
               Checked In
             </button>
             <button
-              onClick={() => setFilter("completed")}
+              onClick={() => { setStatusFilter("COMPLETED"); setPage(1); }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                filter === "completed"
+                statusFilter === "COMPLETED"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
@@ -149,9 +184,9 @@ const ChargingHistory: React.FC = () => {
               Completed
             </button>
             <button
-              onClick={() => setFilter("cancelled")}
+              onClick={() => { setStatusFilter("CANCELLED"); setPage(1); }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                filter === "cancelled"
+                statusFilter === "CANCELLED"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
@@ -159,9 +194,9 @@ const ChargingHistory: React.FC = () => {
               Cancelled
             </button>
             <button
-              onClick={() => setFilter("EXPIRED")}
+              onClick={() => { setStatusFilter("EXPIRED"); setPage(1); }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                filter === "EXPIRED"
+                statusFilter === "EXPIRED"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
@@ -172,7 +207,11 @@ const ChargingHistory: React.FC = () => {
 
           {/* Sessions list */}
           <div className="space-y-4">
-            {filteredSessions.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8">Loading...</div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-600">{error}</div>
+            ) : filteredSessions.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-gray-400 mb-4">
                   <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,12 +227,24 @@ const ChargingHistory: React.FC = () => {
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{session.stationName || `Station ${session.stationId}`}</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">{session.station?.name || `Station ${session.stationId}`}</h3>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.status)}`}>
-                          {session.status.charAt(0).toUpperCase() + session.status.slice(1).replace('_', ' ')}
+                          {formatStatus(session.status)}
                         </span>
+                        <Link
+                          to={`/sessions/view/${session.id || session._id}`}
+                          className="inline-block ml-3 text-sm text-blue-600 hover:underline"
+                        >
+                          View details
+                        </Link>
                       </div>
-                      <p className="text-gray-600 mb-2">{session.location || `Station ID: ${session.stationId}`}</p>
+                      <p className="text-gray-600 mb-2">{session.station?.code || `Station ID: ${session.stationId}`} · <span className="text-gray-500">Booking: {(() => {
+                        const bid = session.booking?.id || session.bookingId;
+                        if (!bid) return '—';
+                        return (
+                          <Link to={`/my-bookings?highlight=${encodeURIComponent(bid)}`} className="text-blue-600 hover:underline">{bid}</Link>
+                        );
+                      })()}</span></p>
                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                          <div>
                            <span className="">Slot Start:</span>
@@ -208,22 +259,22 @@ const ChargingHistory: React.FC = () => {
                            <p className="text-gray-500">{new Date(session.checkInDeadline).toLocaleString()}</p>
                          </div>
                          <div>
-                           <span className="">Duration:</span>
-                           <p className="text-gray-500">{session.duration || 'N/A'}</p>
+                           <span className="">Duration (min):</span>
+                           <p className="text-gray-500">{session.chargeDurationMinutes || session.totalChargingMinutes || 'N/A'}</p>
                          </div>
-                         {session.energyUsed && (
+                         {(session.billing?.breakdown?.energyKwh || session.chargingPredictions?.energyChargedKwh) && (
                            <div>
                              <span className="">Energy Used:</span>
-                             <p className="text-gray-500">{session.energyUsed} kWh</p>
+                             <p className="text-gray-500">{session.billing?.breakdown?.energyKwh ?? session.chargingPredictions?.energyChargedKwh} kWh</p>
                            </div>
                          )}
                        </div>
                      
                     </div>
-                    {session.cost && (
+                    { (session.billing?.totalAmount || session.cost) && (
                       <div className="mt-4 md:mt-0 md:ml-6 text-right">
                         <p className="text-sm text-center pe-5">Total Cost</p>
-                        <div className="text-2xl font-bold text-green-600 text-center pe-5">${session.cost.toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-green-600 text-center pe-5">${Number(session.billing?.totalAmount ?? session.cost ?? 0).toFixed(2)}</div>
                       </div>
                     )}
                   </div>
@@ -231,8 +282,29 @@ const ChargingHistory: React.FC = () => {
               ))
             )}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-1 rounded border bg-white"
+              >
+                Prev
+              </button>
+              <span className="px-3 py-1">Page {page} / {totalPages}</span>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="px-3 py-1 rounded border bg-white"
+              >
+                Next
+              </button>
+            </div>
+          )}
+          </div>
         </div>
-      </div>
   );
 };
 

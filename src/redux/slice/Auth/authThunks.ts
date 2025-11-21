@@ -55,3 +55,48 @@ export const logoutUser = createAsyncThunk(
     }
   }
 );
+
+export const forgotPassword = createAsyncThunk(
+  "auth/forgotPassword",
+  async (payload: { email: string }, { rejectWithValue }) => {
+    try {
+      const res = await api.post("/auth/forgot-password", payload);
+      return res.data;
+    } catch (error) {
+      const err = error as AxiosError<{ msg?: string }>;
+      return rejectWithValue(err.response?.data?.msg || "Yêu cầu khôi phục mật khẩu thất bại");
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async (
+    payload: { token: string; password: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const res = await api.post("/auth/reset-password", payload);
+      return res.data;
+    } catch (error) {
+      const err = error as AxiosError<{ msg?: string }>;
+      return rejectWithValue(err.response?.data?.msg || "Đặt lại mật khẩu thất bại");
+    }
+  }
+);
+
+export const changePassword = createAsyncThunk(
+  "auth/changePassword",
+  async (
+    payload: { currentPassword: string; newPassword: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const res = await api.patch("/auth/change-password", payload);
+      return res.data;
+    } catch (error) {
+      const err = error as AxiosError<{ msg?: string }>;
+      return rejectWithValue(err.response?.data?.msg || "Đổi mật khẩu thất bại");
+    }
+  }
+);
