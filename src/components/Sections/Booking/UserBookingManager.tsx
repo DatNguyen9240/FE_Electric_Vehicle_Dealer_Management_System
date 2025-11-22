@@ -90,8 +90,8 @@ const UserBookingManager: React.FC = () => {
         for (const s of slots) {
           try {
             const d = new Date(s.slotStart);
-            const h = String(d.getHours()).padStart(2, "0");
-            const m = String(d.getMinutes()).padStart(2, "0");
+            const h = String(d.getUTCHours()).padStart(2, "0");
+            const m = String(d.getUTCMinutes()).padStart(2, "0");
             const key = `${h}:${m}`;
             // Sử dụng s.availableCount (số connector available cho charger trong slot)
             map[key] = s.availableCount || 0; // ← Sửa từ (s.availableConnectors || []).length

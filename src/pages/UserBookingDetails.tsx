@@ -57,6 +57,8 @@ const UserBookingDetails: React.FC = () => {
         const [hourStr, minuteStr] = selectedTimeSlot.split(":");
         const startDate = new Date(selectedDate);
         startDate.setHours(Number(hourStr), Number(minuteStr), 0, 0);
+        // Cộng 7 tiếng cho timezone
+        startDate.setHours(startDate.getHours() + 7);
         const startTime = startDate.toISOString();
 
         // Gọi API available-by-time với params
@@ -151,6 +153,8 @@ const UserBookingDetails: React.FC = () => {
       const [hourStr, minuteStr] = (selectedTimeSlot || "07:00").split(":");
       const slotDate = new Date(selectedDate);
       slotDate.setHours(Number(hourStr || 0), Number(minuteStr || 0), 0, 0);
+      // Cộng 7 tiếng cho timezone
+      slotDate.setHours(slotDate.getHours() + 7);
       const slotStart = slotDate.toISOString();
 
       setBooking(true);
