@@ -30,6 +30,7 @@ const UserDetail: React.FC = () => {
   const { loading, error, selectedUser } = useSelector((state: RootState) => state.user);
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletInfo, setWalletInfo] = useState<{ wallet_id: string; balance: number; createdAt?: string; updatedAt?: string } | null>(null);
+  const [stationName, setStationName] = useState<string | null>(null);
 
   
   useEffect(() => {
@@ -41,6 +42,9 @@ const UserDetail: React.FC = () => {
   useEffect(() => {
     const fetchWallet = async () => {
       if (!userId) return;
+      // Skip wallet fetch for staff users
+      if (selectedUser?.role === "staff") return;
+      
       try {
         setWalletLoading(true);
         const { data } = await api.get("/admin/wallet/user", { params: { userId } });
@@ -57,7 +61,25 @@ const UserDetail: React.FC = () => {
       }
     };
     fetchWallet();
-  }, [userId]);
+  }, [userId, selectedUser?.role]);
+
+  // Fetch station name if user is staff and has stationId
+  useEffect(() => {
+    const fetchStationName = async () => {
+      if (selectedUser?.role === "staff" && selectedUser?.stationId) {
+        try {
+          const { data } = await api.get(`/stations/${selectedUser.stationId}`);
+          setStationName(data?.name || null);
+        } catch (err: unknown) {
+          console.error("Failed to fetch station:", err);
+          setStationName(null);
+        }
+      } else {
+        setStationName(null);
+      }
+    };
+    fetchStationName();
+  }, [selectedUser?.role, selectedUser?.stationId]);
 
   useEffect(() => {
     if (error) {
@@ -213,6 +235,26 @@ const UserDetail: React.FC = () => {
               </div>
             </div>
 
+            {/* Station (only show for staff) */}
+            {selectedUser.role === "staff" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assigned Station
+                </label>
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
+                  {stationName ? (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm ">
+                      {stationName}
+                    </span>
+                  ) : selectedUser.stationId ? (
+                    <span className="text-gray-500">Loading station...</span>
+                  ) : (
+                    <span className="text-gray-500">No station assigned</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Created At */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -243,106 +285,110 @@ const UserDetail: React.FC = () => {
           </button>
         </div>
 
-      {/* Wallet Info */}
-      <div className="bg-white rounded-lg shadow mt-6">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">Wallet Information</h2>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="border rounded-lg p-4 bg-white">
-              <div className="text-sm text-gray-500">Wallet Balance</div>
-              <div className="text-2xl font-semibold text-gray-900">
-                {walletLoading ? "…" : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(walletInfo?.balance ?? 0)}
+      {/* Wallet Info - Only show for non-staff users */}
+      {selectedUser.role !== "staff" && (
+        <div className="bg-white rounded-lg shadow mt-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">Wallet Information</h2>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border rounded-lg p-4 bg-white">
+                <div className="text-sm text-gray-500">Wallet Balance</div>
+                <div className="text-2xl font-semibold text-gray-900">
+                  {walletLoading ? "…" : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(walletInfo?.balance ?? 0)}
+                </div>
+              </div>
+              <div className="border rounded-lg p-4 bg-white">
+                <div className="text-sm text-gray-500">Wallet ID</div>
+                <div className="text-sm font-medium text-gray-900 break-all">{walletInfo?.wallet_id || "-"}</div>
+              </div>
+              <div className="border rounded-lg p-4 bg-white">
+                <div className="text-sm text-gray-500">Last Updated</div>
+                <div className="text-sm font-medium text-gray-900">{walletInfo?.updatedAt ? new Date(walletInfo.updatedAt).toLocaleDateString('vi-VN') : "-"}</div>
               </div>
             </div>
-            <div className="border rounded-lg p-4 bg-white">
-              <div className="text-sm text-gray-500">Wallet ID</div>
-              <div className="text-sm font-medium text-gray-900 break-all">{walletInfo?.wallet_id || "-"}</div>
-            </div>
-            <div className="border rounded-lg p-4 bg-white">
-              <div className="text-sm text-gray-500">Last Updated</div>
-              <div className="text-sm font-medium text-gray-900">{walletInfo?.updatedAt ? new Date(walletInfo.updatedAt).toLocaleDateString('vi-VN') : "-"}</div>
-            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Vehicles List */}
-      <div className="bg-white rounded-lg shadow mt-6">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center gap-2">
-            <Car size={20} className="text-gray-700" />
-            <h2 className="text-lg font-medium text-gray-900">Vehicle List</h2>
-            <span className="ml-2 text-sm text-gray-500">
-              ({selectedUser.vehicles?.length || 0} {selectedUser.vehicles?.length === 1 ? 'vehicle' : 'vehicles'})
-            </span>
+      {/* Vehicles List - Only show for non-staff users */}
+      {selectedUser.role !== "staff" && (
+        <div className="bg-white rounded-lg shadow mt-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <Car size={20} className="text-gray-700" />
+              <h2 className="text-lg font-medium text-gray-900">Vehicle List</h2>
+              <span className="ml-2 text-sm text-gray-500">
+                ({selectedUser.vehicles?.length || 0} {selectedUser.vehicles?.length === 1 ? 'vehicle' : 'vehicles'})
+              </span>
+            </div>
+          </div>
+          <div className="p-6">
+            {selectedUser.vehicles && selectedUser.vehicles.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        License Plate
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Make
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Model
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Plug Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Battery Capacity (kWh)
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created Date
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {selectedUser.vehicles.map((vehicle: UserVehicle) => (
+                      <tr key={vehicle.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {vehicle.license_plate || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {vehicle.make || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {vehicle.model || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {vehicle.plug_type || "-"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {vehicle.battery_kwh ? `${vehicle.battery_kwh} kWh` : "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {vehicle.created_at 
+                            ? new Date(vehicle.created_at).toLocaleDateString('en-US')
+                            : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Car size={48} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500 text-lg">This user has no vehicles</p>
+              </div>
+            )}
           </div>
         </div>
-        <div className="p-6">
-          {selectedUser.vehicles && selectedUser.vehicles.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      License Plate
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Make
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Model
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Plug Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Battery Capacity (kWh)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {selectedUser.vehicles.map((vehicle: UserVehicle) => (
-                    <tr key={vehicle.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {vehicle.license_plate || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {vehicle.make || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {vehicle.model || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {vehicle.plug_type || "-"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {vehicle.battery_kwh ? `${vehicle.battery_kwh} kWh` : "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {vehicle.created_at 
-                          ? new Date(vehicle.created_at).toLocaleDateString('en-US')
-                          : "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Car size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500 text-lg">This user has no vehicles</p>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     
     </div>
   );

@@ -153,10 +153,9 @@ const IncidentManager: React.FC = () => {
   const filteredIncidents = incidents.filter((incident: Incident) => {
     const needle = searchTerm.trim().toLowerCase();
     if (!needle) return true;
-    const title = (incident.title || "").toLowerCase();
     const description = (incident.description || "").toLowerCase();
     const id = (incident.id || "").toLowerCase();
-    return title.includes(needle) || description.includes(needle) || id.includes(needle);
+    return description.includes(needle) || id.includes(needle);
   });
 
   const getStationName = (stationId: string | null): string => {
@@ -270,7 +269,7 @@ const IncidentManager: React.FC = () => {
                   ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
+                  Description
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Station
@@ -305,11 +304,8 @@ const IncidentManager: React.FC = () => {
                       {incident.id.slice(0, 8)}...
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <div className="font-medium text-gray-900">
-                        {incident.title || "No title"}
-                      </div>
-                      <div className="text-gray-500 text-xs mt-1 line-clamp-1">
-                        {incident.description}
+                      <div className="text-gray-900 line-clamp-2">
+                        {incident.description || "No description"}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

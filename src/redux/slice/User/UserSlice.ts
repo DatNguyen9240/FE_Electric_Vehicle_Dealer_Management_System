@@ -28,6 +28,7 @@ export interface User {
   phone?: string;
   role: "admin" | "staff" | "driver";
   status: "ACTIVE" | "SUSPENDED";
+  stationId?: string | null;
   created_at: string;
   updated_at?: string;
   vehicles?: UserVehicle[];
