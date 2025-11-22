@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import SideBar from "@components/Layouts/SideBar";
 import { Outlet, useNavigate } from "react-router-dom";
 import LableTitle from "@components/Layouts/LableTitle";
@@ -9,9 +9,24 @@ import { useDispatch } from "react-redux";
 import { logoutUser } from "../redux/slice/Auth/authThunks";
 import type { AppDispatch } from "../redux/store/store";
 import { useUi } from "../contexts/uiContextCore";
+import { getCookie } from "../libs/utils";
+import type { User } from "../interfaces/Auth";
   
 const StaffLayout: React.FC = () => {
   const { title } = useTitle();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const userStr = getCookie("user");
+    if (userStr) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(userStr));
+        setUser(parsedUser as User);
+      } catch {
+        setUser(null);
+      }
+    }
+  }, []);
 
   const staffMenu: SidebarMenuItem[] = [
     { key: "dashboard", label: "Dashboard", icon: <Home size={20} />, to: "/staff" },
@@ -47,7 +62,7 @@ const StaffLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen">
-      <SideBar avatarName="Staff" menu={staffMenu} dropdownItems={dropdownItems} />
+      <SideBar avatarName={user?.name || user?.email || "Staff"} menu={staffMenu} dropdownItems={dropdownItems} />
       <main className="flex-1 bg-gray-50 overflow-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">

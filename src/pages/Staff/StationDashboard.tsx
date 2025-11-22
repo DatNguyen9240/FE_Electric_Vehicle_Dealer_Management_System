@@ -2,7 +2,9 @@ import React, { useEffect } from "react";
 import api from "@libs/axios";
 import { Loader2, Plug, Power, PowerOff, RefreshCw } from "lucide-react";
 import { useTitle } from "../../contexts";
-import { useUi } from "../../contexts/uiContextCore";
+import { toast } from "react-toastify";
+
+const REFRESH_INTERVAL_MS = 30000; // 30 seconds
 
 const StationDashboard: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
@@ -58,8 +60,16 @@ const StationDashboard: React.FC = () => {
       }
     };
     load();
+
+    const interval = setInterval(() => {
+      if (mounted) {
+        load();
+      }
+    }, REFRESH_INTERVAL_MS);
+
     return () => {
       mounted = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -76,21 +86,78 @@ const StationDashboard: React.FC = () => {
     }
   };
 
-  const { showToast } = useUi();
   const [toggling, setToggling] = React.useState<Record<string, boolean>>({});
 
-  const toggleChargerPower = async (chargerId: string | undefined, currentStatus?: string) => {
+  const toggleConnectorStatus = async (connectorId: string | undefined, currentStatus?: string) => {
+    if (!connectorId) return;
+    const status = String(currentStatus || '').toUpperCase();
+    
+    // Allow toggle: IDLE <-> OFFLINE, and FINISHED -> IDLE
+    if (status === "IDLE") {
+      // IDLE -> OFFLINE
+      const next = "OFFLINE";
+      setToggling((s) => ({ ...s, [connectorId]: true }));
+      try {
+        await api.patch(`/connectors/${connectorId}/status`, { status: next });
+        toast.success("Connector deactivated");
+        await loadStations();
+      } catch (err) {
+        console.error(err);
+        const errorMsg = (err as any)?.response?.data?.message || (err as any)?.message || "Error changing status";
+        toast.error(errorMsg);
+      } finally {
+        setToggling((s) => ({ ...s, [connectorId]: false }));
+      }
+    } else if (status === "OFFLINE") {
+      // OFFLINE -> IDLE
+      const next = "IDLE";
+      setToggling((s) => ({ ...s, [connectorId]: true }));
+      try {
+        await api.patch(`/connectors/${connectorId}/status`, { status: next });
+        toast.success("Connector activated");
+        await loadStations();
+      } catch (err) {
+        console.error(err);
+        const errorMsg = (err as any)?.response?.data?.message || (err as any)?.message || "Error changing status";
+        toast.error(errorMsg);
+      } finally {
+        setToggling((s) => ({ ...s, [connectorId]: false }));
+      }
+    } else if (status === "FINISHED") {
+      // FINISHED -> IDLE (reset after charging session)
+      const next = "IDLE";
+      setToggling((s) => ({ ...s, [connectorId]: true }));
+      try {
+        await api.patch(`/connectors/${connectorId}/status`, { status: next });
+        toast.success("Connector reset to available");
+        await loadStations();
+      } catch (err) {
+        console.error(err);
+        const errorMsg = (err as any)?.response?.data?.message || (err as any)?.message || "Error changing status";
+        toast.error(errorMsg);
+      } finally {
+        setToggling((s) => ({ ...s, [connectorId]: false }));
+      }
+    } else {
+      // RESERVED, CHARGING - cannot toggle
+      toast.info("Cannot toggle connector while in use (RESERVED or CHARGING)");
+    }
+  };
+
+  const toggleChargerStatus = async (chargerId: string | undefined, currentStatus?: string) => {
     if (!chargerId) return;
-    const desired = (String(currentStatus || '').toUpperCase() === 'ONLINE') ? 'OFFLINE' : 'ONLINE';
+    // Staff can only toggle between ONLINE and OFFLINE (no MAINTENANCE)
+    const status = String(currentStatus || '').toUpperCase();
+    const next = status === "ONLINE" ? "OFFLINE" : "ONLINE";
     setToggling((s) => ({ ...s, [chargerId]: true }));
     try {
-      await api.patch(`/staff/chargers/${chargerId}/power`, { status: desired });
-      showToast(`Charger ${desired === 'ONLINE' ? 'turned on' : 'turned off'}`, 'success');
+      await api.patch(`/staff/chargers/${chargerId}/power`, { status: next });
+      toast.success(`Charger ${next === "ONLINE" ? "turned on" : "turned off"}`);
       await loadStations();
     } catch (err) {
       console.error(err);
-      const msg = (err as any)?.response?.data?.message || 'Failed to change charger power';
-      showToast(msg, 'error');
+      const errorMsg = (err as any)?.response?.data?.message || (err as any)?.message || "Error changing status";
+      toast.error(errorMsg);
     } finally {
       setToggling((s) => ({ ...s, [chargerId]: false }));
     }
@@ -107,15 +174,19 @@ const StationDashboard: React.FC = () => {
 
   const aggregated = stationsArr.reduce(
     (acc, cur) => {
-      const st = cur.station || {};
       const m = cur.metrics || {};
-      if (st.status === "ONLINE") acc.online += 1;
-      else if (st.status === "OFFLINE") acc.offline += 1;
-      else if (st.status === "MAINTENANCE") acc.maintenance += 1;
-
       const sc = m.statusCounts || {};
       Object.keys(sc).forEach((k) => {
         acc.connectors[k] = (acc.connectors[k] || 0) + (sc[k] || 0);
+      });
+
+      // Count chargers by status
+      const chargers = cur.chargers || [];
+      chargers.forEach((ch: Charger) => {
+        const status = String(ch.status || '').toUpperCase();
+        if (status === 'MAINTENANCE') {
+          acc.maintenanceChargers = (acc.maintenanceChargers || 0) + 1;
+        }
       });
 
       const pw = m.powerKw || {};
@@ -125,10 +196,8 @@ const StationDashboard: React.FC = () => {
       return acc;
     },
     {
-      online: 0,
-      offline: 0,
-      maintenance: 0,
       connectors: {} as Record<string, number>,
+      maintenanceChargers: 0,
       power: { total: 0, charging: 0, available: 0 },
     }
   );
@@ -140,8 +209,33 @@ const StationDashboard: React.FC = () => {
       ? Math.round((aggregated.power.charging / aggregated.power.total) * 100)
       : 0;
 
-  const connectorEntries = Object.entries(aggregated.connectors || {});
-  const firstTwoConnectors = connectorEntries.slice(0, 2);
+  const formatNumber = (value: number | undefined | null) =>
+    Number(value ?? 0).toLocaleString("vi-VN");
+
+  const MetricCard: React.FC<{
+    title: string;
+    value: number | string;
+    subtitle?: string;
+    subtitleClassName?: string;
+    bgClassName?: string;
+  }> = ({ title, value, subtitle, subtitleClassName, bgClassName }) => (
+    <div className={`${bgClassName ?? "bg-white"} rounded-xl border p-6 flex flex-col h-35 relative`}>
+      <span className="text-sm text-gray-500 mb-3 font-medium uppercase tracking-wide leading-tight">
+        {title}
+      </span>
+      <span className="text-5xl font-bold text-black ps-3">
+        {typeof value === "number" ? formatNumber(value) : value}
+      </span>
+      {subtitle && (
+        <span
+          className={`text-sm font-medium absolute bottom-3 right-3 ${subtitleClassName ?? "text-gray-600"
+            }`}
+        >
+          {subtitle}
+        </span>
+      )}
+    </div>
+  );
 
   const getStatusBadge = (status?: string | null) => {
     const base = "px-2 py-1 rounded-full text-xs font-medium";
@@ -158,15 +252,8 @@ const StationDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm uppercase text-gray-500 tracking-wide">Staff Console</p>
-          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">Station dashboard</h1>
-          <p className="text-sm text-gray-500">
-            Monitor stations, connectors, and charger health in real time.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-end mb-4">
         <button
           onClick={loadStations}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:border-gray-300 transition"
@@ -176,47 +263,36 @@ const StationDashboard: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border p-5 shadow-sm">
-          <p className="text-xs uppercase text-gray-500 font-medium">Stations online</p>
-          <p className="text-3xl font-semibold text-gray-900 mt-2">{aggregated.online}</p>
-          <p className="text-xs text-gray-500 mt-1">Out of {filteredStations.length} stations</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <MetricCard
+          title="RESERVED"
+          value={aggregated.connectors.RESERVED || 0}
+          subtitle="Connectors reserved"
+          subtitleClassName="text-green-600"
+        />
+        <MetricCard
+          title="CHARGING"
+          value={aggregated.connectors.CHARGING || 0}
+          subtitle="Active charging"
+          subtitleClassName="text-green-600"
+        />
+        <MetricCard
+          title="MAINTENANCE"
+          value={aggregated.maintenanceChargers || 0}
+          subtitle="Chargers in maintenance"
+          subtitleClassName="text-green-600"
+        />
+        <div className="bg-blue-50 rounded-xl border p-6 flex flex-col h-35 relative">
+          <span className="text-sm text-gray-500 mb-3 font-medium uppercase tracking-wide leading-tight">
+            POWER USAGE
+          </span>
+          <span className="text-5xl font-bold text-black ">
+            {formatNumber(aggregated.power.charging)} / {formatNumber(aggregated.power.total)} <span className="text-lg">kW</span>
+          </span>
+          <span className="text-sm font-medium absolute bottom-3 right-3 text-green-600">
+            {percentUsed}% used
+          </span>
         </div>
-        <div className="bg-white rounded-2xl border p-5 shadow-sm">
-          <p className="text-xs uppercase text-gray-500 font-medium">Stations offline</p>
-          <p className="text-3xl font-semibold text-gray-900 mt-2">{aggregated.offline}</p>
-          <p className="text-xs text-gray-500 mt-1">Need investigation</p>
-        </div>
-        <div className="bg-white rounded-2xl border p-5 shadow-sm">
-          <p className="text-xs uppercase text-gray-500 font-medium">Maintenance</p>
-          <p className="text-3xl font-semibold text-gray-900 mt-2">{aggregated.maintenance}</p>
-          <p className="text-xs text-gray-500 mt-1">Scheduled repairs</p>
-        </div>
-        <div className="bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl text-white p-5 shadow-sm">
-          <p className="text-xs uppercase font-medium opacity-80">Power usage</p>
-          <p className="text-2xl font-semibold mt-2">
-            {aggregated.power.charging} kW / {aggregated.power.total} kW
-          </p>
-          <p className="text-xs opacity-80 mt-1">{percentUsed}% used</p>
-          <div className="w-full bg-white/20 rounded-full h-2 mt-3">
-            <div className="bg-white rounded-full h-2" style={{ width: `${percentUsed}%` }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {firstTwoConnectors.map(([k, v], idx) => (
-          <div key={idx} className="bg-white rounded-2xl border p-5 shadow-sm flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-blue-50 text-blue-600">
-              <Plug className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs uppercase text-gray-500">{k}</p>
-              <p className="text-2xl font-semibold text-gray-900">{String(v)}</p>
-              <p className="text-xs text-gray-500">Connector status</p>
-            </div>
-          </div>
-        ))}
       </div>
 
       <div className="space-y-4">
@@ -243,20 +319,73 @@ const StationDashboard: React.FC = () => {
                   <p className="text-sm text-gray-500">No connectors available.</p>
                 ) : (
                   <div className="space-y-2">
-                    {(s.connectors ?? []).map((c: Connector) => (
-                      <div
-                        key={c.id}
-                        className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-2 flex items-center justify-between text-sm"
-                      >
-                        <div>
-                          <p className="font-semibold text-gray-900">{c.code ?? "Connector"}</p>
-                          <p className="text-xs text-gray-500">
-                            {c.type} • {c.powerKw} kW
-                          </p>
+                    {(s.connectors ?? []).map((c: Connector) => {
+                      const status = String(c.status || '').toUpperCase();
+                      const isIdle = status === "IDLE";
+                      const isOffline = status === "OFFLINE";
+                      const isFinished = status === "FINISHED";
+                      const canToggle = isIdle || isOffline || isFinished;
+                      return (
+                        <div
+                          key={c.id}
+                          className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-2 flex items-center justify-between text-sm"
+                        >
+                          <div>
+                            <p className="font-semibold text-gray-900">{c.code ?? "Connector"}</p>
+                            <p className="text-xs text-gray-500">
+                              {c.type} • {c.powerKw} kW
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              isIdle 
+                                ? "bg-green-50 text-green-600" 
+                                : isOffline
+                                ? "bg-gray-50 text-gray-600"
+                                : "bg-yellow-50 text-yellow-600"
+                            }`}>
+                              {c.status}
+                            </span>
+                            {canToggle ? (
+                              <button 
+                                onClick={() => toggleConnectorStatus(c.id, c.status)} 
+                                disabled={Boolean(toggling[c.id ?? ""])}
+                                className={`transition-colors ${
+                                  isIdle 
+                                    ? "text-green-600 hover:text-green-700" 
+                                    : isFinished
+                                    ? "text-green-600 hover:text-green-700"
+                                    : "text-gray-400 hover:text-gray-600"
+                                }`}
+                                title={
+                                  isIdle 
+                                    ? "Deactivate connector" 
+                                    : isFinished
+                                    ? "Reset connector to available"
+                                    : "Activate connector"
+                                }
+                              >
+                                {isIdle || isFinished ? (
+                                  <div className="flex items-center gap-1">
+                                    <Power size={18} className="text-green-600" />
+                                    <span className="text-xs text-green-600">ON</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    <PowerOff size={18} className="text-gray-400" />
+                                    <span className="text-xs text-gray-400">OFF</span>
+                                  </div>
+                                )}
+                              </button>
+                            ) : (
+                              <span className="text-xs text-gray-500 italic" title="Cannot toggle while in use (RESERVED or CHARGING)">
+                                In use
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-xs text-gray-600">{c.status}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -269,7 +398,12 @@ const StationDashboard: React.FC = () => {
                 ) : (
                   <div className="space-y-2">
                     {(s.chargers ?? []).map((ch: Charger) => {
-                      const online = String(ch.status || "").toUpperCase() === "ONLINE";
+                      const status = String(ch.status || "").toUpperCase();
+                      const isOnline = status === "ONLINE";
+                      const isOffline = status === "OFFLINE";
+                      const isMaintenance = status === "MAINTENANCE";
+                      // Staff can only toggle ONLINE/OFFLINE, but can view MAINTENANCE status
+                      const canToggle = isOnline || isOffline;
                       return (
                         <div
                           key={ch.id}
@@ -281,27 +415,46 @@ const StationDashboard: React.FC = () => {
                               {ch.status} • {ch.powerKw} kW
                             </p>
                           </div>
-                          <button
-                            onClick={() => toggleChargerPower(ch.id, ch.status)}
-                            disabled={Boolean(toggling[ch.id ?? ""])}
-                            className={`text-xs rounded-md font-medium transition ${
-                              online
-                                ? "text-green-600 hover:text-green-700"
-                                : "text-gray-400 hover:text-gray-600"
-                            }`}
-                          >
-                            {online ? (
-                              <div className="flex items-center gap-1">
-                                <Power size={16} className="text-green-600" />
-                                <span className="text-xs text-green-600">ON</span>
-                              </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              isOnline 
+                                ? "bg-green-50 text-green-600" 
+                                : isMaintenance
+                                ? "bg-yellow-50 text-yellow-600"
+                                : "bg-gray-50 text-gray-600"
+                            }`}>
+                              {ch.status}
+                            </span>
+                            {canToggle ? (
+                              <button
+                                onClick={() => toggleChargerStatus(ch.id, ch.status)}
+                                disabled={Boolean(toggling[ch.id ?? ""])}
+                                className={`transition-colors ${
+                                  isOnline 
+                                    ? "text-green-600 hover:text-green-700" 
+                                    : "text-gray-400 hover:text-gray-600"
+                                }`}
+                                title={isOnline ? "Turn off charger" : "Turn on charger"}
+                              >
+                                {isOnline ? (
+                                  <div className="flex items-center gap-1">
+                                    <Power size={18} className="text-green-600" />
+                                    <span className="text-xs text-green-600">ON</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    <PowerOff size={18} className="text-gray-400" />
+                                    <span className="text-xs text-gray-400">OFF</span>
+                                  </div>
+                                )}
+                              </button>
                             ) : (
-                              <div className="flex items-center gap-1">
-                                <PowerOff size={16} className="text-gray-400" />
-                                <span className="text-xs text-gray-400">OFF</span>
+                              <div className="flex items-center gap-1 opacity-60 cursor-not-allowed" title="Maintenance mode - cannot toggle">
+                                <Power size={18} className="text-yellow-600" />
+                                <span className="text-xs text-yellow-600">MAINT</span>
                               </div>
                             )}
-                          </button>
+                          </div>
                         </div>
                       );
                     })}

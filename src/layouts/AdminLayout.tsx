@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import SideBar from "@components/Layouts/SideBar";
 import type { SidebarMenuItem } from "@components/Layouts/SideBar";
 import { Outlet, useNavigate } from "react-router-dom";
@@ -9,12 +9,27 @@ import { useDispatch } from "react-redux";
 import { logoutUser } from "../redux/slice/Auth/authThunks";
 import type { AppDispatch } from "../redux/store/store";
 import { useUi } from "../contexts/uiContextCore";
+import { getCookie } from "../libs/utils";
+import type { User } from "../interfaces/Auth";
 
 const AdminLayout: React.FC = () => {
   const { title } = useTitle();
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { confirm, showToast } = useUi();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const userStr = getCookie("user");
+    if (userStr) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(userStr));
+        setUser(parsedUser as User);
+      } catch {
+        setUser(null);
+      }
+    }
+  }, []);
 
   const dropdownItems = [
     {
@@ -43,7 +58,7 @@ const AdminLayout: React.FC = () => {
     <div className="flex h-screen">
       {/* Admin-specific menu passed into generic SideBar */}
       <SideBar
-        avatarName="Đạt Nguyễn"
+        avatarName={user?.name || user?.email || "Admin"}
         menu={[
             { key: "home", label: "Home", icon: <Home size={20} />, to: "/admin" },
             { key: "users", label: "Users", icon: <Users size={20} />, to: "/admin/users" },
