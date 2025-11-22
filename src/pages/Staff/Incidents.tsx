@@ -1,4 +1,6 @@
 import React, { useEffect } from "react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import api from "@libs/axios";
 import { useUi } from "../../contexts/uiContextCore";
 import { useTitle } from "../../contexts";
@@ -9,11 +11,24 @@ type Incident = {
   station?: { id?: string; name?: string } | null;
   stationId?: string | null;
   description?: string | null;
-  level?: string | null;
+  severity?: string | null;
+  level?: string | null; // Keep for backward compatibility
   status?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 };
+
+const STATUS_OPTIONS = [
+  { key: "OPEN", label: "Open" },
+  { key: "IN_PROGRESS", label: "In Progress" },
+  { key: "RESOLVED", label: "Resolved" },
+] as const;
+
+const LEVEL_OPTIONS = [
+  { key: "LOW", label: "Low" },
+  { key: "MEDIUM", label: "Medium" },
+  { key: "HIGH", label: "High" },
+] as const;
 
 const Incidents: React.FC = () => {
   const [list, setList] = React.useState<Incident[]>([]);
@@ -21,10 +36,11 @@ const Incidents: React.FC = () => {
   const [page, setPage] = React.useState<number>(1);
   const [limit] = React.useState<number>(20);
   const [pagination, setPagination] = React.useState({ page: 1, limit: 20, total: 0, pages: 0 });
-  const [form, setForm] = React.useState({ stationId: "", description: "", level: "LOW" });
-  const [submitting, setSubmitting] = React.useState(false);
-  const [stations, setStations] = React.useState<Array<any>>([]);
-  const [stationsLoading, setStationsLoading] = React.useState(false);
+  const [stationsMap, setStationsMap] = React.useState<Record<string, { name?: string; code?: string }>>({});
+  const [search, setSearch] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState<string[]>([]);
+  const [levelFilter, setLevelFilter] = React.useState<string>("");
+  const [refreshKey, setRefreshKey] = React.useState(0);
 
   const { setTitle } = useTitle();
 
@@ -35,8 +51,13 @@ const Incidents: React.FC = () => {
   const fetch = React.useCallback(
     (p: number = page) => {
       setLoading(true);
+      const params: Record<string, any> = { page: p, limit };
+      if (search) params.search = search;
+      if (statusFilter.length) params.status = statusFilter.join(",");
+      if (levelFilter) params.severity = levelFilter;
+
       api
-        .get("/staff/incidents", { params: { page: p, limit } })
+        .get("/staff/incidents", { params })
         .then((res) => {
           const d = res.data as unknown;
 
@@ -72,58 +93,110 @@ const Incidents: React.FC = () => {
         })
         .finally(() => setLoading(false));
     },
-    [limit, page]
+    [limit, page, search, statusFilter, levelFilter]
   );
 
   React.useEffect(() => {
     fetch(page);
-  }, [fetch, page]);
+  }, [fetch, page, refreshKey]);
 
   const { showToast } = useUi();
 
-  // load stations for select
+  // load stations for map
   React.useEffect(() => {
-    setStationsLoading(true);
     api
       .get('/stations')
       .then((res) => {
         const d = res.data as any;
         const list = Array.isArray(d) ? d : d?.stations ?? d?.items ?? d?.data ?? [];
         if (Array.isArray(list)) {
-          setStations(list);
-          if (list.length === 1) {
-            const id = list[0]._id ?? list[0].id ?? "";
-            setForm((f) => ({ ...f, stationId: id }));
-          }
+          // Create map for station names
+          const map: Record<string, { name?: string; code?: string }> = {};
+          list.forEach((s: any) => {
+            const id = s._id ?? s.id;
+            if (id) {
+              map[id] = { name: s.name, code: s.code };
+            }
+          });
+          setStationsMap(map);
         }
       })
       .catch((err) => {
         console.error(err);
         showToast('Failed to load stations', 'error');
-      })
-      .finally(() => setStationsLoading(false));
+      });
   }, [showToast]);
 
-  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSubmitting(true);
+
+  const toggleStatusTab = (statusKey: string) => {
+    setPage(1);
+    if (statusKey === "ALL") {
+      setStatusFilter([]);
+    } else {
+      setStatusFilter((prev) => {
+        if (prev.includes(statusKey)) {
+          return [];
+        } else {
+          return [statusKey];
+        }
+      });
+    }
+  };
+
+  const badgeClass = (status?: string | null) => {
+    const s = String(status || "OPEN").toUpperCase();
+    switch (s) {
+      case "RESOLVED":
+        return "bg-green-50 text-green-700";
+      case "IN_PROGRESS":
+        return "bg-yellow-50 text-yellow-700";
+      case "OPEN":
+        return "bg-red-50 text-red-700";
+      default:
+        return "bg-gray-50 text-gray-600";
+    }
+  };
+
+  const levelBadgeClass = (severity?: string | null) => {
+    const s = String(severity || "LOW").toUpperCase();
+    switch (s) {
+      case "HIGH":
+        return "bg-red-50 text-red-700";
+      case "MEDIUM":
+        return "bg-yellow-50 text-yellow-700";
+      case "LOW":
+        return "bg-green-50 text-green-700";
+      default:
+        return "bg-gray-50 text-gray-600";
+    }
+  };
+
+  const getStationName = (stationId?: string | null) => {
+    if (!stationId) return "—";
+    const station = stationsMap[stationId];
+    return station?.name || station?.code || stationId || "—";
+  };
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return "—";
     try {
-      await api.post("/staff/incidents", form);
-      showToast("Incident reported successfully", "success");
-      setForm({ stationId: "", description: "", level: "LOW" });
-      fetch(page);
-    } catch (err) {
-      console.error(err);
-      showToast("Failed to report incident", "error");
-    } finally {
-      setSubmitting(false);
+      const d = new Date(value);
+      return new Intl.DateTimeFormat("vi-VN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(d);
+    } catch {
+      return value;
     }
   };
 
   const updateStatus = async (id: string, status: string) => {
     try {
       await api.patch(`/staff/incidents/${id}/status`, { status });
-      fetch(page);
+      setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.error(err);
       showToast("Failed to update status", "error");
@@ -131,156 +204,179 @@ const Incidents: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-inner">
-
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* --- Report Form --- */}
-        <div className="bg-white/80 backdrop-blur-lg border border-gray-100 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-          <h3 className="font-semibold text-lg mb-4 text-gray-700">📋 Report New Incident</h3>
-          <form onSubmit={submit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-600">Station</label>
-              <div>
-                {stations.length === 1 ? (
-                  <div className="mt-1">
-                    <input type="hidden" value={form.stationId} />
-                    <div className="w-full mt-1 rounded-lg p-2.5 text-sm bg-gray-50 text-gray-700">
-                      {stations[0].name ?? stations[0].id}
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <select
-                      value={form.stationId}
-                      onChange={(e) => setForm((f) => ({ ...f, stationId: e.target.value }))}
-                      className="w-full mt-1 border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                    >
-                      <option value="">-- choose station --</option>
-                      {stations.map((s) => (
-                        <option key={s._id ?? s.id} value={s._id ?? s.id}>
-                          {s.name ?? s.id}
-                        </option>
-                      ))}
-                    </select>
-                    {stationsLoading && <div className="text-xs text-gray-500 mt-1">Loading stations...</div>}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">Description</label>
-              <textarea
-                placeholder="Describe the issue..."
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full mt-1 border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[100px]"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">Severity Level</label>
-              <select
-                value={form.level}
-                onChange={(e) => setForm((f) => ({ ...f, level: e.target.value }))}
-                className="w-full mt-1 border border-gray-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              >
-                <option value="LOW">🟢 Low</option>
-                <option value="MEDIUM">🟠 Medium</option>
-                <option value="HIGH">🔴 High</option>
-              </select>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={submitting}
-                className={`px-5 py-2.5 rounded-lg text-white text-sm font-medium transition-all ${
-                  submitting
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 shadow-md hover:shadow-lg"
-                }`}
-              >
-                {submitting ? "Submitting..." : "Report Incident"}
-              </button>
-            </div>
-          </form>
+    <div>
+      {/* Search and Filters */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              value={search}
+              onChange={(e) => {
+                setPage(1);
+                setSearch(e.target.value);
+              }}
+              placeholder="Search incidents..."
+              className="border border-[#333333] rounded-lg px-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500">Level</label>
+            <select
+              value={levelFilter}
+              onChange={(e) => {
+                setPage(1);
+                setLevelFilter(e.target.value);
+              }}
+              className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+            >
+              <option value="">All</option>
+              {LEVEL_OPTIONS.map((l) => (
+                <option key={l.key} value={l.key}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+        <Link
+          to="/staff/incidents/create"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all inline-block"
+        >
+          + Report Incident
+        </Link>
+      </div>
 
-        {/* --- Incident List --- */}
-        <div className="bg-white/80 backdrop-blur-lg border border-gray-100 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-          <h3 className="font-semibold text-lg mb-3 text-gray-700">📄 Incident List</h3>
+      {/* Status Tabs */}
+      <div className="flex gap-6 border-b mb-4">
+        <button
+          className={`py-2 px-2 text-sm font-medium border-b-2 transition-all ${
+            statusFilter.length === 0
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-500 hover:text-blue-600"
+          }`}
+          onClick={() => toggleStatusTab("ALL")}
+        >
+          All
+        </button>
+        {STATUS_OPTIONS.map((t) => (
+          <button
+            key={t.key}
+            className={`py-2 px-2 text-sm font-medium border-b-2 transition-all ${
+              statusFilter.includes(t.key)
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-blue-600"
+            }`}
+            onClick={() => toggleStatusTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-          {loading ? (
-            <div className="text-sm text-gray-500 animate-pulse">Loading incidents...</div>
-          ) : list.length === 0 ? (
-            <div className="text-sm text-gray-500">No incidents found.</div>
-          ) : (
-            <ul className="space-y-3 max-h-[480px] overflow-y-auto pr-2">
-              {list.map((it) => {
-                const status = String(it.status || 'NEW').toUpperCase();
-                const dotClass =
-                  status === 'RESOLVED'
-                    ? 'bg-green-400'
-                    : status === 'IN_PROGRESS'
-                    ? 'bg-yellow-400'
-                    : 'bg-red-400';
-                return (
-                  <li
-                    key={it.id ?? it._id}
-                    className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-400 transition-all shadow-sm hover:shadow-md"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-medium text-gray-800 flex items-center">
-                          <span
-                            className={`${dotClass} inline-block w-3 h-3 rounded-full mr-3`}
-                            title={status}
-                            aria-hidden="true"
-                          />
-                          <span>{it.station?.name || it.stationId || 'Unknown'}</span>
+      {/* Incident Table */}
+      <div className="bg-white rounded-xl border">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium text-gray-900">Incident List</h2>
+            <span className="text-sm text-gray-500">{pagination.total} results</span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">Loading data...</td>
+                </tr>
+              ) : list.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">No incidents found</td>
+                </tr>
+              ) : (
+                list.map((it) => {
+                  const incidentId = it.id || it._id;
+                  const status = String(it.status || "OPEN").toUpperCase();
+                  return (
+                    <tr key={incidentId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {incidentId}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {getStationName(it.stationId)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700 max-w-md">
+                        <div className="truncate" title={it.description || undefined}>
+                          {it.description || "—"}
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">Description: {it.description}</div>
-                        <div className="text-xs text-gray-400 mt-1">Status: {status}</div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        {status === 'IN_PROGRESS' && (
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${levelBadgeClass(it.severity || it.level)}`}>
+                          <span className="w-2 h-2 rounded-full bg-current"></span>
+                          {it.severity || it.level || "—"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${badgeClass(it.status)}`}>
+                          <span className="w-2 h-2 rounded-full bg-current"></span>
+                          {status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {formatDateTime(it.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {status === "IN_PROGRESS" && (
                           <button
-                            onClick={() => updateStatus(it.id ?? it._id ?? '', 'RESOLVED')}
-                            className="text-sm px-3 py-1.5 bg-green-500 text-white rounded-md font-medium hover:bg-green-600 transition-all"
+                            onClick={() => updateStatus(incidentId || "", "RESOLVED")}
+                            className="inline-flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-xs transition"
                           >
                             Resolve
                           </button>
                         )}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+                        {status !== "IN_PROGRESS" && <span className="text-gray-400">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        {pagination.pages > 1 && (
+          <div className="px-6 py-4 border-t flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Page {pagination.page} / {Math.max(1, pagination.pages)}
+            </div>
+            <div className="flex items-center gap-2">
               <button
-                disabled={pagination.page <= 1}
+                disabled={pagination.page <= 1 || loading}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                className="px-3 py-1.5 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center gap-1"
               >
-                ← Prev
+                <ChevronLeft size={16} /> Previous
               </button>
-              <span>
-                Page {pagination.page} / {pagination.pages}
-              </span>
               <button
-                disabled={pagination.page >= pagination.pages}
-                onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
-                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                disabled={pagination.page >= pagination.pages || loading}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-3 py-1.5 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center gap-1"
               >
-                Next →
+                Next <ChevronRight size={16} />
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

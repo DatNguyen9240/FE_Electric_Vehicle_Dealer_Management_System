@@ -61,8 +61,6 @@ const InvoiceManagementDetail: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [data, setData] = React.useState<InvoiceDetail | null>(null);
 
-  // No edit form on detail page; edits are done in InvoiceUpdate
-
   React.useEffect(() => {
     setTitle("Invoice Details");
   }, [setTitle]);
@@ -167,22 +165,16 @@ const InvoiceManagementDetail: React.FC = () => {
               </div>
             </div>
 
-            <div className="border-t px-6 py-4 flex items-center gap-3">
-              <a
-                href={`/admin/invoices/update/${data.id || data._id}`}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
-              >
-                Update Invoice
-              </a>
-              {data.session_id && (
+            {data.session_id && (
+              <div className="border-t px-6 py-4">
                 <a
                   href={`/admin/sessions/view/${data.session_id}`}
                   className="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50"
                 >
                   View Session
                 </a>
-              )}
-            </div>
+              </div>
+            )}
           </>
         )}
       </div>

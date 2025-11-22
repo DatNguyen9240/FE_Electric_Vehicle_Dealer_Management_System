@@ -46,9 +46,12 @@ const AdminTariffs = lazy(() => import("@pages/Admin/Tariffs/Tariffs"));
 const StaffLayout = lazy(() => import("@layouts/StaffLayout"));
 const StaffStationDashboard = lazy(() => import("@pages/Staff/StationDashboard"));
 const StaffBookings = lazy(() => import("@pages/Staff/Bookings"));
+const StaffBookingDetail = lazy(() => import("@pages/Staff/BookingDetail"));
 const StaffChargingSessions = lazy(() => import("@pages/Staff/ChargingSessions"));
 const StaffIncidents = lazy(() => import("@pages/Staff/Incidents"));
+const StaffCreateIncident = lazy(() => import("@pages/Staff/CreateIncident"));
 const StaffInvoices = lazy(() => import("@pages/Staff/Invoices"));
+const StaffInvoiceDetail = lazy(() => import("@pages/Staff/InvoiceDetail"));
 const StaffFeedbacks = lazy(() => import("@pages/Staff/Feedbacks"));
 const StationsManager = lazy(() => import("@pages/Admin/Infrastructure/StationsManager"));
 const ChargersManager = lazy(() => import("@pages/Admin/Infrastructure/ChargersManager"));
@@ -92,9 +95,6 @@ const MembershipPlanDetail = lazy(
 );
 const MembershipPlanForm = lazy(
   () => import("@pages/Admin/MembershipPlans/MembershipPlanForm")
-);
-const InvoiceUpdate = lazy(
-  () => import("@pages/Admin/Invoices/InvoiceUpdate")
 );
 const IncidentManager = lazy(
   () => import("@pages/Admin/Incidents/IncidentManager")
@@ -244,6 +244,10 @@ export default function AppRoutes() {
             element={createLazyRoute(StaffBookings, "Loading bookings...")}
           />
           <Route
+            path="/staff/bookings/:bookingId"
+            element={createLazyRoute(StaffBookingDetail, "Loading booking details...")}
+          />
+          <Route
             path="/staff/feedbacks"
             element={createLazyRoute(StaffFeedbacks, "Loading feedbacks...")}
           />
@@ -256,8 +260,16 @@ export default function AppRoutes() {
             element={createLazyRoute(StaffIncidents, "Loading incidents...")}
           />
           <Route
+            path="/staff/incidents/create"
+            element={createLazyRoute(StaffCreateIncident, "Loading create incident...")}
+          />
+          <Route
             path="/staff/invoices"
             element={createLazyRoute(StaffInvoices, "Loading invoices...")}
+          />
+          <Route
+            path="/staff/sessions/:sessionId/invoice"
+            element={createLazyRoute(StaffInvoiceDetail, "Loading invoice...")}
           />
         </Route>
 
@@ -353,20 +365,6 @@ export default function AppRoutes() {
             element={createLazyRoute(
               InvoiceManagementDetail,
               "Loading invoice detail..."
-            )}
-          />
-          <Route
-            path="/admin/invoices/update"
-            element={createLazyRoute(
-              InvoiceUpdate,
-              "Loading invoice update..."
-            )}
-          />
-          <Route
-            path="/admin/invoices/update/:invoiceId"
-            element={createLazyRoute(
-              InvoiceUpdate,
-              "Loading invoice update..."
             )}
           />
           <Route

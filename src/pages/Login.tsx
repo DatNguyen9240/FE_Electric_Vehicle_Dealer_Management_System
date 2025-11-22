@@ -17,11 +17,17 @@ const Login: React.FC = () => {
       .then((payload: any) => {
         toast.success("Login successful!");
         // Redirect based on role returned from backend
-        const role = payload?.user?.role ?? payload?.role;
+        const user = payload?.user || payload;
+        const role = user?.role?.toLowerCase() || "";
         setTimeout(() => {
-          if (role === "staff") return navigate("/staff");
-          if (role === "admin") return navigate("/admin");
-          navigate("/");
+          if (role === "staff") {
+            navigate("/staff");
+          } else if (role === "admin") {
+            navigate("/admin");
+          } else {
+            // Default user role
+            navigate("/");
+          }
         }, 600);
       })
       .catch((err) => {

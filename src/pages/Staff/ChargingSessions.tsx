@@ -1,105 +1,74 @@
 import React from "react";
+import { Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 import api from "@libs/axios";
-import { Loader2, Play, Square, ChevronLeft, ChevronRight, Eye, RefreshCw } from "lucide-react";
-import { useUi } from "../../contexts/uiContextCore";
 import { useTitle } from "../../contexts";
 
-type Session = {
-  id?: string;
+type SessionItem = {
   _id?: string;
-  user?: { name?: string; fullName?: string } | null;
-  customerName?: string | null;
-  bookingRef?: string | null;
-  bookingId?: string | null;
-  booking?: { id?: string } | null;
-  station?: { name?: string } | null;
-  stationName?: string | null;
-  connector?: { code?: string; name?: string } | null;
-  startedAt?: string | null;
+  id?: string;
   status?: string | null;
+  startedAt?: string | null;
+  stoppedAt?: string | null;
+  createdAt?: string | null;
+  user?: { id?: string; name?: string; email?: string; phone?: string } | null;
+  station?: { id?: string; name?: string; code?: string } | null;
+  connector?: { id?: string; code?: string; type?: string } | null;
+  booking?: { id?: string; bookingRef?: string } | null;
+  bookingRef?: string | null;
+};
+
+type ListResponse = {
+  pagination: { page: number; limit: number; total: number; pages: number };
+  items: SessionItem[];
+};
+
+const STATUS_OPTIONS = [
+  { key: "PENDING", label: "Pending" },
+  { key: "CHARGING", label: "Charging" },
+  { key: "COMPLETED", label: "Completed" },
+  { key: "STOPPED", label: "Stopped" },
+] as const;
+
+const badgeClass = (status?: string | null) => {
+  switch (status) {
+    case "PENDING":
+      return "bg-yellow-50 text-yellow-700";
+    case "CHARGING":
+      return "bg-green-50 text-green-700";
+    case "COMPLETED":
+      return "bg-blue-50 text-blue-700";
+    case "STOPPED":
+      return "bg-gray-100 text-gray-600";
+    default:
+      return "bg-gray-50 text-gray-600";
+  }
 };
 
 const ChargingSessions: React.FC = () => {
-  const [loading, setLoading] = React.useState(true);
-  const [sessions, setSessions] = React.useState<Session[]>([]);
-  const [page, setPage] = React.useState<number>(1);
-  const [limit] = React.useState<number>(20);
-  const [pagination, setPagination] = React.useState({ page: 1, limit: 20, total: 0, pages: 0 });
-  const [connectors, setConnectors] = React.useState<Array<{ id?: string; code?: string }>>([]);
-  const [stations, setStations] = React.useState<Array<{ id?: string; name?: string }>>([]);
-  const [filters, setFilters] = React.useState({ connectorId: '', stationId: '', status: '', search: '', sort: '-startedAt' });
-  const [paymentFilter, setPaymentFilter] = React.useState<string>('');
+  const { setTitle } = useTitle();
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const { showToast, confirm } = useUi();
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const [preview, setPreview] = React.useState<any | null>(null);
-  const [previewLoading, setPreviewLoading] = React.useState(false);
-  // note input removed - preview only
+  // Filters & query state
+  const [search, setSearch] = React.useState("");
+  const [statuses, setStatuses] = React.useState<string[]>([]);
+  const [page, setPage] = React.useState(1);
+  const [limit] = React.useState(20);
+  const [sort] = React.useState<string>("-startedAt");
+
+  // Time range filters
+  const [from, setFrom] = React.useState<string>("");
+  const [to, setTo] = React.useState<string>("");
+
+  const [rows, setRows] = React.useState<SessionItem[]>([]);
+  const [total, setTotal] = React.useState(0);
+  const [pages, setPages] = React.useState(0);
   const [invoiceStatusMap, setInvoiceStatusMap] = React.useState<Record<string, string>>({});
 
-    const { setTitle } = useTitle();
-    React.useEffect(() => {
-      setTitle("Charging Sessions");
-    }, [setTitle]);
-
-  const fetch = React.useCallback((p: number) => {
-    setLoading(true);
-    const params: Record<string, unknown> = { page: p, limit };
-    if (filters.connectorId) params.connectorId = filters.connectorId;
-    if (filters.stationId) params.stationId = filters.stationId;
-    if (filters.status) params.status = filters.status;
-    if (filters.search) params.search = filters.search;
-    if (filters.sort) params.sort = filters.sort;
-    api
-      .get("/staff/sessions", { params })
-      .then((res) => {
-        const d = res.data as unknown;
-        if (typeof d === "object" && d && !Array.isArray(d)) {
-          const rec = d as Record<string, unknown>;
-          const pag = rec["pagination"] as Record<string, unknown> | undefined;
-          if (pag) {
-            setPagination({
-              page: (pag["page"] as number) || p,
-              limit: (pag["limit"] as number) || limit,
-              total: (pag["total"] as number) || 0,
-              pages: (pag["pages"] as number) || 0,
-            });
-          }
-
-          const tryArrays = ["items", "data", "sessions"] as const;
-          for (const key of tryArrays) {
-            const val = rec[key];
-            if (Array.isArray(val)) {
-              const arr = val as Session[];
-              setSessions(arr);
-              // fetch invoice statuses for completed sessions
-              const completedIds = arr
-                .filter((s) => s.status === 'COMPLETED')
-                .map((s) => s.id ?? s._id)
-                .filter(Boolean) as string[];
-              if (completedIds.length) fetchInvoiceStatuses(completedIds);
-              return;
-            }
-          }
-        }
-        if (Array.isArray(d)) {
-          const arr = d as Session[];
-          setSessions(arr);
-          const completedIds = arr
-            .filter((s) => s.status === 'COMPLETED')
-            .map((s) => s.id ?? s._id)
-            .filter(Boolean) as string[];
-          if (completedIds.length) fetchInvoiceStatuses(completedIds);
-          return;
-        }
-        setSessions([]);
-      })
-      .catch((err: unknown) => {
-        console.error(err);
-        setSessions([]);
-      })
-      .finally(() => setLoading(false));
-  }, [limit]);
+  React.useEffect(() => {
+    setTitle("Charging Sessions");
+  }, [setTitle]);
 
   const fetchInvoiceStatuses = async (sessionIds: string[]) => {
     try {
@@ -127,373 +96,237 @@ const ChargingSessions: React.FC = () => {
     }
   };
 
-  // load connectors and stations for filters
-  React.useEffect(() => {
-    api
-      .get('/connectors', { params: { status: 'IDLE', limit: 200 } })
-      .then((res) => {
-        const d = res.data as any;
-        const list = Array.isArray(d) ? d : d?.items ?? d?.connectors ?? d?.data ?? [];
-        if (Array.isArray(list)) setConnectors(list.map((c: any) => ({ id: c._id ?? c.id, code: c.code })));
-      })
-      .catch(() => {});
-
-    api
-      .get('/stations', { params: { status: 'ONLINE', limit: 200 } })
-      .then((res) => {
-        const d = res.data as any;
-        const list = Array.isArray(d) ? d : d?.stations ?? d?.items ?? d?.data ?? [];
-        if (Array.isArray(list)) setStations(list.map((s: any) => ({ id: s._id ?? s.id, name: s.name })));
-      })
-      .catch(() => {});
-  }, []);
-
-  React.useEffect(() => {
-    fetch(page);
-  }, [fetch, page]);
-
-  // debounce search input into filters.search
-  React.useEffect(() => {
-    const t = setTimeout(() => {
-      setFilters((f) => ({ ...f, search: searchTerm }));
-      fetch(1);
-    }, 350);
-    return () => clearTimeout(t);
-  }, [searchTerm]);
-
-  const applyFilters = () => {
-    setPage(1);
-    fetch(1);
-  };
-
-  const getDisplayedSessions = () => {
-    if (!paymentFilter) return sessions;
-    return sessions.filter((s) => {
-      const sid = s.id ?? s._id;
-      if (!sid) return false;
-      return invoiceStatusMap[sid] === paymentFilter;
-    });
-  };
-
-  const stopSession = async (id?: string) => {
-    if (!id) return showToast("Missing session id", "error");
-    const ok = await confirm("Stop this session?");
-    if (!ok) return;
-    api
-      .post(`/sessions/${id}/stop`)
-      .then(() => {
-        showToast("Session stopped", "success");
-        fetch(page);
-      })
-      .catch(() => showToast("Failed to stop session", "error"));
-  };
-
-  
-
-  const startSession = async (bookingId?: string) => {
-    const payload = { bookingId, paymentMethod: "ONSITE" };
-    api
-      .post(`/sessions/start`, payload)
-      .then(() => {
-        showToast("Session started", "success");
-        fetch(page);
-      })
-      .catch(() => showToast("Failed to start session", "error"));
-  };
-
-  const openInvoicePreview = async (sessionId?: string) => {
-    if (!sessionId) return showToast('Missing session id', 'error');
-    setPreviewLoading(true);
+  const fetchData = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await api.get(`/staff/sessions/${sessionId}/invoice`);
-      const d = res.data as any;
-      setPreview({ session: d.session, invoice: d.invoice, sessionId });
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to load invoice preview', 'error');
+      const res = await api.get<ListResponse>("/staff/sessions", {
+        params: {
+          search: search || undefined,
+          status: statuses.length ? statuses.join(",") : undefined,
+          from: from || undefined,
+          to: to || undefined,
+          page,
+          limit,
+          sort,
+        },
+      });
+      setRows(res.data.items);
+      setTotal(res.data.pagination.total);
+      setPages(res.data.pagination.pages);
+
+      // Fetch invoice statuses for completed sessions
+      const completedIds = res.data.items
+        .filter((s) => s.status === "COMPLETED")
+        .map((s) => s.id || s._id)
+        .filter(Boolean) as string[];
+      if (completedIds.length) {
+        fetchInvoiceStatuses(completedIds);
+      }
+    } catch (err: unknown) {
+      const getErrorMessage = (e: unknown) => {
+        try {
+          const ae = e as { response?: { data?: { message?: string } }; message?: string };
+          return ae?.response?.data?.message || ae?.message || "Error loading data";
+        } catch {
+          return "Error loading data";
+        }
+      };
+      setError(getErrorMessage(err));
     } finally {
-      setPreviewLoading(false);
+      setLoading(false);
+    }
+  }, [search, statuses, from, to, page, limit, sort]);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const toggleStatusTab = (statusKey: string) => {
+    setPage(1);
+    if (statusKey === "ALL") {
+      setStatuses([]);
+    } else {
+      setStatuses((prev) => {
+        if (prev.includes(statusKey)) {
+          return [];
+        } else {
+          return [statusKey];
+        }
+      });
     }
   };
 
-  // recordFromPreview removed - preview only
-
-  const getStatusBadge = (status?: string | null) => {
-    const base = "px-2 py-1 rounded-full text-xs font-medium";
-    switch (status) {
-      case "ACTIVE":
-        return <span className={`${base} bg-green-100 text-green-700`}>Active</span>;
-      case "COMPLETED":
-        return <span className={`${base} bg-blue-100 text-blue-700`}>Completed</span>;
-      case "FAILED":
-      case "CANCELLED":
-        return <span className={`${base} bg-red-100 text-red-700`}>Cancelled</span>;
-      default:
-        return <span className={`${base} bg-gray-100 text-gray-700`}>{status || "Unknown"}</span>;
-    }
-  };
-
-  const formatCurrency = (amt?: number | null, cur?: string | null) => {
-    if (amt == null) return '-';
-    try {
-      return `${Number(amt).toLocaleString()} ${cur || ''}`.trim();
-    } catch {
-      return `${amt} ${cur || ''}`.trim();
-    }
-  };
-
-  if (loading)
-    return (
-      <div className="flex items-center justify-center h-48 text-gray-500">
-        <Loader2 className="animate-spin w-6 h-6 mr-2" />
-        Loading sessions...
-      </div>
-    );
 
   return (
-      <div className="p-5">
-        <div className="mb-4 flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Connector</label>
-            <select
-              value={filters.connectorId}
-              onChange={(e) => setFilters(f => ({ ...f, connectorId: e.target.value }))}
-              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
-            >
-              <option value="">All</option>
-              {connectors.map(c => (
-                <option key={c.id} value={c.id}>{c.code}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Station</label>
-            <select
-              value={filters.stationId}
-              onChange={(e) => setFilters(f => ({ ...f, stationId: e.target.value }))}
-              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
-            >
-              <option value="">All</option>
-              {stations.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Status</label>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
-              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
-            >
-              <option value="">Any</option>
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="COMPLETED">COMPLETED</option>
-              <option value="FAILED">FAILED</option>
-              <option value="CANCELLED">CANCELLED</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Payment</label>
-            <select
-              value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
-            >
-              <option value="">All</option>
-              <option value="UNPAID">UNPAID</option>
-              <option value="PAID">PAID</option>
-              <option value="EXPIRED">EXPIRED</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Sort</label>
-            <select
-              value={filters.sort}
-              onChange={(e) => setFilters(f => ({ ...f, sort: e.target.value }))}
-              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
-            >
-              <option value="-startedAt">Newest</option>
-              <option value="startedAt">Oldest</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
+    <div >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
-              type="search"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
+              value={search}
+              onChange={(e) => {
+                setPage(1);
+                setSearch(e.target.value);
+              }}
+              placeholder="Search user/booking"
+              className="border border-[#333333] rounded-lg px-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
             />
           </div>
-
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => { fetch(page); showToast('Refreshed', 'success'); }}
-              className="px-3 py-1 border rounded text-sm inline-flex items-center gap-2"
-            >
-              <RefreshCw size={14} /> Refresh
-            </button>
-          </div>
-
-          <div>
-            <button onClick={applyFilters} className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm">Apply</button>
+            <input
+              type="datetime-local"
+              value={from}
+              onChange={(e) => {
+                setPage(1);
+                setFrom(e.target.value);
+              }}
+              className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+            />
+            <span className="text-sm text-gray-500">to</span>
+            <input
+              type="datetime-local"
+              value={to}
+              onChange={(e) => {
+                setPage(1);
+                setTo(e.target.value);
+              }}
+              className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+            />
           </div>
         </div>
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-gray-500">
-          Total: {pagination.total.toLocaleString()} sessions
-        </span>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium">Customer</th>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium">BookingID</th>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium">Station</th>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium">Connector</th>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium">Started</th>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium">Status</th>
-              <th className="px-4 py-2 text-left text-gray-600 font-medium text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sessions.length === 0 ? (
+      <div className="flex gap-6 border-b mb-4">
+        <button
+          className={`py-2 px-2 text-sm font-medium border-b-2 transition-all ${
+            statuses.length === 0
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-500 hover:text-blue-600"
+          }`}
+          onClick={() => toggleStatusTab("ALL")}
+        >
+          All
+        </button>
+        {STATUS_OPTIONS.map((t) => (
+          <button
+            key={t.key}
+            className={`py-2 px-2 text-sm font-medium border-b-2 transition-all ${
+              statuses.includes(t.key)
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-blue-600"
+            }`}
+            onClick={() => toggleStatusTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-xl border">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium text-gray-900">Session List</h2>
+            <span className="text-sm text-gray-500">{total} results</span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan={7} className="text-center py-6 text-gray-500">
-                  No sessions found.
-                </td>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Connector</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            ) : (
-              getDisplayedSessions().map((s: Session, i: number) => (
-                <tr
-                  key={s.id ?? s._id ?? i}
-                  className="border-t hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-2">
-                    {s.user?.name ?? s.user?.fullName ?? s.customerName ?? s.bookingRef ?? "-"}
-                  </td>
-                  <td className="px-4 py-2">{s.bookingRef ?? "-"}</td>
-                  <td className="px-4 py-2">{s.station?.name ?? s.stationName ?? "-"}</td>
-                  <td className="px-4 py-2">{s.connector?.code ?? s.connector?.name ?? "-"}</td>
-                  <td className="px-4 py-2 text-gray-600">
-                    {s.startedAt ? new Date(s.startedAt).toLocaleString() : "-"}
-                  </td>
-                  <td className="px-4 py-2">{getStatusBadge(s.status)}</td>
-                  <td className="px-4 py-2 text-center">
-                    {s.status === "ACTIVE" ? (
-                      <button
-                        onClick={() => stopSession(s.id ?? s._id)}
-                        className="inline-flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs transition"
-                      >
-                        <Square size={14} />
-                        Stop
-                      </button>
-                    ) : s.status === "COMPLETED" ? (
-                      (() => {
-                        const sid = s.id ?? s._id;
-                        // Only show invoice preview (no record action) when invoice exists
-                        const hasInvoice = sid ? Boolean(invoiceStatusMap[sid]) : false;
-                        return hasInvoice ? (
-                          <button
-                            onClick={() => openInvoicePreview(sid)}
-                            className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs transition"
-                          >
-                            <Eye size={14} />
-                            View invoice
-                          </button>
-                        ) : (
-                          <span className="text-gray-500 text-xs">{sid && invoiceStatusMap[sid] ? invoiceStatusMap[sid] : '—'}</span>
-                        );
-                      })()
-                    ) : (s.booking?.id || s.bookingId) ? (
-                      <button
-                        onClick={() => startSession(s.booking?.id ?? s.bookingId ?? undefined)}
-                        className="inline-flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-xs transition"
-                      >
-                        <Play size={14} />
-                        Start
-                      </button>
-                    ) : (
-                      <span className="text-gray-400 text-xs">—</span>
-                    )}
-                  </td>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-red-600">{error}</td>
+                </tr>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No sessions</td>
+                </tr>
+              ) : (
+                rows.map((s) => {
+                  const sessionId = s.id || s._id;
+                  const hasInvoice = sessionId ? Boolean(invoiceStatusMap[sessionId]) : false;
+                  return (
+                    <tr key={sessionId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {sessionId}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {s.user?.name || s.user?.email || s.user?.id || "—"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {s.station?.name || s.station?.code || "—"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {s.connector?.code || s.connector?.type || "—"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${badgeClass(s.status)}`}>
+                          <span className="w-2 h-2 rounded-full bg-current"></span>
+                          {s.status || "—"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex items-center gap-2">
+                          {s.status === "COMPLETED" && hasInvoice ? (
+                            <Link
+                              to={`/staff/sessions/${sessionId}/invoice`}
+                              className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs transition"
+                            >
+                              <Eye size={14} />
+                              View invoice
+                            </Link>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        {pages > 1 && (
+          <div className="px-6 py-4 border-t flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Page {page} / {Math.max(1, pages)}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-1.5 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center gap-1"
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <button
+                disabled={page >= pages || loading}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-3 py-1.5 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center gap-1"
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {pagination.pages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-4">
-          <button
-            disabled={pagination.page <= 1}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            className="flex items-center gap-1 px-3 py-1 border rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft size={16} /> Prev
-          </button>
-          <span className="text-sm text-gray-600">
-            Page {pagination.page} / {pagination.pages}
-          </span>
-          <button
-            disabled={pagination.page >= pagination.pages}
-            onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
-            className="flex items-center gap-1 px-3 py-1 border rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next <ChevronRight size={16} />
-          </button>
-        </div>
-      )}
-      {/* Invoice preview / record modal */}
-      {preview && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-[92%] max-w-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Invoice Preview</h3>
-              <button onClick={() => setPreview(null)} className="text-gray-500">Close</button>
-            </div>
-
-            {previewLoading ? (
-              <div className="flex items-center gap-2"><Loader2 className="animate-spin" /> Loading...</div>
-            ) : (
-              <div className="space-y-3 text-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-xs text-gray-500">Session</div>
-                    <div>{preview.session?.id ?? preview.session?._id ?? '-'}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500">Invoice</div>
-                    <div>{preview.invoice?.id ?? preview.invoice?._id ?? '-'}</div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-xs text-gray-500">Billing</div>
-                  <div className="flex gap-4">
-                    <div>Charging: {formatCurrency(preview.invoice?.meta?.billing?.chargingAmount, preview.invoice?.currency)}</div>
-                    <div>Idle: {formatCurrency(preview.invoice?.meta?.billing?.idleAmount, preview.invoice?.currency)}</div>
-                    <div className="font-medium">Total: {formatCurrency(preview.invoice?.meta?.billing?.totalAmount ?? preview.invoice?.total, preview.invoice?.currency)}</div>
-                  </div>
-                </div>
-
-         
-
-                {/* Footer removed - actions moved elsewhere */}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

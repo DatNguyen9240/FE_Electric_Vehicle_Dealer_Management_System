@@ -127,6 +127,21 @@ const MembershipPlanForm: React.FC = () => {
     }));
   };
 
+  const isFormValid = React.useMemo(() => {
+    if (!formData.code.trim()) return false;
+    if (!formData.name.trim()) return false;
+    if (!Number.isFinite(formData.monthly_fee_vnd) || formData.monthly_fee_vnd < 0) return false;
+    if (!formData.status) return false;
+    const numericFields: number[] = [
+      formData.mods.pricePerKwhPctOff,
+      formData.mods.idleFeePerMinPctOff,
+      formData.mods.graceMinBonus,
+      formData.mods.minBalancePctOff,
+      formData.mods.queueBoost,
+    ];
+    return numericFields.every((value) => Number.isFinite(value) && value >= 0);
+  }, [formData]);
+
   return (
     <div className="p-6">
       <button
@@ -185,6 +200,7 @@ const MembershipPlanForm: React.FC = () => {
                     value={formData.monthly_fee_vnd}
                     onChange={(e) => setFormData({ ...formData, monthly_fee_vnd: Number(e.target.value) || 0 })}
                     min="0"
+                    required
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
@@ -193,6 +209,7 @@ const MembershipPlanForm: React.FC = () => {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    required
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   >
                     <option value="ACTIVE">Active</option>
@@ -214,19 +231,7 @@ const MembershipPlanForm: React.FC = () => {
                       onChange={(e) => updateMod("pricePerKwhPctOff", Number(e.target.value) || 0)}
                       min="0"
                       max="100"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price per Minute Discount (%)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.mods.pricePerMinPctOff}
-                      onChange={(e) => updateMod("pricePerMinPctOff", Number(e.target.value) || 0)}
-                      min="0"
-                      max="100"
+                      required
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
@@ -240,6 +245,7 @@ const MembershipPlanForm: React.FC = () => {
                       onChange={(e) => updateMod("idleFeePerMinPctOff", Number(e.target.value) || 0)}
                       min="0"
                       max="100"
+                      required
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
@@ -253,6 +259,7 @@ const MembershipPlanForm: React.FC = () => {
                       onChange={(e) => updateMod("graceMinBonus", Number(e.target.value) || 0)}
                       min="0"
                       max="60"
+                      required
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
@@ -266,6 +273,7 @@ const MembershipPlanForm: React.FC = () => {
                       onChange={(e) => updateMod("minBalancePctOff", Number(e.target.value) || 0)}
                       min="0"
                       max="100"
+                      required
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
@@ -279,6 +287,7 @@ const MembershipPlanForm: React.FC = () => {
                       onChange={(e) => updateMod("queueBoost", Number(e.target.value) || 0)}
                       min="0"
                       max="10"
+                      required
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     />
                   </div>
@@ -292,7 +301,7 @@ const MembershipPlanForm: React.FC = () => {
               <div className="flex items-center gap-3">
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || !isFormValid}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
                 >
                   {submitting ? "Saving..." : "Save"}

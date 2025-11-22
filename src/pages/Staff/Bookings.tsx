@@ -1,4 +1,6 @@
 import React, { useEffect } from "react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import api from "@libs/axios";
 import { useUi } from "../../contexts/uiContextCore";
 import { useTitle } from "../../contexts";
@@ -30,7 +32,6 @@ const Bookings: React.FC = () => {
   const [page, setPage] = React.useState<number>(1);
   const [limit] = React.useState<number>(20);
   const [pagination, setPagination] = React.useState({ page: 1, limit: 20, total: 0, pages: 0 });
-  const [selected, setSelected] = React.useState<Booking | null>(null);
   
   const { showToast } = useUi();
   
@@ -91,7 +92,7 @@ const Bookings: React.FC = () => {
 
   const fetch = React.useCallback((p: number) => {
     setLoading(true);
-    const params: Record<string, unknown> = { page: p, limit };
+    const params: Record<string, unknown> = { page: p, limit, sort: "-createdAt" };
     if (statusFilter) params.status = statusFilter;
     if (fromFilter) params.from = toIsoStartOfDay(fromFilter);
     if (toFilter) params.to = toIsoEndOfDay(toFilter);
@@ -131,237 +132,270 @@ const Bookings: React.FC = () => {
       .finally(() => setLoading(false));
   }, [limit, showToast, statusFilter, fromFilter, toFilter, debouncedSearch, stationFilter]);
 
-  // initial load + refetch when fetch function changes (filters included)
-  React.useEffect(() => { fetch(1); }, [fetch]);
-  // page change
-  React.useEffect(() => { fetch(page); }, [page, fetch]);
-
-  // reset to page 1 when filter values change (debouncedSearch already debounced)
+  // Reset to page 1 when filters change
   React.useEffect(() => {
     setPage(1);
-    fetch(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, fromFilter, toFilter, debouncedSearch, stationFilter]);
+
+  // Fetch data when page or filters change
+  React.useEffect(() => {
+    fetch(page);
+  }, [fetch, page]);
 
   // Proxy booking feature removed
 
 
+  const STATUS_OPTIONS = [
+    { key: "RESERVED", label: "Reserved" },
+    { key: "CHECKED_IN", label: "Checked In" },
+    { key: "COMPLETED", label: "Completed" },
+    { key: "CANCELLED", label: "Cancelled" },
+    { key: "NO_SHOW", label: "No Show" },
+  ] as const;
+
+  const toggleStatusTab = (statusKey: string) => {
+    setPage(1);
+    if (statusKey === "ALL") {
+      setStatusFilter("");
+    } else {
+      setStatusFilter(statusKey);
+    }
+  };
+
+  const badgeClass = (status?: string | null) => {
+    const s = String(status || "").toUpperCase();
+    switch (s) {
+      case "COMPLETED":
+        return "bg-green-50 text-green-700";
+      case "CHECKED_IN":
+        return "bg-yellow-50 text-yellow-700";
+      case "CANCELLED":
+        return "bg-red-50 text-red-700";
+      case "NO_SHOW":
+        return "bg-orange-50 text-orange-700";
+      case "RESERVED":
+        return "bg-blue-50 text-blue-700";
+      default:
+        return "bg-gray-50 text-gray-600";
+    }
+  };
+
+ 
+
+  const formatTime = (value?: string | null) => {
+    if (!value) return "—";
+    try {
+      const d = new Date(value);
+      return new Intl.DateTimeFormat("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(d);
+    } catch {
+      return value;
+    }
+  };
+
+  const formatSlot = (start?: string | null, end?: string | null) => {
+    if (!start || !end) return "—";
+    try {
+      const startDate = new Date(start);
+      const dateStr = new Intl.DateTimeFormat("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(startDate);
+      const startTime = formatTime(start);
+      const endTime = formatTime(end);
+      return `${dateStr} ${startTime} - ${endTime}`;
+    } catch {
+      return "—";
+    }
+  };
+
   return (
-  <div className="w-full px-6 py-6">
-      {/* Top actions & filters */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => fetch(page)}
-            className="border border-gray-300 text-gray-700 dark:text-gray-300 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-sm"
-          >
-            Refresh
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            placeholder="Search reference, vehicle, phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border rounded-md p-2 text-sm w-48"
-          />
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border rounded-md p-2 text-sm"
-          >
-            <option value="">All status</option>
-            <option value="RESERVED">RESERVED</option>
-            <option value="PENDING">PENDING</option>
-            <option value="COMPLETED">COMPLETED</option>
-            <option value="CANCELLED">CANCELLED</option>
-          </select>
-
-          <select
-            value={stationFilter}
-            onChange={(e) => setStationFilter(e.target.value)}
-            className="border rounded-md p-2 text-sm"
-          >
-            <option value="">All stations</option>
-            {stations.map((s) => (
-              <option key={s._id || s.id} value={s._id || s.id}>{s.name || s.title || s.code}</option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            value={fromFilter}
-            onChange={(e) => setFromFilter(e.target.value)}
-            className="border rounded-md p-2 text-sm"
-            title="From"
-          />
-
-          <input
-            type="date"
-            value={toFilter}
-            onChange={(e) => setToFilter(e.target.value)}
-            className="border rounded-md p-2 text-sm"
-            title="To"
-          />
-
-          <button
-            onClick={() => {
-              setStatusFilter("");
-              setFromFilter("");
-              setToFilter("");
-              setSearch("");
-              setStationFilter("");
-            }}
-            className="px-3 py-1.5 rounded-lg border text-sm"
-          >
-            Reset
-          </button>
+    <div>
+      {/* Search and Filters */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              value={search}
+              onChange={(e) => {
+                setPage(1);
+                setSearch(e.target.value);
+              }}
+              placeholder="Search reference, vehicle, phone..."
+              className="border border-[#333333] rounded-lg px-7 py-1 w-72 text-sm focus:outline-none focus:ring-1 focus:ring-[#333333]"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={fromFilter}
+              onChange={(e) => {
+                setPage(1);
+                setFromFilter(e.target.value);
+              }}
+              className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+            />
+            <span className="text-sm text-gray-500">to</span>
+            <input
+              type="date"
+              value={toFilter}
+              onChange={(e) => {
+                setPage(1);
+                setToFilter(e.target.value);
+              }}
+              className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500">Station</label>
+            <select
+              value={stationFilter}
+              onChange={(e) => {
+                setPage(1);
+                setStationFilter(e.target.value);
+              }}
+              className="border border-[#333333] rounded-lg px-3 py-1 text-sm"
+            >
+              <option value="">All</option>
+              {stations.map((s) => (
+                <option key={s._id || s.id} value={s._id || s.id}>
+                  {s.name || s.title || s.code}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
-      {/* Pagination */}
-      {pagination.pages > 1 && (
-        <div className="flex justify-between items-center mb-4">
-          <button
-            disabled={pagination.page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className={`px-4 py-2 rounded-lg transition ${
-              pagination.page <= 1
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            }`}
-          >
-            Previous
-          </button>
 
-          <div className="text-sm text-gray-600">
-            Page {pagination.page} / {pagination.pages}
+      {/* Status Tabs */}
+      <div className="flex gap-6 border-b mb-4">
+        <button
+          className={`py-2 px-2 text-sm font-medium border-b-2 transition-all ${
+            !statusFilter
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-500 hover:text-blue-600"
+          }`}
+          onClick={() => toggleStatusTab("ALL")}
+        >
+          All
+        </button>
+        {STATUS_OPTIONS.map((t) => (
+          <button
+            key={t.key}
+            className={`py-2 px-2 text-sm font-medium border-b-2 transition-all ${
+              statusFilter === t.key
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-blue-600"
+            }`}
+            onClick={() => toggleStatusTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Booking Table */}
+      <div className="bg-white rounded-xl border">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium text-gray-900">Booking List</h2>
+            <span className="text-sm text-gray-500">{pagination.total} results</span>
           </div>
-
-          <button
-            disabled={pagination.page >= pagination.pages}
-            onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
-            className={`px-4 py-2 rounded-lg transition ${
-              pagination.page >= pagination.pages
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            }`}
-          >
-            Next
-          </button>
         </div>
-      )}
-
-      {/* Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
-        {loading ? (
-          <div className="p-6 text-center text-gray-500 animate-pulse">Loading...</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 sticky top-0">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slot</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
                 <tr>
-                  <th className="p-3 text-left">Reference</th>
-                  <th className="p-3 text-left">Customer</th>
-                  <th className="p-3 text-left">Vehicle</th>
-                  <th className="p-3 text-left">Station</th>
-                  <th className="p-3 text-left">Slot</th>
-                  <th className="p-3 text-left">Status</th>
-                  <th className="p-3 text-left">Actions</th>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">Loading data...</td>
                 </tr>
-              </thead>
-              <tbody>
-                {list.map((b: Booking, i) => (
-                  <tr
-                    key={b.id ?? i}
-                    className="border-t hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                  >
-                    <td className="p-3 font-medium text-gray-800 dark:text-gray-200">
-                      {b.reference ?? b.id}
-                    </td>
-                    <td className="p-3">{b.user?.name ?? b.customerName ?? "-"}</td>
-                    <td className="p-3">
-                      {b.vehicle
-                        ? `${b.vehicle.make ?? ""} ${b.vehicle.model ?? ""}`.trim()
-                        : "-"}
-                    </td>
-                    <td className="p-3">{b.station?.name ?? b.stationName ?? "-"}</td>
-                    <td className="p-3">
-                      {b.slotStart && b.slotEnd
-                        ? `${new Date(b.slotStart).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })} - ${new Date(b.slotEnd).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}`
-                        : "-"}
-                    </td>
-                    <td className="p-3">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          b.status === "PENDING"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : b.status === "COMPLETED"
-                            ? "bg-green-100 text-green-800"
-                            : b.status === "CANCELLED"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {b.status}
-                      </span>
-                    </td>
-                    <td className="p-3 flex gap-2">
-                      {/* Start action removed for staff list */}
-                      <button
-                        className="border border-gray-300 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium"
-                        onClick={() => setSelected(b)}
-                      >
-                        Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ) : list.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">No bookings found</td>
+                </tr>
+              ) : (
+                list.map((b: Booking) => {
+                  const bookingId = b.id || b._id;
+                  return (
+                    <tr key={bookingId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {b.reference ?? bookingId}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {b.user?.name ?? b.customerName ?? "—"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {b.vehicle
+                          ? `${b.vehicle.make ?? ""} ${b.vehicle.model ?? ""}`.trim()
+                          : "—"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {b.station?.name ?? b.stationName ?? "—"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {formatSlot(b.slotStart, b.slotEnd)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium ${badgeClass(b.status)}`}>
+                          <span className="w-2 h-2 rounded-full bg-current"></span>
+                          {b.status || "—"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <Link
+                          to={`/staff/bookings/${b.id || b._id}`}
+                          className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs transition"
+                        >
+                          Details
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        {pagination.pages > 1 && (
+          <div className="px-6 py-4 border-t flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Page {pagination.page} / {Math.max(1, pagination.pages)}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={pagination.page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-1.5 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center gap-1"
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <button
+                disabled={pagination.page >= pagination.pages || loading}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-3 py-1.5 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center gap-1"
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Detail Modal */}
-        {selected && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-[95%] max-w-5xl p-6 relative animate-fadeIn">
-            <button
-              onClick={() => setSelected(null)}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 dark:hover:text-white"
-            >
-              ✕
-            </button>
-            <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-              Booking Details
-            </h3>
-            <div className="space-y-3 text-gray-700 dark:text-gray-300">
-              <p><strong>Booking ID:</strong> {selected.id}</p>
-              <p><strong>Customer:</strong> {selected.user?.name ?? selected.customerName ?? "-"}</p>
-              <p><strong>Vehicle:</strong> {selected.vehicle?.make} {selected.vehicle?.model}</p>
-              <p><strong>Station:</strong> {selected.station?.name ?? selected.stationName}</p>
-              <p><strong>Connector:</strong> {selected.connector?.code} ({selected.connector?.type})</p>
-              <p><strong>Slot Start:</strong> {selected.slotStart ? new Date(selected.slotStart).toLocaleString() : "-"}</p>
-              <p><strong>Slot End:</strong> {selected.slotEnd ? new Date(selected.slotEnd).toLocaleString() : "-"}</p>
-              <p><strong>Session ID:</strong> {selected.session?.id ?? "-"}</p>
-              <p><strong>Session Status:</strong> {selected.session?.status ?? "-"}</p>
-              <p><strong>Created At:</strong> {selected.createdAt ? new Date(selected.createdAt).toLocaleString() : "-"}</p>
-              <p><strong>Updated At:</strong> {selected.updatedAt ? new Date(selected.updatedAt).toLocaleString() : "-"}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Proxy booking feature removed */}
     </div>
   );
 };
