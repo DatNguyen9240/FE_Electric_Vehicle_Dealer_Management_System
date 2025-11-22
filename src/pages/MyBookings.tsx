@@ -94,6 +94,13 @@ const MyBookings: React.FC = () => {
     }
   };
 
+  const adjustTimeByHours = (date: string | null | undefined, hours: number) => {
+    if (!date) return '-';
+    const result = new Date(date);
+    result.setHours(result.getHours() - hours);
+    return result.toLocaleString();
+  };
+
   return (
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
@@ -123,7 +130,7 @@ const MyBookings: React.FC = () => {
               <tbody>
                 {list.length === 0 ? (
                   <tr>
-                      <td colSpan={7} className="text-center py-6 text-gray-500">No bookings found.</td>
+                      <td colSpan={9} className="text-center py-6 text-gray-500">No bookings found.</td>
                   </tr>
                 ) : (
                   list.map((b, i) => (
@@ -136,21 +143,57 @@ const MyBookings: React.FC = () => {
                     >
                       <td className="p-3">{b.station?.name ?? b.stationName ?? '-'}</td>
                       <td className="p-3">{b.connector?.code ?? b.connectorName ?? b.chargerName ?? '-'}</td>
-                      <td className="p-3">{b.slotStart ? `${new Date(b.slotStart).toLocaleString()} - ${new Date(b.slotEnd ?? b.slotStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '-'}</td>
-                      <td className="p-3">{b.vehicle ? `${b.vehicle.make ?? ''} ${b.vehicle.model ?? ''}`.trim() : '-'}</td>
-                      <td className="p-3">{b.vehicle?.licensePlate ?? '-'}</td>
-                      <td className="p-3">{b.isPaid ? <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">Paid</span> : <span className="px-2 py-1 rounded-full text-xs bg-yellow-50 text-yellow-700">Unpaid</span>}</td>
                       <td className="p-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${b.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : b.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
+                        {b.slotStart
+                          ? `${adjustTimeByHours(b.slotStart, 7)} - ${adjustTimeByHours(
+                              b.slotEnd ?? b.slotStart,
+                              7
+                            )}`
+                          : '-'}
+                      </td>
+                      <td className="p-3">
+                        {b.vehicle
+                          ? `${b.vehicle.make ?? ''} ${b.vehicle.model ?? ''}`.trim()
+                          : '-'}
+                      </td>
+                      <td className="p-3">{b.vehicle?.licensePlate ?? '-'}</td>
+                      <td className="p-3">
+                        {b.isPaid ? (
+                          <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                            Paid
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 rounded-full text-xs bg-yellow-50 text-yellow-700">
+                            Unpaid
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            b.status === 'COMPLETED'
+                              ? 'bg-green-100 text-green-700'
+                              : b.status === 'CANCELLED'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
                           {b.status}
                         </span>
                         {b.checkInDeadline && (
-                          <div className="text-xs text-gray-500 mt-1">Check-in: {new Date(b.checkInDeadline).toLocaleString()}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Check-in: {adjustTimeByHours(b.checkInDeadline, 7)}
+                          </div>
                         )}
                       </td>
                       <td className="p-3">
                         {b.status === 'RESERVED' ? (
-                          <button className="px-3 py-1 border rounded text-xs" onClick={() => cancelBooking(b.id)}>Cancel</button>
+                          <button
+                            className="px-3 py-1 border rounded text-xs"
+                            onClick={() => cancelBooking(b.id)}
+                          >
+                            Cancel
+                          </button>
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}

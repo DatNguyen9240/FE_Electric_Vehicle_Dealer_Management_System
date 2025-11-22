@@ -111,6 +111,7 @@ const FeedbackManager = lazy(
 const FeedbackDetail = lazy(
   () => import("@pages/Admin/Feedbacks/FeedbackDetail")
 );
+const ContactPage = lazy(() => import("@pages/Shared/ContactPage"));
 
 const createLazyRoute = (
   Component: React.LazyExoticComponent<React.ComponentType<object>>,
@@ -271,6 +272,10 @@ export default function AppRoutes() {
             path="/staff/sessions/:sessionId/invoice"
             element={createLazyRoute(StaffInvoiceDetail, "Loading invoice...")}
           />
+          <Route
+            path="/staff/contacts"
+            element={<Suspense fallback={<LazyLoading message="Loading staff contacts..." />}><ContactPage role="staff" /></Suspense>}
+          />
         </Route>
 
         <Route element={<AdminLayout />}>
@@ -429,6 +434,10 @@ export default function AppRoutes() {
               MembershipPlanForm,
               "Loading edit membership plan..."
             )}
+          />
+          <Route
+            path="/admin/contacts"
+            element={<Suspense fallback={<LazyLoading message="Loading admin contacts..." />}><ContactPage role="admin" /></Suspense>}
           />
         </Route>
       </Routes>

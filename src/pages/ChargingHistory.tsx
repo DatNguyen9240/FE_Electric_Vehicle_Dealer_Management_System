@@ -47,6 +47,11 @@ const ChargingHistory: React.FC = () => {
   const [toDate, setToDate] = useState<string | null>(null);
   // removed duplicate `filter` state — use `statusFilter` everywhere
 
+  const formatAmount = (value?: number) => {
+    if (value == null) return "0₫";
+    return `${Number(value).toLocaleString()}₫`;
+  };
+
   const fetchSessions = async () => {
     setLoading(true);
     setError(null);
@@ -274,7 +279,7 @@ const ChargingHistory: React.FC = () => {
                     { (session.billing?.totalAmount || session.cost) && (
                       <div className="mt-4 md:mt-0 md:ml-6 text-right">
                         <p className="text-sm text-center pe-5">Total Cost</p>
-                        <div className="text-2xl font-bold text-green-600 text-center pe-5">${Number(session.billing?.totalAmount ?? session.cost ?? 0).toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-green-600 text-center pe-5">{formatAmount(session.billing?.totalAmount ?? session.cost)}</div>
                       </div>
                     )}
                   </div>
