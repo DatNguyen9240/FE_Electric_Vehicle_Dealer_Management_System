@@ -47,35 +47,35 @@ const Wallet: React.FC = () => {
   const renderTransactionStatus = (status?: string) => {
     const normalized = String(status || "").toUpperCase();
     if (normalized === "SUCCEEDED" || normalized === "COMPLETED")
-      return <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Hoàn tất</span>;
+      return <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Completed</span>;
     if (normalized === "PENDING")
-      return <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Chờ xử lý</span>;
+      return <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Pending</span>;
     if (normalized === "FAILED")
-      return <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Thất bại</span>;
-    return <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{status || "Không rõ"}</span>;
+      return <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Failed</span>;
+    return <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{status || "Unknown"}</span>;
   };
 
   return (
     <div className="px-6 py-10">
       <div className=" mx-20 space-y-6">
         <div className="flex flex-col gap-2">
-          <p className="text-sm text-gray-500 uppercase tracking-wide">Ví điện tử</p>
-          <h1 className="text-3xl font-semibold text-gray-900">Số dư và giao dịch của bạn</h1>
+          <p className="text-sm text-gray-500 uppercase tracking-wide">E-Wallet</p>
+          <h1 className="text-3xl font-semibold text-gray-900">Your Balance and Transactions</h1>
           <p className="text-sm text-gray-500">
-            Theo dõi số dư hiện tại, lịch sử nạp tiền và các giao dịch gần đây của bạn.
+            Track your current balance, top-up history, and recent transactions.
           </p>
         </div>
 
         <div className="bg-white rounded-2xl border px-6 py-5 flex flex-col gap-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase text-gray-500 font-medium">Số dư hiện tại</p>
+              <p className="text-xs uppercase text-gray-500 font-medium">Current Balance</p>
               <p className="text-4xl font-semibold text-gray-900 mt-2">
                 {loading
-                  ? "Đang tải..."
+                  ? "Loading..."
                   : wallet?.balance !== undefined
                   ? formatAmount(wallet.balance)
-                  : "Không lấy được số dư"}
+                  : "Unable to retrieve balance"}
               </p>
             </div>
             <div className="p-3 rounded-2xl bg-blue-50 text-blue-600">
@@ -88,19 +88,19 @@ const Wallet: React.FC = () => {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition"
             >
               <CreditCard size={16} />
-              Nạp tiền
+              Top Up
             </Link>
             <Link
               to="/charging-history"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:border-gray-300 transition"
             >
-              Xem lịch sử sạc
+              View Charging History
             </Link>
             <Link
               to="/my-invoices"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:border-gray-300 transition"
             >
-              Xem hóa đơn
+              View Invoices
             </Link>
           </div>
         </div>
@@ -108,20 +108,20 @@ const Wallet: React.FC = () => {
         <div className="bg-white rounded-2xl border shadow-sm">
           <div className="px-6 py-4 border-b flex items-center justify-between">
             <div>
-              <p className="text-lg font-semibold text-gray-900">Lịch sử giao dịch</p>
+              <p className="text-lg font-semibold text-gray-900">Transaction History</p>
               <p className="text-sm text-gray-500">
-                Các giao dịch nạp tiền và thanh toán gần đây nhất.
+                Recent top-up and payment transactions.
               </p>
             </div>
             <span className="text-xs font-medium text-gray-500 uppercase">
-              {transactions.length} giao dịch
+              {transactions.length} transactions
             </span>
           </div>
           <div className="p-6">
             {txLoading ? (
-              <div className="text-sm text-gray-500">Đang tải lịch sử...</div>
+              <div className="text-sm text-gray-500">Loading history...</div>
             ) : transactions.length === 0 ? (
-              <div className="text-sm text-gray-400 italic">Bạn chưa có giao dịch nào.</div>
+              <div className="text-sm text-gray-400 italic">You have no transactions yet.</div>
             ) : (
               <div className="space-y-3">
                 {transactions.map((t, i) => {

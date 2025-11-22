@@ -14,6 +14,8 @@ interface Connector {
   power: string;
   status: string;
   remainingTime: string;
+  chargerName?: string; // Thêm
+  stationName?: string; // Thêm
 }
 
 // Raw shape returned by backend for a connector
@@ -46,35 +48,74 @@ const UserBookingDetails: React.FC = () => {
   const [loadingConnectors, setLoadingConnectors] = useState(false);
   const [connectorsError, setConnectorsError] = useState<string | null>(null);
   useEffect(() => {
-    async function loadCharger() {
-      if (!chargerId) return;
+    async function loadAvailableConnectors() {
+      if (!stationId || !chargerId || !selectedTimeSlot || !selectedDate) return;
       setLoadingConnectors(true);
       setConnectorsError(null);
       try {
-        const res = await api.get(`/chargers/${chargerId}`);
-        const data = res.data;
-        // data.connectors expected
-        const mapped: Connector[] = (data.connectors ?? []).map((c: RawConnector) => ({
-          id: c._id,
-          name: c.code ?? c.type ?? `Connector ${c._id}`,
-          type: c.type ?? c.connectorType ?? "-",
-          power: c.powerKw ? `${c.powerKw}kW` : c.power ?? "-",
-          status: c.status === "IDLE" ? "Available" : c.status === "CHARGING" ? "Charging" : (c.status || "Unknown"),
+        // Parse startTime từ timeSlot + date
+        const [hourStr, minuteStr] = selectedTimeSlot.split(":");
+        const startDate = new Date(selectedDate);
+        startDate.setHours(Number(hourStr), Number(minuteStr), 0, 0);
+        const startTime = startDate.toISOString();
+
+        // Gọi API available-by-time với params
+        const res = await api.get(`/stations/available-by-time`, {
+          params: {
+            startTime,
+            durationMinutes: 30, // Mặc định 30 phút
+            stationId,
+            stationStatus: 'ONLINE', // Chỉ ONLINE stations
+            chargerId, // Lọc đúng trụ
+            // connectorType: 'CCS', // Có thể thêm nếu biết từ vehicle, tạm bỏ
+          },
+        });
+
+        const availableConnectors = res.data?.availableConnectors ?? [];
+        
+        // Map thành format Connector
+        const mapped: Connector[] = availableConnectors.map((c: any) => ({
+          id: c.id,
+          name: c.code ?? `Connector ${c.id}`,
+          type: c.type ?? "-",
+          power: c.powerKw ? `${c.powerKw}kW` : "-",
+          status: c.isAvailable ? "Available" : "Reserved", // Dựa trên isAvailable
           remainingTime: "",
+          chargerName: c.charger?.name || "Unknown Charger",
+          stationName: c.station?.name || "Unknown Station",
         }));
+
         setConnectors(mapped);
       } catch (err: unknown) {
-        const message = axios.isAxiosError(err)
-          ? (err.response?.data?.msg as string) || err.message
-          : (err as Error)?.message || "Lỗi tải connector";
-        setConnectorsError(message);
-        toast.error(message);
+        // Fallback: Load từ /chargers nếu API mới lỗi
+        console.warn('Available-by-time API failed, falling back to charger connectors', err);
+        try {
+          const res = await api.get(`/chargers/${chargerId}`);
+          const data = res.data;
+          const mapped: Connector[] = (data.connectors ?? []).map((c: RawConnector) => ({
+            id: c._id,
+            name: c.code ?? c.type ?? `Connector ${c._id}`,
+            type: c.type ?? c.connectorType ?? "-",
+            power: c.powerKw ? `${c.powerKw}kW` : c.power ?? "-",
+            status: "Available", // Fallback không check slot, nhưng set Available để user có thể thử book
+            remainingTime: "",
+            chargerName: data.name || "Unknown Charger",
+            stationName: "Unknown Station", // Không có trong fallback
+          }));
+          setConnectors(mapped);
+        } catch (fallbackErr: unknown) {
+          const message = axios.isAxiosError(fallbackErr)
+            ? (fallbackErr.response?.data?.msg as string) || fallbackErr.message
+            : (fallbackErr as Error)?.message || "Lỗi tải connector";
+          setConnectorsError(message);
+          toast.error(message);
+        }
       } finally {
         setLoadingConnectors(false);
       }
     }
-    loadCharger();
-  }, [chargerId]);
+    loadAvailableConnectors();
+  }, [stationId, chargerId, selectedTimeSlot, selectedDate]);
 
   // read date from query param passed from slots page
   const [searchParams] = useSearchParams();
@@ -179,18 +220,19 @@ const UserBookingDetails: React.FC = () => {
                     connectors.map((connector: Connector) => {
                       const isAvailable = connector.status === "Available";
                       // Block tracking removed — any connector can be selected
-                      const isBlocked = false;
+                      const isBlocked = connector.status === "Reserved"; // Disable nếu Reserved
                       const isSelected = selectedConnector === connector.id;
 
                       return (
                         <div
                           key={connector.id}
                           onClick={() => {
+                            if (isBlocked) return; // Không cho chọn nếu Reserved
                             // Always allow selecting a connector to view details; do not show any toast or message.
                             setSelectedConnector(isSelected ? null : connector.id);
                           }}
                           className={`relative border-2 rounded-xl p-6 transition-all ${
-                             !isAvailable ? "opacity-80 bg-gray-50" : "cursor-pointer hover:shadow-md"
+                             !isAvailable ? "opacity-80 bg-gray-50 cursor-not-allowed" : "cursor-pointer hover:shadow-md"
                           } ${isSelected ? "border-blue-600 bg-blue-50 shadow-lg" : "border-gray-200 hover:border-blue-300"}`}
                         >
                         {/* Selected Badge or Disabled Badge */}
@@ -282,6 +324,7 @@ const UserBookingDetails: React.FC = () => {
                           <h4 className="text-xl font-bold text-gray-900 mb-2">
                             {connector.name}
                           </h4>
+                          <p className="text-sm text-gray-600">Charger: {connector.chargerName}</p>
                           <div className="space-y-1">
                             <p
                               className={`text-sm ${
@@ -386,7 +429,7 @@ const UserBookingDetails: React.FC = () => {
                           No available connectors
                         </h3>
                         <p className="text-sm text-yellow-700 mt-1">
-                          All connectors are currently in use. Please try
+                          All connectors are currently reserved for this slot. Please try
                           another time slot or charger.
                         </p>
                       </div>

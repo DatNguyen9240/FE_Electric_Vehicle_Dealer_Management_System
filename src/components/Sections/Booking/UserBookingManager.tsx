@@ -71,7 +71,7 @@ const UserBookingManager: React.FC = () => {
 
   useEffect(() => {
     const fetchSlots = async () => {
-      if (!stationId || !selectedDate) return;
+      if (!stationId || !selectedDate || !chargerId) return; // Thêm check chargerId
       setLoadingSlots(true);
       try {
         const sel = selectedDate;
@@ -79,10 +79,10 @@ const UserBookingManager: React.FC = () => {
         const mm = String(sel.getMonth() + 1).padStart(2, "0");
         const dd = String(sel.getDate()).padStart(2, "0");
         const dateStr = `${yyyy}-${mm}-${dd}`;
-        const [slotsRes, chargerRes] = await Promise.all([
-          api.get(`/bookings/available-slots`, { params: { stationId, date: dateStr } }),
-          api.get(`/chargers/${chargerId}`),
-        ]);
+        // Thêm chargerId vào params để lọc theo charger cụ thể
+        const slotsRes = await api.get(`/bookings/available-slots`, { 
+          params: { stationId, date: dateStr, chargerId } // ← Thêm chargerId
+        });
 
         const slots = slotsRes.data?.availableSlots ?? [];
         const map: Record<string, number> = {};
@@ -93,7 +93,8 @@ const UserBookingManager: React.FC = () => {
             const h = String(d.getHours()).padStart(2, "0");
             const m = String(d.getMinutes()).padStart(2, "0");
             const key = `${h}:${m}`;
-            map[key] = (s.availableConnectors || []).length;
+            // Sử dụng s.availableCount (số connector available cho charger trong slot)
+            map[key] = s.availableCount || 0; // ← Sửa từ (s.availableConnectors || []).length
           } catch (e) {
             continue;
           }
@@ -101,9 +102,8 @@ const UserBookingManager: React.FC = () => {
 
         setAvailableMap(map);
 
-        const chargerData = chargerRes.data;
-        const connectors = chargerData?.connectors ?? [];
-        setConnectorCount(connectors.length || 0);
+        // Cập nhật connectorCount từ slots (tổng connectors của charger)
+        setConnectorCount(slots.length > 0 ? slots[0].totalConnectors || 0 : 0); // ← Sửa từ chargerRes
       } catch (err) {
         console.error('Error fetching available slots', err);
       } finally {
@@ -112,7 +112,7 @@ const UserBookingManager: React.FC = () => {
     };
 
     fetchSlots();
-  }, [selectedDate, stationId, chargerId]);
+  }, [selectedDate, stationId, chargerId]); // Thêm chargerId vào dependency
 
   return (
     <>
