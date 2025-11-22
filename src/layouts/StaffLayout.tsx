@@ -35,6 +35,7 @@ const StaffLayout: React.FC = () => {
     { key: "bookings", label: "Bookings", icon: <CalendarCheck size={20} />, to: "/staff/bookings" },
     { key: "feedbacks", label: "Feedbacks", icon: <MessageCircle size={20} />, to: "/staff/feedbacks" },
     { key: "invoices", label: "Invoices", icon: <CreditCard size={20} />, to: "/staff/invoices" },
+    { key: "contacts", label: "Contacts", icon: <MessageCircle size={20} />, to: "/staff/contacts" },
   ];
 
   const dispatch = useDispatch<AppDispatch>();

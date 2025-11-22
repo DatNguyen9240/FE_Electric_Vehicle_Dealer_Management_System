@@ -50,8 +50,6 @@ const AdminLayout: React.FC = () => {
     },
   ];
 
- 
-
   
 
   return (
@@ -70,6 +68,7 @@ const AdminLayout: React.FC = () => {
             { key: "feedbacks", label: "Feedbacks", icon: <MessageSquare size={20} />, to: "/admin/feedbacks" },
             { key: "membership-plans", label: "Membership Plans", icon: <Crown size={20} />, to: "/admin/membership-plans" },
             { key: "ai", label: "AI Forecast", icon: <Cpu size={20} />, to: "/admin/ai-forecast" },
+            { key: "contacts", label: "Contacts", icon: <MessageSquare size={20} />, to: "/admin/contacts" },
           ] as SidebarMenuItem[]}
         dropdownItems={dropdownItems}
         showInfrastructure={true}

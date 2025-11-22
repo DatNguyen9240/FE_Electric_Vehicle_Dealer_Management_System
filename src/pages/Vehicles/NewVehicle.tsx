@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@components/Ui/Button";
 import { toast } from "react-toastify";
@@ -10,19 +10,36 @@ import {
 } from "@redux/slice/Vehical/VehicalThunk";
 import { setSelectedVehicle } from "@redux/slice/Vehical/VehicalSlice";
 import { ArrowLeft } from "lucide-react";
+import { EV_MODELS } from "../../constants/evModels";
+
+interface EVModel {
+  brand: string;
+  model: string;
+  plugType: string;
+  batteryKwh: number;
+}
 
 export default function NewVehicle() {
-  const [model, setModel] = useState("");
-  const PLUG_TYPES = ["CCS2", "CHAdeMO", "AC_Type2", "GB/T", "Other"];
-  const [plugType, setPlugType] = useState<string>(PLUG_TYPES[0]);
-  const [make, setMake] = useState("");
+  const [selectedModel, setSelectedModel] = useState(EV_MODELS[0].model);
+  const [plugType, setPlugType] = useState(EV_MODELS[0].plugType);
+  const [make, setMake] = useState(EV_MODELS[0].brand);
   const [licensePlate, setLicensePlate] = useState("");
   const [isDefault, setIsDefault] = useState(false);
-  const [batteryKwh, setBatteryKwh] = useState<number | "">("");
+  const [batteryKwh, setBatteryKwh] = useState<number | "">(EV_MODELS[0].batteryKwh);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+
+  const handleModelChange = (selectedModel: string) => {
+    const selectedVehicle = EV_MODELS.find((v: EVModel) => v.model === selectedModel);
+    if (selectedVehicle) {
+      setSelectedModel(selectedVehicle.model);
+      setPlugType(selectedVehicle.plugType);
+      setMake(selectedVehicle.brand);
+      setBatteryKwh(selectedVehicle.batteryKwh);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +55,7 @@ export default function NewVehicle() {
       const payload = {
         licensePlate: licensePlate.trim() || undefined,
         make: make.trim() || undefined,
-        model: model.trim(),
+        model: selectedModel.trim(),
         plugType: plugType.trim(),
         batteryKwh: battery,
         isDefault,
@@ -68,11 +85,16 @@ export default function NewVehicle() {
     }
   };
 
+  useEffect(() => {
+    // Automatically set the first model on initial render
+    handleModelChange(EV_MODELS[0].model);
+  }, []);
+
   // Creation-only page: no edit/fetch/delete logic
 
   return (
     <div className="px-6 py-10">
-      <div className=" mx-20 space-y-6">
+      <div className="mx-20 space-y-6">
         <button
           onClick={() => navigate("/")}
           className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition"
@@ -91,22 +113,27 @@ export default function NewVehicle() {
           </p>
         </div>
 
-        <div className=" gap-6">
+        <div className="gap-6">
           <form
             onSubmit={handleSubmit}
-            className=" bg-white rounded-2xl border p-6 shadow-sm space-y-5"
+            className="bg-white rounded-2xl border p-6 shadow-sm space-y-5"
           >
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Model <span className="text-red-500">*</span>
               </label>
-              <input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
+              <select
+                value={selectedModel}
+                onChange={(e) => handleModelChange(e.target.value)}
                 className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="VinFast VF8, Tesla Model 3..."
                 required
-              />
+              >
+                {EV_MODELS.map((v: EVModel) => (
+                  <option key={v.model} value={v.model}>
+                    {v.brand} - {v.model}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
@@ -114,18 +141,11 @@ export default function NewVehicle() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Plug type
                 </label>
-                <select
+                <input
                   value={plugType}
-                  onChange={(e) => setPlugType(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  {PLUG_TYPES.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
+                  readOnly
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
               <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -134,15 +154,8 @@ export default function NewVehicle() {
                 <input
                   type="number"
                   value={batteryKwh}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setBatteryKwh(v === "" ? "" : parseFloat(v));
-                  }}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min={0.1}
-                  step={0.1}
-                  placeholder="75"
-                  required
+                  readOnly
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -154,9 +167,8 @@ export default function NewVehicle() {
                   </label>
                 <input
                   value={make}
-                  onChange={(e) => setMake(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Hyundai, Nissan..."
+                  readOnly
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div>
