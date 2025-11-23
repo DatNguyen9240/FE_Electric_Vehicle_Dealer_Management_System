@@ -25,7 +25,7 @@ const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
     <div className="text-center w-full">
       <div className="font-medium text-lg mb-2">Charger #{id}</div>
       <div className="font-semibold text-base mb-2">
-        Status: <span className={statusColor}>{status}</span>
+          Status: <span className="text-green-600 font-semibold">{status}</span>
       </div>
       
       <button
