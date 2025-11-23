@@ -87,77 +87,85 @@ const SimpleChargerList: React.FC<{ stationId?: string }> = ({ stationId: propSt
             const availableConnectors = (charger.connectors || []).filter(c => c.status === 'IDLE').length;
             return (
               <div
-                key={charger._id}
-                className="border rounded-2xl p-6 bg-white shadow-md flex flex-col items-center transition-all hover:shadow-lg hover:-translate-y-1"
-              >
-                <div className="w-16 h-16 mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-green-600">
-                    <path d="M7 2v11h3v9l7-12h-4l3-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold mb-1 text-center">{charger.name || charger.code || `Charger ${charger._id}`}</h3>
-                <p className="text-gray-500 text-sm mb-2 text-center">
-                  Loại: {charger.connectorType || "Không rõ"} | Công suất: {charger.powerKw ? `${charger.powerKw}kW` : "-"}
-                </p>
-                <div className="mb-3">
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-semibold
-                      ${availableConnectors > 0 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
-                  >
-                    {availableConnectors > 0 ? `${availableConnectors} connector rảnh` : "Đang bận"}
-                  </span>
-                </div>
-                {/* Danh sách connector */}
-                {Array.isArray(charger.connectors) && charger.connectors.length > 0 && (
-                  <div className="w-full mb-3">
-                    <h4 className="font-semibold text-sm mb-1">Connectors:</h4>
-                    <ul className="space-y-2">
-                      {charger.connectors.map(connector => (
-                        <li key={connector._id} className="flex items-center gap-2 border rounded-lg px-3 py-2">
-                          <span className="font-medium">{connector.code || connector.type}</span>
-                          <span className="text-xs text-gray-500">{connector.type}</span>
-                          <span className="text-xs text-gray-500">{connector.powerKw ? `${connector.powerKw}kW` : "-"}</span>
-                          <span className={`ml-auto px-2 py-1 rounded-full text-xs font-semibold
-                            ${connector.status === "IDLE" ? "bg-green-100 text-green-700" : connector.status === "CHARGING" ? "bg-yellow-100 text-yellow-700" : "bg-gray-200 text-gray-500"}`}
-                          >
-                            {connector.status === "IDLE" ? "Rảnh" : connector.status === "CHARGING" ? "Đang sạc" : connector.status}
-                          </span>
-                          <button
-                            className="ml-2 px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200"
-                            onClick={async () => {
-                              if (!connector.code) return toast.error("Connector không có mã code");
-                              try {
-                                const res = await api.get(`/connectors/scan/${connector.code}`);
-                                const data = res.data as Record<string, unknown> | undefined;
-                                const connectorObj = data?.["connector"] as Record<string, unknown> | undefined;
-                                const qrObj = connectorObj?.["qr"] as Record<string, unknown> | undefined;
-                                const token = (qrObj?.["token"] as string | undefined) ?? "";
-                                // pass booking object or null
-                                const bookingObj = (data?.["booking"] as Record<string, unknown> | undefined) ?? null;
-                                openQrPage(token, (bookingObj as unknown) as Booking | null);
-                              } catch (err: unknown) {
-                                let message = "Quét thất bại";
-                                if (err instanceof Error) message = err.message;
-                                else if (typeof err === "object" && err !== null) {
-                                  const r = err as Record<string, unknown>;
-                                  const response = r["response"] as Record<string, unknown> | undefined;
-                                  const data = response?.["data"] as Record<string, unknown> | undefined;
-                                  const msg = data?.["msg"] as string | undefined;
-                                  if (msg) message = msg;
-                                }
-                                toast.error(message);
-                              }
-                            }}
-                          >
-                            Quét QR
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                  key={charger._id}
+                  className="border rounded-2xl p-6 bg-white shadow-md flex flex-col items-start transition-all hover:shadow-lg hover:-translate-y-1"
+                >
+                  <div className="w-16 h-16 mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-green-600">
+                      <path d="M7 2v11h3v9l7-12h-4l3-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </div>
-                )}
-                {/* Đã bỏ nút Xem slot */}
-              </div>
+                  <h3 className="text-xl font-bold mb-1">{charger.name || charger.code || `Charger ${charger._id}`}</h3>
+                  <p className="text-gray-500 text-sm mb-2">
+                    <span className="block">Loại: {charger.connectorType || "Không rõ"}</span>
+                    <span className="block">Công suất: {charger.powerKw ? `${charger.powerKw}kW` : "-"}</span>
+                  </p>
+                  <div className="mb-3">
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold
+                        ${availableConnectors > 0 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
+                    >
+                      {availableConnectors > 0 ? `${availableConnectors} connector rảnh` : "Đang bận"}
+                    </span>
+                  </div>
+                  {/* Danh sách connector */}
+                  {Array.isArray(charger.connectors) && charger.connectors.length > 0 && (
+                    <div className="w-full mb-3">
+                      <h4 className="font-semibold text-sm mb-1">Connectors:</h4>
+                      <ul className="space-y-2">
+                        {charger.connectors.map(connector => (
+                          <li key={connector._id} className="flex flex-col gap-1 border rounded-lg px-3 py-2">
+                            <div className="flex items-center w-full">
+                              <div className="flex-1">
+                                <div className="font-medium">{connector.code || connector.type}</div>
+                                <div className="text-xs text-gray-500">{connector.type} • {connector.powerKw ? `${connector.powerKw}kW` : "-"}</div>
+                              </div>
+                              <div className="ml-4">
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold
+                                  ${connector.status === "IDLE" ? "bg-green-100 text-green-700" : connector.status === "CHARGING" ? "bg-yellow-100 text-yellow-700" : "bg-gray-200 text-gray-500"}`}
+                                >
+                                  {connector.status === "IDLE" ? "Rảnh" : connector.status === "CHARGING" ? "Đang sạc" : connector.status}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="w-full flex justify-end">
+                              <button
+                                className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200"
+                                onClick={async () => {
+                                  if (!connector.code) return toast.error("Connector không có mã code");
+                                  try {
+                                    const res = await api.get(`/connectors/scan/${connector.code}`);
+                                    const data = res.data as Record<string, unknown> | undefined;
+                                    const connectorObj = data?.["connector"] as Record<string, unknown> | undefined;
+                                    const qrObj = connectorObj?.["qr"] as Record<string, unknown> | undefined;
+                                    const token = (qrObj?.["token"] as string | undefined) ?? "";
+                                    // pass booking object or null
+                                    const bookingObj = (data?.["booking"] as Record<string, unknown> | undefined) ?? null;
+                                    openQrPage(token, (bookingObj as unknown) as Booking | null);
+                                  } catch (err: unknown) {
+                                    let message = "Quét thất bại";
+                                    if (err instanceof Error) message = err.message;
+                                    else if (typeof err === "object" && err !== null) {
+                                      const r = err as Record<string, unknown>;
+                                      const response = r["response"] as Record<string, unknown> | undefined;
+                                      const data = response?.["data"] as Record<string, unknown> | undefined;
+                                      const msg = data?.["msg"] as string | undefined;
+                                      if (msg) message = msg;
+                                    }
+                                    toast.error(message);
+                                  }
+                                }}
+                              >
+                                Quét QR
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {/* Đã bỏ nút Xem slot */}
+                </div>
             );
           })}
         </div>
