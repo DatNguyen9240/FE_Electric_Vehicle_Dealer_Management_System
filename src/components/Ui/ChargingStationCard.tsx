@@ -24,8 +24,17 @@ const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
     />
     <div className="text-center w-full">
       <div className="font-medium text-lg mb-2">Charger #{id}</div>
-      <div className="font-semibold text-base mb-2">
-          Status: <span className="text-green-600 font-semibold">{status}</span>
+      <div className="font-semibold text-base mb-2 flex items-center justify-center gap-2">
+        <span className="text-gray-600">Status:</span>
+        {status === 'ONLINE' ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-semibold bg-green-50 text-green-700">
+            ONLINE
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-semibold bg-red-50 text-red-700">
+            OFFLINE
+          </span>
+        )}
       </div>
       
       <button
