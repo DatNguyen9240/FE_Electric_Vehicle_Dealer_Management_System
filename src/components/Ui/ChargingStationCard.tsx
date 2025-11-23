@@ -12,7 +12,6 @@ interface ChargingStationCardProps {
 const ChargingStationCard: React.FC<ChargingStationCardProps> = ({
   id,
   status,
-  statusColor,
   img,
   onBookNow,
 }) => (
