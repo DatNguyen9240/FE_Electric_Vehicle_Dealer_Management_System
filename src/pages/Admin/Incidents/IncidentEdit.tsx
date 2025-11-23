@@ -107,7 +107,7 @@ const IncidentEdit: React.FC = () => {
             Back
           </button>
           <h1 className="text-2xl font-bold text-gray-900">
-            {selectedIncident.title || `Incident ${selectedIncident.id.slice(0, 8)}`}
+            Incident {selectedIncident.id.slice(0, 8)}
           </h1>
         </div>
       </div>

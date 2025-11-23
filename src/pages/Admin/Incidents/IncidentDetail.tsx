@@ -235,16 +235,6 @@ const IncidentDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Title
-              </label>
-              <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {selectedIncident.title || "No title"}
-              </div>
-            </div>
-
             {/* Station */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -252,16 +242,6 @@ const IncidentDetail: React.FC = () => {
               </label>
               <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
                 {loadingStation ? "Loading..." : (station?.name || selectedIncident.stationId || "—")}
-              </div>
-            </div>
-
-            {/* Connector */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Connector
-              </label>
-              <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {selectedIncident.connectorId || "—"}
               </div>
             </div>
 

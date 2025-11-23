@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Eye, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { fetchFeedbacks } from "@redux/slice/Feedback/FeedbackThunks";
 import { clearError } from "@redux/slice/Feedback/FeedbackSlice";
 import type { RootState, AppDispatch } from "@redux/store/store";
@@ -12,7 +11,6 @@ import api from "../../../libs/axios";
 
 const FeedbackManager: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const navigate = useNavigate();
   const { data: feedbacks, loading, error } = useSelector((state: RootState) => state.feedback);
   const { setTitle } = useTitle();
 
@@ -68,10 +66,6 @@ const FeedbackManager: React.FC = () => {
       dispatch(clearError());
     }
   }, [error, dispatch]);
-
-  const handleViewFeedback = (feedbackId: string) => {
-    navigate(`/admin/feedbacks/view/${feedbackId}`);
-  };
 
   const getUserName = (userId?: string | null) => {
     if (!userId) return "—";
@@ -229,15 +223,12 @@ const FeedbackManager: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Created At
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredFeedbacks.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                     {ratingFilter || userIdFilter
                       ? "No feedbacks found matching the search criteria"
                       : "No feedbacks yet"}
@@ -262,16 +253,6 @@ const FeedbackManager: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(feedback.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleViewFeedback(feedback.id || feedback._id || "")}
-                        className="text-gray-400 hover:text-blue-500 transition-colors"
-                        title="View details"
-                        disabled={!feedback.id && !feedback._id}
-                      >
-                        <Eye size={16} />
-                      </button>
                     </td>
                   </tr>
                 ))
