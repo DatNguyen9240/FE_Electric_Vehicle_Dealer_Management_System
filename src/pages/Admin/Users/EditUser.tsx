@@ -240,7 +240,6 @@ const EditUser: React.FC = () => {
               >
                 <option value="driver">Driver</option>
                 <option value="staff">Staff</option>
-                <option value="admin">Admin</option>
               </select>
             </div>
             {/* Station (only show when role is staff) */}
